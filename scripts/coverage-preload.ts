@@ -23,6 +23,7 @@ import '../src/infra/graph-version.ts';
 import '../src/infra/image-files.ts';
 import '../src/infra/instagram-graph.ts';
 import '../src/infra/instagram-http.ts';
+import '../src/infra/instagram-media.ts';
 import '../src/infra/json-body.ts';
 import '../src/infra/logger.ts';
 import '../src/infra/threads-account.ts';

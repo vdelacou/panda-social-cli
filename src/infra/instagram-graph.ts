@@ -5,6 +5,7 @@ import type { Result } from '../domain/result.ts';
 import type { Instagram, InstagramAccount, InstagramError, Quota, RefreshedToken } from '../use-cases/ports/instagram.ts';
 import { INSTAGRAM_GRAPH_HOST, request } from './instagram-http.ts';
 import type { InstagramGraphConfig } from './instagram-http.ts';
+import { publishImage } from './instagram-media.ts';
 import { isRecord, recordField, stringField } from './json-body.ts';
 
 export { INSTAGRAM_GRAPH_BASE } from './instagram-http.ts';
@@ -65,4 +66,5 @@ export const createInstagramGraph = (config: InstagramGraphConfig): Instagram =>
   whoAmI: async () => whoAmI(config),
   refreshToken: async () => refreshToken(config),
   publishingLimit: async (userId) => publishingLimit(config, userId),
+  publishImage: async (userId, imageUrl, caption) => publishImage(config, userId, imageUrl, caption),
 });

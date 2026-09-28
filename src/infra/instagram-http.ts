@@ -14,12 +14,17 @@ const DEFAULT_TIMEOUT_MS = 10_000;
 export type InstagramGraphConfig = {
   readonly token: string;
   readonly timeoutMs?: number;
+  // The wait between container status checks; tests pass one that returns at once.
+  readonly sleep?: (ms: number) => Promise<void>;
+  readonly pollAttempts?: number;
 };
 
 type Kind = InstagramError['kind'];
 
 // D32: Meta's own code sorts a failure as it does on Facebook (D25), 10 and 200-299 being
-// permissions; the HTTP status speaks only when the code is none of these.
+// permissions; the HTTP status speaks only when the code is none of these. D36: 9004, 36000,
+// 36001 and 36003 are an image Instagram cannot use, 9 its publishing limit, 9007 a container
+// not ready yet.
 const BY_CODE: ReadonlyMap<number, Kind> = new Map<number, Kind>([
   [102, 'unauthorized'],
   [190, 'unauthorized'],
@@ -28,6 +33,12 @@ const BY_CODE: ReadonlyMap<number, Kind> = new Map<number, Kind>([
   [17, 'rate-limited'],
   [32, 'rate-limited'],
   [613, 'rate-limited'],
+  [9, 'rate-limited'],
+  [9004, 'image-rejected'],
+  [36_000, 'image-rejected'],
+  [36_001, 'image-rejected'],
+  [36_003, 'image-rejected'],
+  [9007, 'still-processing'],
 ]);
 const BY_STATUS: ReadonlyMap<number, Kind> = new Map<number, Kind>([
   [401, 'unauthorized'],

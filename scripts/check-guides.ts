@@ -5,7 +5,7 @@
  *
  *   - Every `panda-social` line in a bash block of skills/SKILL.md or a setup guide under
  *     docs/setup/ is a command line the real parser accepts.
- *   - Every setup step the CLI shows (THREADS_SETUP_STEPS, X_SETUP_STEPS) is in its guide:
+ *   - Every setup step the CLI shows (THREADS_SETUP_STEPS, X_SETUP_STEPS, FACEBOOK_SETUP_STEPS) is in its guide:
  *     `## Step N: <title>`, then each action as `- <action>` and the URL as `Open <url>`.
  *   - The skill's frontmatter names it panda-social and keeps its description within the
  *     1,024 characters an agent harness loads.
@@ -13,6 +13,7 @@
  *   bun run scripts/check-guides.ts   # exit 1 with one line per finding
  */
 import { parseCliArgs } from '../src/presenter/cli.ts';
+import { FACEBOOK_SETUP_STEPS } from '../src/presenter/facebook-setup-steps.ts';
 import { THREADS_SETUP_STEPS } from '../src/presenter/threads-setup-steps.ts';
 import { X_SETUP_STEPS } from '../src/presenter/x-setup-steps.ts';
 import type { SetupStep } from '../src/domain/setup-step.ts';
@@ -21,6 +22,7 @@ const SKILL = 'skills/SKILL.md';
 const GUIDES: ReadonlyArray<{ readonly file: string; readonly steps: ReadonlyArray<SetupStep> }> = [
   { file: 'docs/setup/threads.md', steps: THREADS_SETUP_STEPS },
   { file: 'docs/setup/x.md', steps: X_SETUP_STEPS },
+  { file: 'docs/setup/facebook.md', steps: FACEBOOK_SETUP_STEPS },
 ];
 const DESCRIPTION_LIMIT = 1024;
 

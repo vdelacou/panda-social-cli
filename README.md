@@ -2,7 +2,7 @@
 
 Post text, an image, or both to Threads, X, Facebook Pages and Instagram from one command line or one TypeScript library. It is built for AI agents first: every command answers in JSON, and every error names its cause and the next step to fix it.
 
-> Status: under construction. Threads works from source: guided setup, text and image posts, long texts as reply threads, delete, update by reposting, a `status` check, a saved token that refreshes itself, and commands that document themselves for agents. X works too: guided setup, text and image posts, long texts as threads, edits in place (X Premium) or by reposting, delete and a `status` check. Facebook and Instagram come after. Nothing is published to npm yet.
+> Status: under construction. Threads works from source: guided setup, text and image posts, long texts as reply threads, delete, update by reposting, a `status` check, a saved token that refreshes itself, and commands that document themselves for agents. X works too: guided setup, text and image posts, long texts as threads, edits in place (X Premium) or by reposting, delete and a `status` check. A Facebook Page connects with a guided setup and a `status` check; posting to it comes next, then Instagram. Nothing is published to npm yet.
 
 ## What each platform allows
 
@@ -28,6 +28,8 @@ bun run src/main.ts setup x
 bun run src/main.ts post --to x --text "Hello from panda"
 bun run src/main.ts post --to x --image ./chart.png --text "This week in one chart"
 bun run src/main.ts status x
+bun run src/main.ts setup facebook
+bun run src/main.ts status facebook
 ```
 
 `setup threads` walks you through the six one-time steps (a Meta developer account, an app with the Threads API, its permissions, a tester invitation, and the token), one at a time. You paste the token without it showing on screen; the CLI checks it with Threads and saves it in `~/.panda-social/credentials.json`, readable by you only. The same steps, with what each permission is for and the usual failures and their fixes, are in [docs/setup/threads.md](docs/setup/threads.md).
@@ -42,13 +44,15 @@ A Threads token lives 60 days from its last refresh. Every Threads command refre
 
 On X, `--image` takes a local JPEG, PNG, GIF or WEBP file of 5 MB at most, which the CLI checks by its first bytes and uploads; an https URL is refused, since the CLI never downloads anything for you. X counts 280 characters its own way: most characters 1, CJK characters and emoji 2, a link 23 however long, and `--split` threads a longer text as on Threads. `update --on x` edits the post in place, which X allows only for X Premium accounts, shortly after posting and 5 times at most; `--repost` deletes and republishes instead. Every post costs $0.015 of credits, and $0.20 when its text contains a link.
 
-For several accounts, add `--profile brand-a` to `setup`, `post`, `update`, `delete` and `status`. `PANDA_SOCIAL_THREADS_TOKEN` overrides the saved Threads token, and the four `PANDA_SOCIAL_X_` variables the saved X keys, which suits CI.
+`setup facebook` connects a Facebook Page in five steps: an app with the "Manage everything on your Page" use case, its posting permissions, publishing the app (until then, only people with a role on it see its posts), a user token from the Graph API Explorer, and that token extended to 60 days in the Access Token Debugger, which spares you the app secret. You paste the extended token without it showing; the CLI asks Meta which Pages it grants, keeps the chosen Page's own token, which does not expire, and never saves yours. When the token grants several Pages, it asks which one to keep, or takes `--page <id>`. The steps and the usual failures are in [docs/setup/facebook.md](docs/setup/facebook.md). An agent finishes with `panda-social setup facebook --token-stdin`, piping the token in. `status facebook` shows which Page the saved token belongs to.
+
+For several accounts, add `--profile brand-a` to `setup`, `post`, `update`, `delete` and `status`. `PANDA_SOCIAL_THREADS_TOKEN` overrides the saved Threads token, the four `PANDA_SOCIAL_X_` variables the saved X keys, and `PANDA_SOCIAL_FACEBOOK_PAGE_ID` with `PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN` the saved Page, which suits CI.
 
 Every command prints one JSON line on stdout and exits 0 or 1; the guide and the logs go to stderr.
 
 ```json
 {"ok":true,"data":{"platform":"threads","id":"17890000000000001","url":"https://www.threads.com/@you/post/..."}}
-{"ok":false,"error":{"code":"missing-credentials","message":"No Threads token is configured for the \"default\" profile.","hint":"Connect the account with `panda-social setup threads` or `panda-social setup x` (add `--profile <name>` for another profile), or set PANDA_SOCIAL_THREADS_TOKEN, or all four PANDA_SOCIAL_X_ variables."}}
+{"ok":false,"error":{"code":"missing-credentials","message":"No Threads token is configured for the \"default\" profile.","hint":"Connect the account with `panda-social setup threads`, `panda-social setup x` or `panda-social setup facebook` (add `--profile <name>` for another profile), or set PANDA_SOCIAL_THREADS_TOKEN, all four PANDA_SOCIAL_X_ variables, or both PANDA_SOCIAL_FACEBOOK_ variables."}}
 ```
 
 ## For agents

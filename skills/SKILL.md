@@ -4,11 +4,12 @@ description: >
   Publish, edit, replace and delete posts on the user's own Threads and X accounts through
   the local panda-social CLI, as text, an image (a public URL on Threads, a local file on X),
   or a long text split into a thread of replies; check a connected account and its limits;
-  and walk a first-time user through connecting Threads or X. Use it whenever the user asks
-  to post, share, publish, tweet, thread, reword, edit, repost or delete something on Threads
-  or X, or asks whether their Threads or X connection works or how many posts they have left
-  today. Do NOT use it to read a feed, replies, mentions or insights, to schedule a post for
-  later, or for Facebook or Instagram, which the CLI does not do yet.
+  and walk a first-time user through connecting Threads, X or a Facebook Page. Use it whenever
+  the user asks to post, share, publish, tweet, thread, reword, edit, repost or delete
+  something on Threads or X, to connect a Facebook Page, or asks whether their Threads, X or
+  Facebook connection works or how many posts they have left today. Do NOT use it to read a
+  feed, replies, mentions or insights, to schedule a post for later, or to post on Facebook or
+  Instagram, which the CLI does not do yet.
 ---
 
 # Post to Threads and X with panda-social
@@ -43,6 +44,8 @@ If the command is missing, the user installs it with `npm i -g panda-social-cli`
 
 Connecting X runs the same way with `panda-social setup x`: five steps as JSON to relay one at a time (`docs/setup/x.md` has them with the prices and the usual failures), then the user runs `panda-social setup x` in their own terminal and pastes the four keys where they do not show. X has no free tier: before step 2, tell the user that every request spends their prepaid credits, about $0.01 for the setup's own check. `panda-social status x` then answers with their username.
 
+Connecting a Facebook Page runs the same way with `panda-social setup facebook`: five steps as JSON to relay one at a time (`docs/setup/facebook.md` has them with the usual failures). Step 3 publishes the app, since until then only people with a role on it see its posts: say so if the user wants to skip it. Then the user runs `panda-social setup facebook` in their own terminal and pastes the extended token of step 5 where it does not show; when the token grants several Pages, the CLI names them and asks for the id of the one to keep. `panda-social status facebook` then answers with the Page.
+
 For several accounts, the same commands take `--profile <name>` (lowercase letters, digits, `-` and `_`), for example `--profile brand-a`.
 
 ## What to run
@@ -55,7 +58,7 @@ For several accounts, the same commands take `--profile <name>` (lowercase lette
 | A Threads post's wording changed | `update --on threads --id <post id> --text "<text>" --repost` |
 | An X post's wording changed | `update --on x --id <post id> --text "<text>"` edits it in place (X Premium); with `--repost` it deletes and republishes |
 | A post deleted | `delete --on threads --id <post id>`, or `--on x` |
-| To know the connection works | `status threads`, with the day's quotas, or `status x` |
+| To know the connection works | `status threads`, with the day's quotas, `status x` or `status facebook` |
 
 For example:
 
@@ -87,10 +90,11 @@ The post id is the `id` that `post` answered; keep it if the user may want to ch
 - Threads allows 250 posts, 1,000 replies and 100 deletes per rolling 24 hours; `status threads` reports what is used. X allows 100 posts and 50 deletes per 15 minutes. On `rate-limited`, wait.
 - X keys never expire. On X, `unauthorized` means they were regenerated or revoked, and `read-only-keys` that the app could not post when they were made: the hint gives the fix, then the user runs `panda-social setup x` again. `credits-depleted` means the app's credits are spent: the user buys more in the X developer console.
 - `edit-refused` means X declined the edit: it edits only for X Premium accounts, shortly after posting and 5 times at most. Offer `--repost`, which deletes the post, so get a yes first. `duplicate-text` means the text repeats one of the account's recent posts: change it.
-- `PANDA_SOCIAL_THREADS_TOKEN`, when set, is used instead of the saved Threads token and is never refreshed; the four `PANDA_SOCIAL_X_` variables, when all set, replace the saved X keys.
+- A Facebook Page token does not expire. `unauthorized` on Facebook means it stopped working (a changed password, a lost Page role, or a token not extended in step 5): the user makes and extends a new token (steps 4 and 5) and runs `panda-social setup facebook` again. `missing-page-task` means their role on the Page cannot create posts; `choose-page` lists the Pages the token grants, for `--page <id>`.
+- `PANDA_SOCIAL_THREADS_TOKEN`, when set, is used instead of the saved Threads token and is never refreshed; the four `PANDA_SOCIAL_X_` variables, when all set, replace the saved X keys; `PANDA_SOCIAL_FACEBOOK_PAGE_ID` and `PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN`, when both set, replace the saved Page.
 
 ## Known limitations
 
-- Threads and X only for now; Facebook and Instagram come later.
+- Posting works on Threads and X. A Facebook Page can be connected and checked, and posting to it comes next; Instagram after that.
 - Nothing is read back: no feed, replies, mentions or insights. No scheduling.
 - Threads has no edit, so `update` there always deletes and republishes.

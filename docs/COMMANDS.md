@@ -212,7 +212,7 @@ On a terminal, walks a first-time user through the one-time steps of the platfor
 ### Usage
 
 ```bash
-panda-social setup <platform> [--token-stdin] [--keys-stdin] [--profile <name>]
+panda-social setup <platform> [--token-stdin] [--keys-stdin] [--page <page-id>] [--profile <name>]
 ```
 
 ### Parameters
@@ -222,6 +222,7 @@ panda-social setup <platform> [--token-stdin] [--keys-stdin] [--profile <name>]
 | `<platform>` | yes | The platform to connect. One of: threads, x. |
 | `--token-stdin` | no | Threads: read the token from standard input instead of asking for it. |
 | `--keys-stdin` | no | X: read the four keys from standard input, one per line: API Key, API Key Secret, Access Token, Access Token Secret. |
+| `--page <page-id>` | no | Facebook: the id of the Page to connect, needed when the token grants several. |
 | `--profile <name>` | no | The profile to save the account under. Defaults to "default". |
 
 ### Examples

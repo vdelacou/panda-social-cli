@@ -264,7 +264,7 @@
       "name": "setup",
       "summary": "Connect a Threads or X account and save its credentials under a profile.",
       "description": "On a terminal, walks a first-time user through the one-time steps of the platform (six for Threads, five for X) one at a time, then reads the Threads token or the four X keys without showing them. Without a terminal it answers with the same steps as JSON, for an agent to relay to its human, and the command that finishes the setup. With --token-stdin (Threads) or --keys-stdin (X, four lines: API Key, API Key Secret, Access Token, Access Token Secret) it reads them from standard input. The credentials are checked with the platform before they are saved in ~/.panda-social/credentials.json, readable by its owner only; X keys that X reports as read-only are refused. Checking X keys spends about $0.01 of X credits.",
-      "usage": "panda-social setup <platform> [--token-stdin] [--keys-stdin] [--profile <name>]",
+      "usage": "panda-social setup <platform> [--token-stdin] [--keys-stdin] [--page <page-id>] [--profile <name>]",
       "arguments": [
         {
           "name": "platform",
@@ -286,6 +286,12 @@
           "flag": "--keys-stdin",
           "required": false,
           "description": "X: read the four keys from standard input, one per line: API Key, API Key Secret, Access Token, Access Token Secret."
+        },
+        {
+          "flag": "--page",
+          "value": "<page-id>",
+          "required": false,
+          "description": "Facebook: the id of the Page to connect, needed when the token grants several."
         },
         {
           "flag": "--profile",

@@ -480,6 +480,49 @@ describe('connecting a Facebook Page with `panda-social setup facebook`', () => 
     rmSync(home, { recursive: true, force: true });
   });
 
+  it('without a terminal, `setup facebook` prints the five Facebook steps as JSON with the command that finishes it', async () => {
+    const { exitCode, answers } = await run(['setup', 'facebook'], { HOME: home });
+
+    expect(exitCode).toBe(0);
+    expect(answers).toEqual([
+      {
+        ok: true,
+        data: {
+          platform: 'facebook',
+          profile: 'default',
+          steps: expect.arrayContaining([
+            expect.objectContaining({ step: 1, title: 'Create an app that can manage your Page' }),
+            expect.objectContaining({ step: 5, title: 'Extend the token to 60 days' }),
+          ]),
+          finish: expect.stringContaining('panda-social setup facebook --token-stdin'),
+        },
+      },
+    ]);
+  });
+
+  it('a token piped to `setup facebook --token-stdin --page <id>` is checked with Meta and that Page token is saved, never the user token, and `status facebook` then answers with the Page', async () => {
+    mock = facebookGraph();
+
+    const setup = await run(['setup', 'facebook', '--token-stdin', '--page', '104000000000002'], { HOME: home }, `${FACEBOOK_USER_TOKEN}\n`);
+    const status = await run(['status', 'facebook'], { HOME: home });
+
+    expect(setup).toEqual({
+      exitCode: 0,
+      answers: [{ ok: true, data: { platform: 'facebook', profile: 'default', pageId: '104000000000002', pageName: 'Panda Books', note: expect.stringContaining('published') } }],
+    });
+    expect(readFileSync(path.join(home, '.panda-social', 'credentials.json'), 'utf8')).not.toContain(FACEBOOK_USER_TOKEN);
+    expect(lastAuthorization(mock)).toBe(`Bearer ${BOOKS_TOKEN}`);
+    expect(status).toEqual({
+      exitCode: 0,
+      answers: [
+        {
+          ok: true,
+          data: { platform: 'facebook', profile: 'default', page: { id: '104000000000002', name: 'Panda Books' }, token: { source: 'saved', savedAt: expect.any(String) } },
+        },
+      ],
+    });
+  });
+
   it('PANDA_SOCIAL_FACEBOOK_PAGE_ID and _PAGE_TOKEN override the saved Page, and setting only the id fails as incomplete-environment naming the token variable', async () => {
     mock = facebookGraph();
     const envToken = ['env', 'page', 'token'].join('-');

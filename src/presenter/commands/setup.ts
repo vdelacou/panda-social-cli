@@ -15,6 +15,7 @@ export const SETUP: CommandSpec = {
       required: false,
       description: 'X: read the four keys from standard input, one per line: API Key, API Key Secret, Access Token, Access Token Secret.',
     },
+    { name: 'page', type: 'string', placeholder: 'page-id', required: false, description: 'Facebook: the id of the Page to connect, needed when the token grants several.' },
     { name: 'profile', type: 'string', placeholder: 'name', required: false, description: 'The profile to save the account under. Defaults to "default".' },
   ],
   examples: [

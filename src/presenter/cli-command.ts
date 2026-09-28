@@ -1,3 +1,4 @@
+import type { FacebookPageId } from '../domain/facebook-page.ts';
 import type { ProfileName } from '../domain/profile-name.ts';
 import type { CommandName } from './command-spec.ts';
 import type { DeleteCommand, PostCommand, UpdateCommand } from './post-command.ts';
@@ -16,7 +17,16 @@ export type XSetupCommand = {
   readonly keysFromStdin: boolean;
 };
 
-export type SetupCommand = ThreadsSetupCommand | XSetupCommand;
+// `pageId` is absent when --page is not given: the only Page the token grants is kept.
+export type FacebookSetupCommand = {
+  readonly command: 'setup';
+  readonly platform: 'facebook';
+  readonly profile: ProfileName;
+  readonly tokenFromStdin: boolean;
+  readonly pageId?: FacebookPageId;
+};
+
+export type SetupCommand = ThreadsSetupCommand | XSetupCommand | FacebookSetupCommand;
 
 // `profile` is absent when --profile is not given: the default profile applies.
 export type ThreadsStatusCommand = {

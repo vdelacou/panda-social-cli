@@ -1,10 +1,7 @@
 import type { FacebookPageId } from '../domain/facebook-page.ts';
 import type { ProfileName } from '../domain/profile-name.ts';
 import type { CommandName } from './command-spec.ts';
-import type { DeleteCommand, Platform, PostCommand, UpdateCommand } from './post-command.ts';
-
-// setup and status take Instagram before post, update and delete do (5.2).
-export type AccountPlatform = Platform | 'instagram';
+import type { DeleteCommand, PostCommand, UpdateCommand } from './post-command.ts';
 
 export type ThreadsSetupCommand = {
   readonly command: 'setup';

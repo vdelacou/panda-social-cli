@@ -3,9 +3,6 @@ import type { OptionSpec } from '../command-spec.ts';
 // The platforms every command takes.
 export const PLATFORMS: ReadonlyArray<string> = ['threads', 'x', 'facebook', 'instagram'];
 
-// The same list, under the name the platform readers still use until the next change.
-export const ACCOUNT_PLATFORMS: ReadonlyArray<string> = PLATFORMS;
-
 export const PROFILE_OPTION: OptionSpec = {
   name: 'profile',
   type: 'string',

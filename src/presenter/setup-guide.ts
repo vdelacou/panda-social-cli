@@ -1,10 +1,10 @@
 import { DEFAULT_PROFILE } from '../domain/profile-name.ts';
 import type { ProfileName } from '../domain/profile-name.ts';
 import type { SetupStep } from '../domain/setup-step.ts';
-import type { AccountPlatform } from './cli-command.ts';
+import type { Platform } from './post-command.ts';
 
 export type SetupGuide = {
-  readonly platform: AccountPlatform;
+  readonly platform: Platform;
   readonly profile: ProfileName;
   readonly steps: ReadonlyArray<SetupStep & { readonly step: number }>;
   readonly finish: string;

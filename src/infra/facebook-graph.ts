@@ -5,6 +5,7 @@ import type { Result } from '../domain/result.ts';
 import type { Facebook, FacebookError, FacebookPage } from '../use-cases/ports/facebook.ts';
 import { request } from './facebook-http.ts';
 import type { FacebookGraphConfig } from './facebook-http.ts';
+import { deletePost, editText, publishPhoto, publishText } from './facebook-posts.ts';
 import { isRecord, stringField } from './json-body.ts';
 
 export { FACEBOOK_GRAPH_BASE } from './facebook-http.ts';
@@ -49,4 +50,8 @@ const whoAmI = async (config: FacebookGraphConfig): Promise<Result<FacebookPage,
 export const createFacebookGraph = (config: FacebookGraphConfig): Facebook => ({
   listPages: async () => listPages(config),
   whoAmI: async () => whoAmI(config),
+  publishText: async (pageId, text) => publishText(config, pageId, text),
+  publishPhoto: async (pageId, photo, caption) => publishPhoto(config, pageId, photo, caption),
+  editText: async (id, text) => editText(config, id, text),
+  deletePost: async (id) => deletePost(config, id),
 });

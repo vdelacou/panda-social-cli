@@ -18,7 +18,8 @@ export type FacebookGraphConfig = {
 type Kind = FacebookError['kind'];
 
 // D25: Meta's own code sorts a failure (10 and 200-299 are permissions); the HTTP status
-// speaks only when the code is none of these, as for a body that is not Meta's JSON.
+// speaks only when the code is none of these, as for a body that is not Meta's JSON. D29: 324
+// is an image Meta cannot use, 506 a text that repeats a recent post.
 const BY_CODE: ReadonlyMap<number, Kind> = new Map<number, Kind>([
   [102, 'unauthorized'],
   [190, 'unauthorized'],
@@ -27,6 +28,8 @@ const BY_CODE: ReadonlyMap<number, Kind> = new Map<number, Kind>([
   [17, 'rate-limited'],
   [32, 'rate-limited'],
   [613, 'rate-limited'],
+  [324, 'image-rejected'],
+  [506, 'duplicate-text'],
 ]);
 const BY_STATUS: ReadonlyMap<number, Kind> = new Map<number, Kind>([
   [401, 'unauthorized'],
@@ -50,13 +53,19 @@ const classifyHttp = (status: number, text: string): FacebookError => {
 };
 
 // The token rides in the header, never in the URL (rule 27): graph.facebook.com reads it
-// there (a dummy token answered code 190, no token code 2500, 2026-09-28).
-export const request = async (config: FacebookGraphConfig, path: string, init: RequestInit): Promise<Result<Readonly<Record<string, unknown>>, FacebookError>> => {
+// there (a dummy token answered code 190, no token code 2500, 2026-09-28). A form body sets
+// its own content type. An upload passes a longer deadline than the default.
+export const request = async (
+  config: FacebookGraphConfig,
+  path: string,
+  init: RequestInit,
+  timeoutMs = DEFAULT_TIMEOUT_MS
+): Promise<Result<Readonly<Record<string, unknown>>, FacebookError>> => {
   try {
     const response = await fetch(`${FACEBOOK_GRAPH_BASE}${path}`, {
       ...init,
       headers: { authorization: `Bearer ${config.token}` },
-      signal: AbortSignal.timeout(config.timeoutMs ?? DEFAULT_TIMEOUT_MS),
+      signal: AbortSignal.timeout(config.timeoutMs ?? timeoutMs),
     });
     const text = await response.text();
     if (!response.ok) return err(classifyHttp(response.status, text));

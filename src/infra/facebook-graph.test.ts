@@ -1,8 +1,10 @@
 import { afterEach, describe, expect, it } from 'bun:test';
 import { facebookPageIdUnsafe } from '../domain/facebook-page.ts';
+import { facebookPostIdUnsafe } from '../domain/facebook-post-id.ts';
+import { imageUrlUnsafe } from '../domain/image-url.ts';
 import { err, ok } from '../domain/result.ts';
 import { installFetchMock } from '../test-helpers/fetch-mock.ts';
-import type { FetchMock } from '../test-helpers/fetch-mock.ts';
+import type { FetchMock, FetchMockCall } from '../test-helpers/fetch-mock.ts';
 import type { FacebookError } from '../use-cases/ports/facebook.ts';
 import { createFacebookGraph } from './facebook-graph.ts';
 
@@ -137,5 +139,101 @@ describe('the Facebook Graph adapter', () => {
     const unreachable = await createFacebookGraph({ token: BAKERY_TOKEN }).whoAmI();
 
     expect(unreachable).toEqual(err({ kind: 'network-failed', message: 'fetch failed' }));
+  });
+});
+
+const PAGE_ID = facebookPageIdUnsafe('104000000000001');
+const POST_ID = '104000000000001_122000000000001';
+const FEED_URL = 'https://graph.facebook.com/v26.0/104000000000001/feed';
+const PHOTOS_URL = 'https://graph.facebook.com/v26.0/104000000000001/photos';
+const POST_URL = `https://graph.facebook.com/v26.0/${POST_ID}`;
+const LINK = 'https://www.facebook.com/104000000000001/posts/122000000000001';
+const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00]);
+
+const answersAt = (target: string, method: string, response: () => Response): FetchMock =>
+  installFetchMock([{ match: (url, init) => init?.method === method && url === target, respond: response }]);
+
+// The fields of a form body, as Meta reads them.
+const formOf = (call: FetchMockCall | undefined): Readonly<Record<string, string>> => Object.fromEntries(new URLSearchParams(String(call?.init?.body)));
+
+describe('the Facebook Graph adapter, publishing', () => {
+  let mock: FetchMock | undefined;
+  afterEach(() => mock?.restore());
+
+  it('publishing a text calls POST graph.facebook.com/v26.0/<page id>/feed with the message in a form body, and answers the post id with its facebook.com link', async () => {
+    mock = answersAt(FEED_URL, 'POST', () => json({ id: POST_ID }));
+
+    const result = await createFacebookGraph({ token: BAKERY_TOKEN }).publishText(PAGE_ID, 'Hello from panda');
+
+    expect(result).toEqual(ok({ id: facebookPostIdUnsafe(POST_ID), url: LINK }));
+    expect(formOf(mock.calls[0])).toEqual({ message: 'Hello from panda' });
+    expect(new Headers(mock.calls[0]?.init?.headers).get('authorization')).toBe(`Bearer ${BAKERY_TOKEN}`);
+  });
+
+  it('publishing a photo from a URL calls POST /<page id>/photos with url and caption, and answers the post_id rather than the photo id', async () => {
+    mock = answersAt(PHOTOS_URL, 'POST', () => json({ id: '123000000000001', post_id: '104000000000001_122000000000002' }));
+
+    const result = await createFacebookGraph({ token: BAKERY_TOKEN }).publishPhoto(
+      PAGE_ID,
+      { kind: 'url', url: imageUrlUnsafe('https://cdn.example.com/cat.jpg') },
+      'A cat on the sofa'
+    );
+
+    expect(result).toEqual(ok({ id: facebookPostIdUnsafe('104000000000001_122000000000002'), url: 'https://www.facebook.com/104000000000001/posts/122000000000002' }));
+    expect(formOf(mock.calls[0])).toEqual({ url: 'https://cdn.example.com/cat.jpg', caption: 'A cat on the sofa' });
+  });
+
+  it('a local photo goes as multipart form data: the bytes under source, typed image/png and named photo.png, with the caption beside them', async () => {
+    mock = answersAt(PHOTOS_URL, 'POST', () => json({ id: '123000000000001', post_id: POST_ID }));
+
+    const result = await createFacebookGraph({ token: BAKERY_TOKEN }).publishPhoto(PAGE_ID, { kind: 'upload', image: { bytes: PNG, format: 'png' } }, 'The chart');
+
+    const body = mock.calls[0]?.init?.body;
+    const source = body instanceof FormData ? body.get('source') : null;
+    expect(result).toEqual(ok({ id: facebookPostIdUnsafe(POST_ID), url: LINK }));
+    expect(source instanceof File ? [source.name, source.type] : []).toEqual(['photo.png', 'image/png']);
+    expect(source instanceof File ? new Uint8Array(await source.arrayBuffer()) : undefined).toEqual(PNG);
+    expect(body instanceof FormData ? body.get('caption') : null).toBe('The chart');
+  });
+
+  it('editing calls POST /v26.0/<post id> with the new message and deleting calls DELETE /v26.0/<post id>; an answer without success: true, or a post id not shaped <page>_<post>, comes back as rejected', async () => {
+    mock = installFetchMock([{ match: (url, init) => url === POST_URL && (init?.method === 'POST' || init?.method === 'DELETE'), respond: () => json({ success: true }) }]);
+    const graph = createFacebookGraph({ token: BAKERY_TOKEN });
+
+    const edited = await graph.editText(facebookPostIdUnsafe(POST_ID), 'Fixed');
+    const deleted = await graph.deletePost(facebookPostIdUnsafe(POST_ID));
+
+    expect(edited).toEqual(ok({ id: facebookPostIdUnsafe(POST_ID), url: LINK }));
+    expect(formOf(mock.calls[0])).toEqual({ message: 'Fixed' });
+    expect(deleted).toEqual(ok(undefined));
+    expect(mock.calls.map((call) => call.init?.method)).toEqual(['POST', 'DELETE']);
+
+    mock.restore();
+    mock = installFetchMock([
+      { match: (url) => url === POST_URL, respond: () => json({ success: false }) },
+      { match: (url) => url === FEED_URL, respond: () => json({ id: '122000000000001' }) },
+    ]);
+
+    const unconfirmed = await graph.deletePost(facebookPostIdUnsafe(POST_ID));
+    const oddId = await graph.publishText(PAGE_ID, 'Hello from panda');
+
+    expect(!unconfirmed.ok && unconfirmed.error.kind).toBe('rejected');
+    expect(!oddId.ok && oddId.error.kind).toBe('rejected');
+  });
+
+  it("code 324 comes back as image-rejected and code 506 as duplicate-text, each with Meta's own message", async () => {
+    const failures: ReadonlyArray<readonly [Response, FacebookError]> = [
+      [metaError(324, '(#324) Missing or invalid image file'), { kind: 'image-rejected', message: '(#324) Missing or invalid image file' }],
+      [metaError(506, '(#506) Duplicate status message'), { kind: 'duplicate-text', message: '(#506) Duplicate status message' }],
+    ];
+
+    for (const [response, expected] of failures) {
+      mock?.restore();
+      mock = answersAt(FEED_URL, 'POST', () => response);
+
+      const result = await createFacebookGraph({ token: BAKERY_TOKEN }).publishText(PAGE_ID, 'Hello from panda');
+
+      expect(result).toEqual(err(expected));
+    }
   });
 });

@@ -18,6 +18,7 @@
 import '../src/infra/credential-store-file.ts';
 import '../src/infra/facebook-graph.ts';
 import '../src/infra/facebook-http.ts';
+import '../src/infra/facebook-posts.ts';
 import '../src/infra/image-files.ts';
 import '../src/infra/json-body.ts';
 import '../src/infra/logger.ts';

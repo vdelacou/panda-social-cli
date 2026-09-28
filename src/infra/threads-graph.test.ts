@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from 'bun:test';
 import { imageUrlUnsafe } from '../domain/image-url.ts';
+import { threadsPostIdUnsafe } from '../domain/threads-post-id.ts';
 import { installFetchMock } from '../test-helpers/fetch-mock.ts';
 import type { FetchMock, FetchMockCall } from '../test-helpers/fetch-mock.ts';
 import { createThreadsGraph } from './threads-graph.ts';
@@ -25,6 +26,7 @@ const sentForm = (call: FetchMockCall | undefined): Record<string, string> => {
 };
 
 const CONTAINER = '18000000000000001';
+const REPLY_ID = '17891000000000001';
 const IMAGE = 'https://cdn.example.com/cat.jpg';
 
 // Each call gets the next answer; the last one repeats.
@@ -183,6 +185,37 @@ describe('the Threads Graph adapter', () => {
     expect(!result.ok && result.error).toEqual({ kind: 'still-processing', message: `container ${CONTAINER} was still processing after 3 checks` });
     expect(mock.calls.filter((call) => isStatusRead(call.url))).toHaveLength(3);
     expect(mock.calls.some((call) => isPublishStep(call.url, call.init))).toBe(false);
+  });
+
+  it('a reply creates a TEXT container answering the given post, then publishes it', async () => {
+    mock = containerFlow([() => json({ status: 'FINISHED' })], REPLY_ID);
+
+    const result = await createThreadsGraph({ token: TOKEN, sleep: recordingSleep([]) }).publishReply(threadsPostIdUnsafe(POST_ID), 'Part two');
+
+    expect(result).toEqual({ ok: true, value: threadsPostIdUnsafe(REPLY_ID) });
+    expect(sentForm(mock.calls[0])).toEqual({ media_type: 'TEXT', text: 'Part two', reply_to_id: POST_ID });
+  });
+
+  it('deleting sends DELETE for the post id, with the token in the header', async () => {
+    mock = installFetchMock([{ match: (url, init) => init?.method === 'DELETE' && url.endsWith(`/v1.0/${POST_ID}`), respond: () => json({ success: true, deleted_id: POST_ID }) }]);
+
+    const result = await createThreadsGraph({ token: TOKEN }).deletePost(threadsPostIdUnsafe(POST_ID));
+
+    expect(result).toEqual({ ok: true, value: undefined });
+    expect(new Headers(mock.calls[0]?.init?.headers).get('authorization')).toBe(`Bearer ${TOKEN}`);
+  });
+
+  it('a permission the token lacks (code 10) comes back as forbidden', async () => {
+    mock = installFetchMock([
+      {
+        match: (url, init) => init?.method === 'DELETE',
+        respond: () => json({ error: { message: '(#10) Application does not have permission for this action', type: 'OAuthException', code: 10 } }, 400),
+      },
+    ]);
+
+    const result = await createThreadsGraph({ token: TOKEN }).deletePost(threadsPostIdUnsafe(POST_ID));
+
+    expect(!result.ok && result.error.kind).toBe('forbidden');
   });
 
   it('a call that runs past its deadline comes back as a timeout', async () => {

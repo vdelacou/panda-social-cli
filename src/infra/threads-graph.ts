@@ -32,6 +32,13 @@ const publishText = async (config: ThreadsGraphConfig, text: string): Promise<Re
 const publishImage = async (config: ThreadsGraphConfig, imageUrl: ImageUrl, text: string | undefined): Promise<Result<PublishedPost, ThreadsError>> =>
   withPermalink(config, await createAndPublish(config, { media_type: 'IMAGE', image_url: imageUrl, ...(text !== undefined && { text }) }));
 
+const deletePost = async (config: ThreadsGraphConfig, id: ThreadsPostId): Promise<Result<void, ThreadsError>> => {
+  const answer = await request(config, `/${id}`, { method: 'DELETE' });
+  if (!answer.ok) return answer;
+  if (answer.value['success'] !== true) return err({ kind: 'rejected', status: 200, message: `Threads did not confirm the delete of ${id}` });
+  return ok(undefined);
+};
+
 const whoAmI = async (config: ThreadsGraphConfig): Promise<Result<ThreadsAccount, ThreadsError>> => {
   const answer = await request(config, '/me?fields=id,username', { method: 'GET' });
   if (!answer.ok) return answer;
@@ -44,5 +51,7 @@ const whoAmI = async (config: ThreadsGraphConfig): Promise<Result<ThreadsAccount
 export const createThreadsGraph = (config: ThreadsGraphConfig): Threads => ({
   publishText: async (text) => publishText(config, text),
   publishImage: async (imageUrl, text) => publishImage(config, imageUrl, text),
+  publishReply: async (replyTo, text) => createAndPublish(config, { media_type: 'TEXT', text, reply_to_id: replyTo }),
+  deletePost: async (id) => deletePost(config, id),
   whoAmI: async () => whoAmI(config),
 });

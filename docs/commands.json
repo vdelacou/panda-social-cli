@@ -294,7 +294,11 @@
         "invalid-profile",
         "no-home",
         "cancelled",
+        "invalid-keys",
         "unauthorized",
+        "read-only-keys",
+        "credits-depleted",
+        "forbidden",
         "rate-limited",
         "rejected",
         "network-failed",
@@ -449,6 +453,10 @@
       "hint": "Threads needs a public https URL to a JPEG or PNG image, 8 MB at most. Host a local file first, then pass its URL with --image."
     },
     {
+      "code": "invalid-keys",
+      "hint": "Paste the four X keys in this order, one per line: API Key, API Key Secret, Access Token, Access Token Secret."
+    },
+    {
       "code": "invalid-post-id",
       "hint": "Pass the numeric id that post returned, for example --id 17890000000000001."
     },
@@ -475,6 +483,10 @@
     {
       "code": "rate-limited",
       "hint": "Threads allows 250 posts and 100 deletes per 24 hours; X allows 100 posts and 50 deletes per 15 minutes, and 75 account checks. Wait, then retry."
+    },
+    {
+      "code": "read-only-keys",
+      "hint": "These X keys can read but not post. In the developer console, set the app permissions to Read and write, then regenerate the Access Token and Secret (keys made earlier stay read-only) and run `panda-social setup x` again."
     },
     {
       "code": "rejected",

@@ -19,7 +19,10 @@ const HINTS: Readonly<Record<string, string>> = {
   unsupported: 'Threads cannot edit a published post. Pass --repost to delete it and publish the new version: it gets a new id and link, and loses its likes and replies.',
   forbidden:
     "The credentials lack a permission this action needs. Threads: add threads_delete (to delete) or threads_manage_replies (for --split) under Use cases, Access the Threads API, Customize, generate a new token, and run `panda-social setup threads` again. X: the message gives X's reason; an app outside the pay-per-use package is refused, so check it in the developer console.",
+  'read-only-keys':
+    'These X keys can read but not post. In the developer console, set the app permissions to Read and write, then regenerate the Access Token and Secret (keys made earlier stay read-only) and run `panda-social setup x` again.',
   'credits-depleted': 'X has no credits left for this app. Buy more in the developer console (and check its spending limit), then retry.',
+  'invalid-keys': 'Paste the four X keys in this order, one per line: API Key, API Key Secret, Access Token, Access Token Secret.',
   'incomplete-environment':
     'Set all four of PANDA_SOCIAL_X_API_KEY, PANDA_SOCIAL_X_API_SECRET, PANDA_SOCIAL_X_ACCESS_TOKEN and PANDA_SOCIAL_X_ACCESS_SECRET, or none of them to use the saved keys.',
   'invalid-profile': 'Use lowercase letters, digits, - and _, starting with a letter or digit, 40 characters at most. Example: --profile brand-a',

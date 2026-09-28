@@ -233,7 +233,11 @@ The connected account, `{"platform":"threads","profile":"<name>","userId":"<id>"
 | `invalid-profile` | Use lowercase letters, digits, - and _, starting with a letter or digit, 40 characters at most. Example: --profile brand-a |
 | `no-home` | Set HOME (USERPROFILE on Windows), or pass the credentials in the environment instead of saving them: PANDA_SOCIAL_THREADS_TOKEN, or the four PANDA_SOCIAL_X_ variables. |
 | `cancelled` | The setup stopped before the credentials were pasted. Run the same setup command again when you have them. |
+| `invalid-keys` | Paste the four X keys in this order, one per line: API Key, API Key Secret, Access Token, Access Token Secret. |
 | `unauthorized` | The platform refused the credentials. Threads: generate a new token (Meta app dashboard, Use cases, Access the Threads API, Settings, User Token Generator) and run `panda-social setup threads` again. X: regenerate the Access Token and Secret in the developer console and run `panda-social setup x` again. |
+| `read-only-keys` | These X keys can read but not post. In the developer console, set the app permissions to Read and write, then regenerate the Access Token and Secret (keys made earlier stay read-only) and run `panda-social setup x` again. |
+| `credits-depleted` | X has no credits left for this app. Buy more in the developer console (and check its spending limit), then retry. |
+| `forbidden` | The credentials lack a permission this action needs. Threads: add threads_delete (to delete) or threads_manage_replies (for --split) under Use cases, Access the Threads API, Customize, generate a new token, and run `panda-social setup threads` again. X: the message gives X's reason; an app outside the pay-per-use package is refused, so check it in the developer console. |
 | `rate-limited` | Threads allows 250 posts and 100 deletes per 24 hours; X allows 100 posts and 50 deletes per 15 minutes, and 75 account checks. Wait, then retry. |
 | `rejected` | The platform rejected the request; the message says why. Fix what it names (the text, the image or the post id), then retry. |
 | `network-failed` | The platform could not be reached (graph.threads.net or api.x.com). Check the network, then retry. |
@@ -374,6 +378,7 @@ Every failure carries one of these codes. Its `hint` says what to do next.
 | `image-rejected` | Threads could not download or read the image. Check that the URL opens in a private browser window and serves a JPEG or PNG of 8 MB at most, then retry. |
 | `incomplete-environment` | Set all four of PANDA_SOCIAL_X_API_KEY, PANDA_SOCIAL_X_API_SECRET, PANDA_SOCIAL_X_ACCESS_TOKEN and PANDA_SOCIAL_X_ACCESS_SECRET, or none of them to use the saved keys. |
 | `invalid-image` | Threads needs a public https URL to a JPEG or PNG image, 8 MB at most. Host a local file first, then pass its URL with --image. |
+| `invalid-keys` | Paste the four X keys in this order, one per line: API Key, API Key Secret, Access Token, Access Token Secret. |
 | `invalid-post-id` | Pass the numeric id that post returned, for example --id 17890000000000001. |
 | `invalid-profile` | Use lowercase letters, digits, - and _, starting with a letter or digit, 40 characters at most. Example: --profile brand-a |
 | `missing-credentials` | Connect the account with `panda-social setup threads` or `panda-social setup x` (add `--profile <name>` for another profile), or set PANDA_SOCIAL_THREADS_TOKEN, or all four PANDA_SOCIAL_X_ variables. |
@@ -381,6 +386,7 @@ Every failure carries one of these codes. Its `hint` says what to do next.
 | `network-failed` | The platform could not be reached (graph.threads.net or api.x.com). Check the network, then retry. |
 | `no-home` | Set HOME (USERPROFILE on Windows), or pass the credentials in the environment instead of saving them: PANDA_SOCIAL_THREADS_TOKEN, or the four PANDA_SOCIAL_X_ variables. |
 | `rate-limited` | Threads allows 250 posts and 100 deletes per 24 hours; X allows 100 posts and 50 deletes per 15 minutes, and 75 account checks. Wait, then retry. |
+| `read-only-keys` | These X keys can read but not post. In the developer console, set the app permissions to Read and write, then regenerate the Access Token and Secret (keys made earlier stay read-only) and run `panda-social setup x` again. |
 | `rejected` | The platform rejected the request; the message says why. Fix what it names (the text, the image or the post id), then retry. |
 | `still-processing` | Threads was still processing the image after 60 seconds, so nothing was published. Retry the post. |
 | `text-too-long` | Threads allows 500 characters per post, an emoji counting its UTF-8 bytes. Shorten the text, or pass --split to post it as a thread of replies. |

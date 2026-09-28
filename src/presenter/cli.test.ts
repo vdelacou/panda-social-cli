@@ -153,6 +153,23 @@ describe('reading the Threads features', () => {
 });
 
 describe('reading the X commands', () => {
+  it('`setup x` reads as the X setup of the default profile, and --keys-stdin and --profile are carried', () => {
+    expect(parseCliArgs(['setup', 'x'])).toEqual(ok({ command: 'setup', platform: 'x', profile: DEFAULT_PROFILE, keysFromStdin: false }));
+    expect(parseCliArgs(['setup', 'x', '--keys-stdin', '--profile', 'brand-a'])).toEqual(
+      ok({ command: 'setup', platform: 'x', profile: profileNameUnsafe('brand-a'), keysFromStdin: true })
+    );
+  });
+
+  it('`setup x --token-stdin` and `setup threads --keys-stdin` are refused, each naming the flag its platform takes', () => {
+    const x = parseCliArgs(['setup', 'x', '--token-stdin']);
+    const threads = parseCliArgs(['setup', 'threads', '--keys-stdin']);
+
+    expect(!x.ok && x.error.code).toBe('unknown-option');
+    expect(!x.ok && x.error.message).toContain('--keys-stdin');
+    expect(!threads.ok && threads.error.code).toBe('unknown-option');
+    expect(!threads.ok && threads.error.message).toContain('--token-stdin');
+  });
+
   it('`status x` reads as a status check of X', () => {
     expect(parseCliArgs(['status', 'x'])).toEqual(ok({ command: 'status', platform: 'x' }));
   });

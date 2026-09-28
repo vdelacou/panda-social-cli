@@ -9,8 +9,8 @@ Every command prints one JSON line on stdout: `{"ok":true,"data":...}` on succes
 | [`post`](#post) | Publish a text post, an image, or both, to Threads or X. |
 | [`update`](#update) | Replace a post: an edit in place on X, or with --repost on either platform, delete it and publish the new version. |
 | [`delete`](#delete) | Delete a Threads or X post by its id. |
-| [`setup`](#setup) | Connect a Threads or X account and save its credentials under a profile. |
-| [`status`](#status) | Check a connected Threads or X account: whose credentials they are and whether they still work, with the Threads quotas. |
+| [`setup`](#setup) | Connect a Threads account, X keys or a Facebook Page, and save the credentials under a profile. |
+| [`status`](#status) | Check a connected Threads, X or Facebook account: whose credentials they are and whether they still work, with the Threads quotas. |
 | [`help-json`](#help-json) | Describe every command, option, example and error code as JSON. Start here. |
 | [`docs`](#docs) | Show one command's full documentation as markdown. |
 
@@ -35,7 +35,7 @@ panda-social post --to <platform> [--text <text>] [--profile <name>] [--image <i
 | --- | --- | --- |
 | `--to <platform>` | yes | The platform to post to. One of: threads, x. |
 | `--text <text>` | no | The text of the post, quoted when it contains spaces. Required unless --image is given. Threads takes 500 characters, an emoji counting its UTF-8 bytes (a thumbs-up is 4); X takes 280 as X counts them: most characters 1, CJK characters and emoji 2, a link 23. |
-| `--profile <name>` | no | The profile whose saved account acts. Defaults to "default". A saved Threads token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, or all four PANDA_SOCIAL_X_ variables, when set, override the saved credentials. |
+| `--profile <name>` | no | The profile whose saved account acts. Defaults to "default". A saved Threads token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, all four PANDA_SOCIAL_X_ variables, or both PANDA_SOCIAL_FACEBOOK_PAGE_ID and PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN, when set, override the saved credentials. |
 | `--image <image>` | no | Threads: a public https URL to a JPEG or PNG image, 8 MB at most, which Threads downloads itself. X: a local JPEG, PNG, GIF or WEBP file, 5 MB at most, which the CLI uploads. |
 | `--split` | no | Post a text over the limit as a thread: the first post, then replies, each answering the one before. If a part fails, the parts already published are deleted. |
 
@@ -104,7 +104,7 @@ panda-social update --on <platform> --id <post-id> [--text <text>] [--profile <n
 | `--on <platform>` | yes | The platform the post is on. One of: threads, x. |
 | `--id <post-id>` | yes | The numeric id of the post, as post returned it. |
 | `--text <text>` | no | The text of the post, quoted when it contains spaces. Required unless --image is given. Threads takes 500 characters, an emoji counting its UTF-8 bytes (a thumbs-up is 4); X takes 280 as X counts them: most characters 1, CJK characters and emoji 2, a link 23. |
-| `--profile <name>` | no | The profile whose saved account acts. Defaults to "default". A saved Threads token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, or all four PANDA_SOCIAL_X_ variables, when set, override the saved credentials. |
+| `--profile <name>` | no | The profile whose saved account acts. Defaults to "default". A saved Threads token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, all four PANDA_SOCIAL_X_ variables, or both PANDA_SOCIAL_FACEBOOK_PAGE_ID and PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN, when set, override the saved credentials. |
 | `--image <image>` | no | Threads: a public https URL to a JPEG or PNG image, 8 MB at most, which Threads downloads itself. X: a local JPEG, PNG, GIF or WEBP file, 5 MB at most, which the CLI uploads. |
 | `--split` | no | Post a text over the limit as a thread: the first post, then replies, each answering the one before. If a part fails, the parts already published are deleted. |
 | `--repost` | no | Delete the post and publish the new version instead of editing it. Required on Threads, which cannot edit; on X it replaces the edit. |
@@ -168,7 +168,7 @@ panda-social delete --on <platform> --id <post-id> [--profile <name>]
 | --- | --- | --- |
 | `--on <platform>` | yes | The platform the post is on. One of: threads, x. |
 | `--id <post-id>` | yes | The numeric id of the post, as post returned it. |
-| `--profile <name>` | no | The profile whose saved account acts. Defaults to "default". A saved Threads token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, or all four PANDA_SOCIAL_X_ variables, when set, override the saved credentials. |
+| `--profile <name>` | no | The profile whose saved account acts. Defaults to "default". A saved Threads token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, all four PANDA_SOCIAL_X_ variables, or both PANDA_SOCIAL_FACEBOOK_PAGE_ID and PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN, when set, override the saved credentials. |
 
 ### Examples
 
@@ -207,7 +207,7 @@ The deleted post: `{"platform":"<platform>","id":"<post id>","deleted":true}`.
 
 ## setup
 
-On a terminal, walks a first-time user through the one-time steps of the platform (six for Threads, five for X) one at a time, then reads the Threads token or the four X keys without showing them. Without a terminal it answers with the same steps as JSON, for an agent to relay to its human, and the command that finishes the setup. With --token-stdin (Threads) or --keys-stdin (X, four lines: API Key, API Key Secret, Access Token, Access Token Secret) it reads them from standard input. The credentials are checked with the platform before they are saved in ~/.panda-social/credentials.json, readable by its owner only; X keys that X reports as read-only are refused. Checking X keys spends about $0.01 of X credits.
+On a terminal, walks a first-time user through the one-time steps of the platform (six for Threads, five for X and for Facebook) one at a time, then reads the Threads token, the four X keys or the Facebook token without showing them. Without a terminal it answers with the same steps as JSON, for an agent to relay to its human, and the command that finishes the setup. With --token-stdin (Threads, Facebook) or --keys-stdin (X, four lines: API Key, API Key Secret, Access Token, Access Token Secret) it reads them from standard input. The credentials are checked with the platform before they are saved in ~/.panda-social/credentials.json, readable by its owner only; X keys that X reports as read-only are refused. Checking X keys spends about $0.01 of X credits. For Facebook, the token is the long-lived user token of step 5: the CLI reads the Pages it grants, saves the chosen Page's own token, which does not expire, and never the user token; --page names the Page when the token grants several, and a Page on which the user cannot create content is refused.
 
 ### Usage
 
@@ -219,8 +219,8 @@ panda-social setup <platform> [--token-stdin] [--keys-stdin] [--page <page-id>] 
 
 | Parameter | Required | Description |
 | --- | --- | --- |
-| `<platform>` | yes | The platform to connect. One of: threads, x. |
-| `--token-stdin` | no | Threads: read the token from standard input instead of asking for it. |
+| `<platform>` | yes | The platform to connect. One of: threads, x, facebook. |
+| `--token-stdin` | no | Threads and Facebook: read the token from standard input instead of asking for it. |
 | `--keys-stdin` | no | X: read the four keys from standard input, one per line: API Key, API Key Secret, Access Token, Access Token Secret. |
 | `--page <page-id>` | no | Facebook: the id of the Page to connect, needed when the token grants several. |
 | `--profile <name>` | no | The profile to save the account under. Defaults to "default". |
@@ -238,11 +238,15 @@ panda-social setup threads --token-stdin --profile brand-a
 panda-social setup x
 # Save four X keys piped in, one per line, once X confirms they can post.
 panda-social setup x --keys-stdin
+# On a terminal, the guided Facebook setup; without one, the steps as JSON.
+panda-social setup facebook
+# Save the Page 104000000000001 with a token piped in, once Meta confirms the token grants it.
+panda-social setup facebook --token-stdin --page 104000000000001
 ```
 
 ### Output
 
-The connected account, `{"platform":"threads","profile":"<name>","userId":"<id>","username":"<username>"}`, and for X the same with `"platform":"x"` and a `note` on credits. Without a terminal and without --token-stdin or --keys-stdin, the guide instead: `{"platform":"threads","profile":"<name>","steps":[{"step":1,"title":"...","actions":["..."],"url":"..."}],"finish":"<the command that completes the setup>"}`.
+The connected account, `{"platform":"threads","profile":"<name>","userId":"<id>","username":"<username>"}`, for X the same with `"platform":"x"` and a `note` on credits, and for Facebook `{"platform":"facebook","profile":"<name>","pageId":"<id>","pageName":"<name>","note":"<posts stay private until the app is published>"}`. Without a terminal and without --token-stdin or --keys-stdin, the guide instead: `{"platform":"threads","profile":"<name>","steps":[{"step":1,"title":"...","actions":["..."],"url":"..."}],"finish":"<the command that completes the setup>"}`.
 
 ### Errors
 
@@ -273,7 +277,7 @@ The connected account, `{"platform":"threads","profile":"<name>","userId":"<id>"
 
 ## status
 
-Asks the platform whose credentials the profile holds. For Threads it also reads the rolling 24-hour quotas for posts, replies and deletes, and a saved token 30 days old or more is refreshed first, as every Threads command does: running status now and then keeps an idle token alive, since Threads lets a token lapse 60 days after its last refresh. For X it reports the access level X states for the keys (null when X states none); X shows neither the credit balance nor the rate windows to these keys, and the check spends about $0.01 of X credits. It never posts.
+Asks the platform whose credentials the profile holds. For Threads it also reads the rolling 24-hour quotas for posts, replies and deletes, and a saved token 30 days old or more is refreshed first, as every Threads command does: running status now and then keeps an idle token alive, since Threads lets a token lapse 60 days after its last refresh. For X it reports the access level X states for the keys (null when X states none); X shows neither the credit balance nor the rate windows to these keys, and the check spends about $0.01 of X credits. For Facebook it asks Meta which Page the token belongs to. It never posts.
 
 ### Usage
 
@@ -285,8 +289,8 @@ panda-social status <platform> [--profile <name>]
 
 | Parameter | Required | Description |
 | --- | --- | --- |
-| `<platform>` | yes | The platform to check. One of: threads, x. |
-| `--profile <name>` | no | The profile whose saved account acts. Defaults to "default". A saved Threads token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, or all four PANDA_SOCIAL_X_ variables, when set, override the saved credentials. |
+| `<platform>` | yes | The platform to check. One of: threads, x, facebook. |
+| `--profile <name>` | no | The profile whose saved account acts. Defaults to "default". A saved Threads token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, all four PANDA_SOCIAL_X_ variables, or both PANDA_SOCIAL_FACEBOOK_PAGE_ID and PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN, when set, override the saved credentials. |
 
 ### Examples
 
@@ -297,11 +301,13 @@ panda-social status threads
 panda-social status threads --profile brand-a
 # Check the X keys saved in the default profile.
 panda-social status x
+# Check the Facebook Page saved in the default profile.
+panda-social status facebook
 ```
 
 ### Output
 
-Threads: `{"platform":"threads","profile":"<name>","account":{"userId":"<id>","username":"<username>"},"token":{"source":"saved","savedAt":"<time>","ageDays":<n>,"expiresAt":"<time, or null until the first refresh>","refreshed":<true when this run refreshed it>},"limits":{"posts":{"used":<n>,"total":250,"windowSeconds":86400},"replies":{...},"deletes":{...}}}`, with `token` `{"source":"environment"}` when PANDA_SOCIAL_THREADS_TOKEN is set. X: `{"platform":"x","profile":"<name>","account":{"userId":"<id>","username":"<username>"},"accessLevel":"read-write","keys":{"source":"saved","savedAt":"<time>"}}`, with `keys` `{"source":"environment"}` when the four PANDA_SOCIAL_X_ variables are set.
+Threads: `{"platform":"threads","profile":"<name>","account":{"userId":"<id>","username":"<username>"},"token":{"source":"saved","savedAt":"<time>","ageDays":<n>,"expiresAt":"<time, or null until the first refresh>","refreshed":<true when this run refreshed it>},"limits":{"posts":{"used":<n>,"total":250,"windowSeconds":86400},"replies":{...},"deletes":{...}}}`, with `token` `{"source":"environment"}` when PANDA_SOCIAL_THREADS_TOKEN is set. X: `{"platform":"x","profile":"<name>","account":{"userId":"<id>","username":"<username>"},"accessLevel":"read-write","keys":{"source":"saved","savedAt":"<time>"}}`, with `keys` `{"source":"environment"}` when the four PANDA_SOCIAL_X_ variables are set. Facebook: `{"platform":"facebook","profile":"<name>","page":{"id":"<id>","name":"<name>"},"token":{"source":"saved","savedAt":"<time>"}}`, with `token` `{"source":"environment"}` when PANDA_SOCIAL_FACEBOOK_PAGE_ID and PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN are set.
 
 ### Errors
 

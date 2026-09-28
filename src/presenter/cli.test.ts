@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { facebookPageIdUnsafe } from '../domain/facebook-page.ts';
 import { imagePathUnsafe } from '../domain/image-path.ts';
 import { imageUrlUnsafe } from '../domain/image-url.ts';
 import { DEFAULT_PROFILE, profileNameUnsafe } from '../domain/profile-name.ts';
@@ -202,5 +203,30 @@ describe('reading the X post commands', () => {
 
       expect(!result.ok && result.error.code).toBe('invalid-post-id');
     }
+  });
+});
+
+describe('reading the Facebook commands', () => {
+  it('`setup facebook` reads as the Facebook setup of the default profile, and --token-stdin, --page and --profile are carried', () => {
+    expect(parseCliArgs(['setup', 'facebook'])).toEqual(ok({ command: 'setup', platform: 'facebook', profile: DEFAULT_PROFILE, tokenFromStdin: false }));
+    expect(parseCliArgs(['setup', 'facebook', '--token-stdin', '--page', '104000000000002', '--profile', 'brand-a'])).toEqual(
+      ok({ command: 'setup', platform: 'facebook', profile: profileNameUnsafe('brand-a'), tokenFromStdin: true, pageId: facebookPageIdUnsafe('104000000000002') })
+    );
+  });
+
+  it('`setup facebook --page abc` is refused as invalid-page-id, `setup facebook --keys-stdin` names --token-stdin, and `setup x --page` is refused as an option of setup facebook only', () => {
+    const badPage = parseCliArgs(['setup', 'facebook', '--page', 'abc']);
+    const keys = parseCliArgs(['setup', 'facebook', '--keys-stdin']);
+    const xPage = parseCliArgs(['setup', 'x', '--page', '104000000000001']);
+
+    expect(!badPage.ok && badPage.error.code).toBe('invalid-page-id');
+    expect(!keys.ok && keys.error.code).toBe('unknown-option');
+    expect(!keys.ok && keys.error.message).toContain('--token-stdin');
+    expect(!xPage.ok && xPage.error.code).toBe('unknown-option');
+    expect(!xPage.ok && xPage.error.message).toContain('setup facebook');
+  });
+
+  it('`status facebook` reads as a status check of the Facebook Page', () => {
+    expect(parseCliArgs(['status', 'facebook'])).toEqual(ok({ command: 'status', platform: 'facebook' }));
   });
 });

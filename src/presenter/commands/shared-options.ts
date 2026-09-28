@@ -3,13 +3,16 @@ import type { OptionSpec } from '../command-spec.ts';
 // The platforms every command takes.
 export const PLATFORMS: ReadonlyArray<string> = ['threads', 'x'];
 
+// setup and status take Facebook before posting does (4.1 lands before 4.2).
+export const ACCOUNT_PLATFORMS: ReadonlyArray<string> = ['threads', 'x', 'facebook'];
+
 export const PROFILE_OPTION: OptionSpec = {
   name: 'profile',
   type: 'string',
   placeholder: 'name',
   required: false,
   description:
-    'The profile whose saved account acts. Defaults to "default". A saved Threads token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, or all four PANDA_SOCIAL_X_ variables, when set, override the saved credentials.',
+    'The profile whose saved account acts. Defaults to "default". A saved Threads token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, all four PANDA_SOCIAL_X_ variables, or both PANDA_SOCIAL_FACEBOOK_PAGE_ID and PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN, when set, override the saved credentials.',
 };
 
 export const TEXT_OPTION: OptionSpec = {

@@ -6,15 +6,13 @@ import { err, ok } from '../domain/result.ts';
 import type { Result } from '../domain/result.ts';
 import { exampleOf, withProfile } from './builder-helpers.ts';
 import type { CliCommand } from './cli-command.ts';
+import { ACCOUNT_PLATFORMS } from './commands/shared-options.ts';
 import type { Failure } from './failure.ts';
 import { hintFor } from './hints.ts';
 import { readProfile } from './post-flags.ts';
 import type { Flags } from './read-flags.ts';
 
 type AccountPlatform = 'threads' | 'x' | 'facebook';
-
-// setup and status take Facebook before posting does (4.1 lands before 4.2).
-const ACCOUNT_PLATFORMS: ReadonlyArray<string> = ['threads', 'x', 'facebook'];
 
 const isAccountPlatform = (value: string): value is AccountPlatform => ACCOUNT_PLATFORMS.includes(value);
 

@@ -96,6 +96,7 @@
         "unknown-platform",
         "invalid-profile",
         "missing-text",
+        "missing-image",
         "invalid-image",
         "text-too-long",
         "image-rejected",
@@ -194,6 +195,7 @@
         "unsupported",
         "edit-refused",
         "missing-text",
+        "missing-image",
         "invalid-image",
         "text-too-long",
         "image-rejected",
@@ -546,7 +548,7 @@
     },
     {
       "code": "image-rejected",
-      "hint": "The platform could not use the image. Threads: check that the URL opens in a private browser window and serves a JPEG or PNG of 8 MB at most. X: check that the file opens as a JPEG, PNG, GIF or WEBP image. Facebook: check that the URL opens in a private browser window, or that the file opens as an image. Then retry."
+      "hint": "The platform could not use the image. Threads: check that the URL opens in a private browser window and serves a JPEG or PNG of 8 MB at most. X: check that the file opens as a JPEG, PNG, GIF or WEBP image. Facebook: check that the URL opens in a private browser window, or that the file opens as an image. Instagram: check that the URL opens in a private browser window and serves a JPEG of 8 MB at most, between 4:5 (portrait) and 1.91:1 (landscape). Then retry."
     },
     {
       "code": "incomplete-environment",
@@ -554,7 +556,7 @@
     },
     {
       "code": "invalid-image",
-      "hint": "Threads needs a public https URL to a JPEG or PNG image, 8 MB at most: host a local file first, then pass its URL. X needs a local JPEG, PNG, GIF or WEBP file, 5 MB at most: download a remote image first, then pass its path. Facebook takes an https URL, or a local JPEG, PNG, GIF, BMP or TIFF file of 10 MB at most."
+      "hint": "Threads needs a public https URL to a JPEG or PNG image, 8 MB at most: host a local file first, then pass its URL. X needs a local JPEG, PNG, GIF or WEBP file, 5 MB at most: download a remote image first, then pass its path. Facebook takes an https URL, or a local JPEG, PNG, GIF, BMP or TIFF file of 10 MB at most. Instagram needs a public https URL to a JPEG of 8 MB at most: host a local file first, then pass its URL."
     },
     {
       "code": "invalid-keys",
@@ -566,7 +568,7 @@
     },
     {
       "code": "invalid-post-id",
-      "hint": "Pass the id that post returned, for example --id 17890000000000001 on Threads, --id 1880000000000000001 on X, or --id 104000000000001_122000000000001 on Facebook, the Page id and the post number joined by an underscore."
+      "hint": "Pass the id that post returned, for example --id 17890000000000001 on Threads, --id 1880000000000000001 on X, --id 17900000000000001 on Instagram, or --id 104000000000001_122000000000001 on Facebook, the Page id and the post number joined by an underscore."
     },
     {
       "code": "invalid-profile",
@@ -577,12 +579,16 @@
       "hint": "Connect the account with `panda-social setup threads`, `panda-social setup x`, `panda-social setup facebook` or `panda-social setup instagram` (add `--profile <name>` for another profile), or set PANDA_SOCIAL_THREADS_TOKEN, all four PANDA_SOCIAL_X_ variables, both PANDA_SOCIAL_FACEBOOK_ variables, or PANDA_SOCIAL_INSTAGRAM_TOKEN."
     },
     {
+      "code": "missing-image",
+      "hint": "Instagram has no text-only posts. Pass --image with a public https URL to a JPEG of 8 MB at most, with an aspect ratio between 4:5 and 1.91:1; --text becomes its caption. Example: panda-social post --to instagram --image https://cdn.example.com/cat.jpg --text \"A cat on the sofa\""
+    },
+    {
       "code": "missing-page-task",
       "hint": "Your role on the Page cannot create posts. Ask a Page admin for full control or content access (the Page's settings, Page access), then run `panda-social setup facebook` again."
     },
     {
       "code": "missing-text",
-      "hint": "Pass the text of the post with --text (quoted when it contains spaces), an image with --image (a URL on Threads, a local file on X, either on Facebook), or both."
+      "hint": "Pass the text of the post with --text (quoted when it contains spaces), an image with --image (a URL on Threads and Instagram, a local file on X, either on Facebook), or both."
     },
     {
       "code": "network-failed",
@@ -610,7 +616,7 @@
     },
     {
       "code": "still-processing",
-      "hint": "Threads was still processing the image after 60 seconds, so nothing was published. Retry the post."
+      "hint": "Threads or Instagram was still processing the image after 60 seconds, so nothing was published. Retry the post."
     },
     {
       "code": "text-too-long",
@@ -646,7 +652,7 @@
     },
     {
       "code": "unsupported",
-      "hint": "Threads cannot edit a published post, and Facebook edits the text of one but not its image. Pass --repost to delete the post and publish the new version: it gets a new id and link, and loses its likes, replies and comments."
+      "hint": "Threads cannot edit a published post, and Facebook edits the text of one but not its image. Pass --repost to delete the post and publish the new version: it gets a new id and link, and loses its likes, replies and comments. Instagram, connected through Instagram Login, can neither edit nor delete a post: change or delete it in the Instagram app."
     },
     {
       "code": "write-failed",

@@ -15,18 +15,20 @@ const HINTS: Readonly<Record<string, string>> = {
   'unexpected-argument': 'Quote any value that contains spaces, for example --text "Hello from panda".',
   'unknown-platform': 'Name a platform the command takes, as `panda-social docs <command>` lists them.',
   'missing-text':
-    'Pass the text of the post with --text (quoted when it contains spaces), an image with --image (a URL on Threads, a local file on X, either on Facebook), or both.',
+    'Pass the text of the post with --text (quoted when it contains spaces), an image with --image (a URL on Threads and Instagram, a local file on X, either on Facebook), or both.',
+  'missing-image':
+    'Instagram has no text-only posts. Pass --image with a public https URL to a JPEG of 8 MB at most, with an aspect ratio between 4:5 and 1.91:1; --text becomes its caption. Example: panda-social post --to instagram --image https://cdn.example.com/cat.jpg --text "A cat on the sofa"',
   'text-too-long':
     'Threads allows 500 characters per post, an emoji counting its UTF-8 bytes; X allows 280, most characters counting 1, CJK characters and emoji 2, a link 23. Shorten the text, or pass --split to post it as a thread of replies; an X edit is one post, so pass --repost there instead.',
   'invalid-image':
-    'Threads needs a public https URL to a JPEG or PNG image, 8 MB at most: host a local file first, then pass its URL. X needs a local JPEG, PNG, GIF or WEBP file, 5 MB at most: download a remote image first, then pass its path. Facebook takes an https URL, or a local JPEG, PNG, GIF, BMP or TIFF file of 10 MB at most.',
+    'Threads needs a public https URL to a JPEG or PNG image, 8 MB at most: host a local file first, then pass its URL. X needs a local JPEG, PNG, GIF or WEBP file, 5 MB at most: download a remote image first, then pass its path. Facebook takes an https URL, or a local JPEG, PNG, GIF, BMP or TIFF file of 10 MB at most. Instagram needs a public https URL to a JPEG of 8 MB at most: host a local file first, then pass its URL.',
   'image-rejected':
-    'The platform could not use the image. Threads: check that the URL opens in a private browser window and serves a JPEG or PNG of 8 MB at most. X: check that the file opens as a JPEG, PNG, GIF or WEBP image. Facebook: check that the URL opens in a private browser window, or that the file opens as an image. Then retry.',
-  'still-processing': 'Threads was still processing the image after 60 seconds, so nothing was published. Retry the post.',
+    'The platform could not use the image. Threads: check that the URL opens in a private browser window and serves a JPEG or PNG of 8 MB at most. X: check that the file opens as a JPEG, PNG, GIF or WEBP image. Facebook: check that the URL opens in a private browser window, or that the file opens as an image. Instagram: check that the URL opens in a private browser window and serves a JPEG of 8 MB at most, between 4:5 (portrait) and 1.91:1 (landscape). Then retry.',
+  'still-processing': 'Threads or Instagram was still processing the image after 60 seconds, so nothing was published. Retry the post.',
   'invalid-post-id':
-    'Pass the id that post returned, for example --id 17890000000000001 on Threads, --id 1880000000000000001 on X, or --id 104000000000001_122000000000001 on Facebook, the Page id and the post number joined by an underscore.',
+    'Pass the id that post returned, for example --id 17890000000000001 on Threads, --id 1880000000000000001 on X, --id 17900000000000001 on Instagram, or --id 104000000000001_122000000000001 on Facebook, the Page id and the post number joined by an underscore.',
   unsupported:
-    'Threads cannot edit a published post, and Facebook edits the text of one but not its image. Pass --repost to delete the post and publish the new version: it gets a new id and link, and loses its likes, replies and comments.',
+    'Threads cannot edit a published post, and Facebook edits the text of one but not its image. Pass --repost to delete the post and publish the new version: it gets a new id and link, and loses its likes, replies and comments. Instagram, connected through Instagram Login, can neither edit nor delete a post: change or delete it in the Instagram app.',
   'edit-refused':
     'X edits a post only for an X Premium account, within a short window after posting (30 minutes or 1 hour, X pages differ) and 5 times at most; Facebook edits only posts this Meta app made. Pass --repost to delete the post and publish the new version instead: it gets a new id and link, and loses its likes, replies and comments.',
   'duplicate-text': "X and Facebook refuse a post whose text repeats one of the account's recent posts. Change the text, or delete the earlier post first.",

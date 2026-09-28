@@ -70,4 +70,4 @@ export const X_CALL_ERRORS: ReadonlyArray<string> = ['incomplete-environment', '
 // What Facebook adds: a Page id that is not digits, in the environment or the credentials file.
 export const FACEBOOK_CALL_ERRORS: ReadonlyArray<string> = ['invalid-page-id'];
 
-export const PUBLISH_ERRORS: ReadonlyArray<string> = ['missing-text', 'invalid-image', 'text-too-long', 'image-rejected', 'still-processing', 'duplicate-text'];
+export const PUBLISH_ERRORS: ReadonlyArray<string> = ['missing-text', 'missing-image', 'invalid-image', 'text-too-long', 'image-rejected', 'still-processing', 'duplicate-text'];

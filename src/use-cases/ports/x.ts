@@ -1,4 +1,6 @@
 import type { Result } from '../../domain/result.ts';
+import type { XImage } from '../../domain/x-image.ts';
+import type { XPostId } from '../../domain/x-post-id.ts';
 
 export type XError =
   | { readonly kind: 'unauthorized'; readonly message: string }
@@ -19,6 +21,24 @@ export type XAccount = {
   readonly accessLevel: string | null;
 };
 
+// One post as X creates it: a new post, a reply in a thread, or a new version of a post
+// (an edit, which X answers with a new id). `text` may be empty beside an image.
+export type XPostDraft = {
+  readonly text: string;
+  readonly mediaIds?: ReadonlyArray<string>;
+  readonly replyTo?: XPostId;
+  readonly editOf?: XPostId;
+};
+
+export type XPublishedPost = {
+  readonly id: XPostId;
+  readonly url: string;
+};
+
 export type X = {
   readonly whoAmI: () => Promise<Result<XAccount, XError>>;
+  // Answers the media id to attach to a post.
+  readonly uploadImage: (image: XImage) => Promise<Result<string, XError>>;
+  readonly createPost: (draft: XPostDraft) => Promise<Result<XPublishedPost, XError>>;
+  readonly deletePost: (id: XPostId) => Promise<Result<void, XError>>;
 };

@@ -19,9 +19,20 @@ export type XCredentials = XKeys & {
   readonly savedAt: string;
 };
 
+// A Page token made from a long-lived user token does not expire (D21): nothing refreshes it.
+// The ids are plain strings here, as the file stores them; a reader checks the Page id
+// before it reaches a URL.
+export type FacebookCredentials = {
+  readonly pageId: string;
+  readonly pageName: string;
+  readonly token: string;
+  readonly savedAt: string;
+};
+
 export type ProfileCredentials = {
   readonly threads?: ThreadsCredentials;
   readonly x?: XCredentials;
+  readonly facebook?: FacebookCredentials;
 };
 
 export type CredentialsFile = {
@@ -63,3 +74,8 @@ export const withXCredentials = (file: CredentialsFile, profile: ProfileName, x:
 
 export const xCredentialsFor = (file: CredentialsFile, profile: ProfileName): XCredentials | undefined =>
   Object.hasOwn(file.profiles, profile) ? file.profiles[profile].x : undefined;
+
+export const withFacebookCredentials = (file: CredentialsFile, profile: ProfileName, facebook: FacebookCredentials): CredentialsFile => ({
+  version: 1,
+  profiles: { ...file.profiles, [profile]: { ...file.profiles[profile], facebook } },
+});

@@ -25,3 +25,23 @@ export type GrantedPage = {
   readonly token: string;
   readonly tasks: ReadonlyArray<string> | null;
 };
+
+export type PageChoiceError = { readonly kind: 'no-pages' | 'choose-page' | 'missing-page-task'; readonly message: string };
+
+const listed = (pages: ReadonlyArray<GrantedPage>): string => pages.map((page) => `${page.id} (${page.name})`).join(', ');
+
+const pick = (pages: ReadonlyArray<GrantedPage>, wanted: FacebookPageId | undefined): Result<GrantedPage, PageChoiceError> => {
+  if (pages.length === 0) return err({ kind: 'no-pages', message: 'The token grants no Facebook Page.' });
+  if (wanted === undefined) return pages.length === 1 ? ok(pages[0]) : err({ kind: 'choose-page', message: `The token grants several Pages: ${listed(pages)}.` });
+  const found = pages.find((page) => page.id === wanted);
+  return found ? ok(found) : err({ kind: 'choose-page', message: `The token does not grant the Page ${wanted}. The Pages it grants: ${listed(pages)}.` });
+};
+
+// D22: the Page --page names, or the only one granted; posting needs the CREATE_CONTENT task,
+// and only a known lack of it is refused.
+export const choosePage = (pages: ReadonlyArray<GrantedPage>, wanted: FacebookPageId | undefined): Result<GrantedPage, PageChoiceError> => {
+  const chosen = pick(pages, wanted);
+  if (!chosen.ok || chosen.value.tasks === null || chosen.value.tasks.includes('CREATE_CONTENT')) return chosen;
+  const { id, name } = chosen.value;
+  return err({ kind: 'missing-page-task', message: `Your role on ${name} (${id}) lacks the CREATE_CONTENT task, which posting needs.` });
+};

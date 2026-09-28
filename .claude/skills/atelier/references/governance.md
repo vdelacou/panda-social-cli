@@ -1,0 +1,142 @@
+# Governance (no black boxes, clear ownership)
+
+Anyone with a stake in the project should be able to see its real state at any moment, and every part of the system should have a name next to it. Opacity and orphaned ownership are how projects quietly rot. The README discipline (Behavioural Guideline #5), the durable plan, and the lessons journal already cover the essentials of legibility; this reference adds decision records, contract-generated API docs, measurable commitments, the honest backlog, and the ownership machinery.
+
+Two ground rules first: the project has **one working language** (docs, comments, commit messages, identifiers), chosen once and kept everywhere, because a mixed-language repo taxes every reader; and **documentation drift is a defect**: if the README no longer matches how the project installs, runs, or deploys, the change is not finished even with green tests (Behavioural Guideline #5; `references/workflow.md`, README consistency).
+
+## README stays runnable (docs-check in CI, canon 12.1)
+
+Drift-as-a-defect is a review duty until a gate makes it mechanical. Keep a README that actually installs and runs the project (exact, runnable commands, not prose), and **fail CI when it goes stale**: the shipped `assets/check-docs.sh` runs the fenced ```bash block under the README's `## Verify` heading, so a documented command that no longer works fails the pull request. It runs only lines that name one of the repo's own entry points (`bun run <script>`, `bun test`, `bash scripts/<file>`, `./scripts/<file>`, `./mvnw` with lifecycle phases, `spotless:check` or `pmd:check`, `test -f|-d|-e <path>`), each as an argument list and never through a shell, and it refuses the whole block before anything runs when a line carries a pipe, a redirect, a quote, a variable or any other command. The README documents what the repo can do; it never becomes a second place to write code CI executes, because whoever can edit the README could otherwise run code with the runner's token (the skills.sh Socket and Gen audits flagged the earlier `bash -c` version for exactly that). A health curl or a longer smoke goes in a script under `scripts/` or in `package.json`, and the Verify line calls it. Keep the block fast, not the full install.
+
+Every variant's shipped CI workflow (`assets/ci.yml`, `ci-next.yml`, `ci-java.yml`) runs `bash scripts/check-docs.sh` as a step after the install, so the lines run against real dependencies under the workflow's read-only permissions, and each bootstrap checklist copies the script. A README without a `## Verify` block passes with a note; add the block to make the gate bite.
+
+The atelier repo's own `scripts/smoke-test.sh` is the reference implementation of the idea: it replays the Bootstrap checklist of `references/bun-typescript.md` into a scratch repo and fails if any step breaks, which is exactly a docs-check for a project whose product is its instructions.
+
+## A vendored standard is a dependency (canon 5.3, canon 12.1)
+
+A repo that vendors or pins this skill (a `skills-lock.json` hash, a copied `.claude/skills/`
+tree, a submodule) has taken a dependency on doctrine, and it goes stale exactly like a
+library does: silently, while every gate stays green. A 2026-08-30 field test found a real
+consumer running a 49-day-old pin, so its hook still ran the pre-split eight gates and its
+rule 26 still read the superseded wording. Nothing was broken; the repo was faithfully
+following a standard that had moved.
+
+Treat it as the dependency it is. Pin it (never float), re-check the pin on the same cadence
+as the dependency scan, and re-sync deliberately: read what changed between the pinned
+version and current, then bring the gates and their prose across in one commit, because the
+doctrine and the assets that enforce it move together. Vendor it ONCE per repo: two copies
+of the standard in one tree is canon 12.1 drift with extra steps.
+
+The re-check is mechanical, not a memory exercise: `assets/check-skill-pin.sh` compares the
+whole vendored tree (SKILL.md, references, assets) file by file against upstream, a repository
+URL cloned shallowly or a local checkout (`SKILL_PIN_UPSTREAM`, set in `assets/audit.yml`), and
+fails when any file is behind; it rides beside the CVE scan rather than blocking commits, since
+upstream moves independently of your diff, and degrades when it cannot check, saying so.
+
+## Decision records (why is it like this)
+
+Two tiers, one rule: the record changes in the same commit as the code it explains, so it cannot drift.
+
+- **Every significant decision** gets a `[decision]` entry in `.claude/LESSONS.md` (the title line plus the few sentences `references/lessons.md` asks for) (append-only; superseded by a newer entry when it changes). This is the index and stays the default (`references/lessons.md`).
+- **Decisions with rejected alternatives and a reversal path worth keeping** (a vendor, a storage engine, a deliberate lock-in, a security tradeoff) additionally get a full decision record: `docs/adr/NNNN-title.md`, committed with the change. The atelier-grill-me interview output is the natural draft. One trap in the standard MADR template: its `Deciders` field invites a person's name into a tracked file, which rule 26 forbids. Put the accountable ROLE or team handle there (the same string CODEOWNERS uses); who typed it is already in the commit metadata, permanently and for free.
+
+```markdown
+# 0007: Encrypt state client-side
+- Status: accepted   - Date: 2026-07-06
+## Context
+<the forces, in two or three lines>
+## Decision
+<what was chosen>
+## Options considered
+- <option>. Rejected: <why, one line>
+## Consequences
+- <cost accepted>
+- Reversal: <the concrete steps that undo this>
+```
+
+The test of a good record: a maintainer who was not in the room can answer "why is it like this" and "how would we undo it" without asking anyone.
+
+## API documentation is generated from the contract
+
+If the project exposes an API, its reference documentation derives from the same schema that validates requests, with a real example per endpoint, published where consumers can reach it. A hand-maintained API wiki silently disagrees with the running code within a month; an API without documentation someone could onboard against is a private API you happen to have left exposed.
+
+```ts
+// one Zod schema validates the request AND emits the OpenAPI, examples included
+const Invoice = z.object({
+  amountCents: z.number().int().positive().openapi({ example: 4200 }),
+  currency: z.literal('EUR').openapi({ example: 'EUR' }),
+}).openapi('Invoice');
+export const createInvoiceRoute = createRoute({
+  method: 'post', path: '/v1/invoices',
+  request: { body: { content: { 'application/json': { schema: Invoice } } } },
+  responses: { 201: { description: 'Created' } },
+});
+```
+
+Java: MicroProfile OpenAPI annotations on the resource render the spec from the code itself (`references/java-quarkus.md`). Either way the wire contract is also where DTO shapes stop: the internal model is mapped at the boundary (`references/architecture.md`, API shape and the three model boundaries).
+
+## Numbers, not adjectives
+
+"Fast", "secure", and "well tested" mean nothing until they are numbers someone agreed to and anyone can check. Commit a thresholds file (SLOs, latency budgets, error rates: the same one `references/observability.md` alerts against) and give stakeholders live access from day one: the repository, the pipeline, the board, the dashboards. Not a monthly summary; the actual thing.
+
+## One honest backlog
+
+- One shared, visible tracker is the source of truth: if it is not on the board, it is not work. No shadow spreadsheet, no "can you also..." in DMs that never lands.
+- Bugs are first-class issues, not a hand-maintained "known issues" page.
+- Deliberately deferred work is visible with its why, not silently absent.
+- Status is honest: "blocked, waiting on X" beats an "in progress" that has not moved in a week.
+
+## Ownership is explicit (an owner next to everything)
+
+Shared ownership with no name attached is how things rot: everyone assumes someone else has it.
+
+```bash
+# .github/CODEOWNERS: every path maps to an accountable owner; last match wins
+*                 @org/platform        # default owner, nothing is orphaned
+/packages/core/   @org/domain-team
+/docs/adr/        @org/architecture
+```
+
+Back it with a short RACI note (`docs/OWNERSHIP.md`): for each area, exactly **one** Accountable, any number of Responsible, who is Consulted and Informed, each named by team or role handle as CODEOWNERS does (rule 26 exempts CODEOWNERS and `.mailmap` only, so a person's name in the RACI note is a finding). If two teams claim Accountable, split the area. For anything that can break, you should be able to name its owner in seconds.
+
+## Separation of duties
+
+Whoever requests a sensitive change is never its sole approver:
+
+- Required independent review on `main`; the author cannot approve their own change; new commits dismiss stale approvals; `enforce_admins` so nobody is exempt; no direct pushes.
+- Production access follows least privilege and passes through review; infrastructure write access belongs to the pipeline alone (`references/delivery.md`, Humans are read-only).
+- Branch protection is code, not a console setting.
+
+This coexists with trunk-based development (`references/workflow.md`): small same-day branches through a required review are still trunk-based; weeks-long divergence is not.
+
+## Audit trail
+
+Sensitive mutations record who, what, and why, durably, in the same transaction as the change, so accountability is real rather than nominal. Approvals, exceptions, and emergency access leave a record.
+
+```ts
+export const createUpgradePlan = (deps: Deps) =>
+  async (ctx: { actorId: ActorId; reason: string }, orgId: OrgId): Promise<Result<void, PlanError>> =>
+    deps.db.transaction(async (tx) => {
+      await tx.update(orgs).set({ plan: 'enterprise' }).where(eq(orgs.id, orgId));
+      await tx.insert(auditLog).values({ actorId: ctx.actorId, action: 'plan.upgrade', target: orgId, reason: ctx.reason, at: new Date() });
+      return ok(undefined);
+    });
+```
+
+## Finding problems is safe; "done" is verifiable by its owner
+
+- If whoever spots an issue is saddled with owning it, people stop looking. Reward detection; route the fix deliberately (a spotted issue becomes a first-class backlog item, not the finder's homework).
+- Whoever is accountable must be able to verify completion themselves: "done" is a re-runnable check (a test, a script, a command with an exit code) the owner can execute, not a screenshot or a status-meeting claim. Evidence anyone can reproduce is the standard (`references/workflow.md`, Verification discipline).
+
+## The platform is a product
+
+Whatever paved road the team ships (templates, gate assets, scaffolds) is run like a product: an owner in CODEOWNERS, a changelog, a support channel, a deprecation policy, and a feedback loop. A golden path nobody maintains gets quietly forked around. The profile's numbers for "maintained": a first response to an issue within four business hours, and 90 percent of the services built on it on its current major, the adoption metric the owner reports.
+
+## Review checklist
+
+1. Significant choice in this change: `[decision]` entry, and an ADR if alternatives and a reversal path are worth keeping?
+2. API surface changed: does the published spec regenerate from the schema, examples included?
+3. Any commitment stated as an adjective that should be a number in the thresholds file?
+4. New area of code or infra: does CODEOWNERS map it to exactly one Accountable owner?
+5. Sensitive mutation: audit row in the same transaction, actor and reason included?
+6. Does anything here bypass required review or widen production access? That is a separation-of-duties change; treat it as sensitive.

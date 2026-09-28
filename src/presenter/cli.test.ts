@@ -61,3 +61,40 @@ describe('writing the answer', () => {
     expect(JSON.parse(renderFailure(failure))).toEqual({ ok: false, error: failure });
   });
 });
+
+describe('reading the agent entry points', () => {
+  it('`--version` reads as the version request', () => {
+    expect(parseCliArgs(['--version'])).toEqual(ok({ command: 'version' }));
+  });
+
+  it('no arguments, or `--help`, reads as the manifest request', () => {
+    expect(parseCliArgs([])).toEqual(ok({ command: 'help-json' }));
+    expect(parseCliArgs(['--help'])).toEqual(ok({ command: 'help-json' }));
+  });
+
+  it('`docs post` and `post --help` both ask for the post documentation', () => {
+    expect(parseCliArgs(['docs', 'post'])).toEqual(ok({ command: 'docs', target: 'post' }));
+    expect(parseCliArgs(['post', '--help'])).toEqual(ok({ command: 'docs', target: 'post' }));
+  });
+
+  it('`docs myspace` is refused, and the hint lists the commands', () => {
+    const result = parseCliArgs(['docs', 'myspace']);
+
+    expect(!result.ok && result.error.code).toBe('unknown-command');
+    expect(!result.ok && result.error.hint).toContain('post, setup, help-json, docs');
+  });
+
+  it('an unknown option is refused, and the hint lists the command options', () => {
+    const result = parseCliArgs(['post', '--to', 'threads', '--text', 'Hello', '--txet', 'oops']);
+
+    expect(!result.ok && result.error.code).toBe('unknown-option');
+    expect(!result.ok && result.error.hint).toContain('--to, --text, --profile');
+  });
+
+  it('text with spaces left unquoted is refused as an unexpected argument, and the hint shows it quoted', () => {
+    const result = parseCliArgs(['post', '--to', 'threads', '--text', 'Hello', 'from', 'panda']);
+
+    expect(!result.ok && result.error.code).toBe('unexpected-argument');
+    expect(!result.ok && result.error.hint).toContain('--text "Hello from panda"');
+  });
+});

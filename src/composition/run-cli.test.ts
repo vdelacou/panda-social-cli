@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { PassThrough } from 'node:stream';
+import packageJson from '../../package.json' with { type: 'json' };
 import { installFetchMock } from '../test-helpers/fetch-mock.ts';
 import type { FetchMock } from '../test-helpers/fetch-mock.ts';
 import { runCli } from './run-cli.ts';
@@ -139,5 +140,26 @@ describe('connecting Threads with `panda-social setup threads`', () => {
       exitCode: 1,
       answers: [{ ok: false, error: { code: 'missing-credentials', message: expect.any(String), hint: expect.stringContaining('panda-social setup threads') } }],
     });
+  });
+});
+
+describe('the agent entry points', () => {
+  it('`--version` prints the package name and version', async () => {
+    expect(await run(['--version'], {})).toEqual({ exitCode: 0, answers: [{ ok: true, data: { name: 'panda-social-cli', version: packageJson.version } }] });
+  });
+
+  it('`help-json` prints the manifest with every command', async () => {
+    const { exitCode, answers } = await run(['help-json'], {});
+    const everyCommand = expect.arrayContaining(['post', 'setup', 'help-json', 'docs'].map((name) => expect.objectContaining({ name })));
+
+    expect(exitCode).toBe(0);
+    expect(answers).toEqual([{ ok: true, data: expect.objectContaining({ name: 'panda-social-cli', version: packageJson.version, commands: everyCommand }) }]);
+  });
+
+  it('`docs post` prints the post page as markdown', async () => {
+    const { exitCode, answers } = await run(['docs', 'post'], {});
+
+    expect(exitCode).toBe(0);
+    expect(answers).toEqual([{ ok: true, data: { command: 'post', markdown: expect.stringContaining('## post') } }]);
   });
 });

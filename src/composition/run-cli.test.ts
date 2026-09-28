@@ -163,3 +163,45 @@ describe('the agent entry points', () => {
     expect(answers).toEqual([{ ok: true, data: { command: 'post', markdown: expect.stringContaining('## post') } }]);
   });
 });
+
+describe('the Threads features, end to end', () => {
+  const CONTAINER = '18000000000000001';
+  const NEW_ID = '17890000000000002';
+  const env = { PANDA_SOCIAL_THREADS_TOKEN: ['env', 'threads', 'token'].join('-') };
+  let mock: FetchMock | undefined;
+  afterEach(() => mock?.restore());
+
+  it('an image post runs end to end against a fake Threads API: container, status, publish, permalink', async () => {
+    mock = installFetchMock([
+      { match: (url, init) => init?.method === 'POST' && url.endsWith('/me/threads'), respond: () => json({ id: CONTAINER }) },
+      { match: (url) => url.includes(`/${CONTAINER}?fields=status`), respond: () => json({ status: 'FINISHED' }) },
+      { match: (url, init) => init?.method === 'POST' && url.endsWith('/me/threads_publish'), respond: () => json({ id: POST_ID }) },
+      { match: (url) => url.includes(`/${POST_ID}?fields=permalink`), respond: () => json({ id: POST_ID, permalink: PERMALINK }) },
+    ]);
+
+    const result = await run(['post', '--to', 'threads', '--image', 'https://cdn.example.com/cat.jpg', '--text', 'A cat'], env);
+
+    expect(result).toEqual({ exitCode: 0, answers: [{ ok: true, data: { platform: 'threads', id: POST_ID, url: PERMALINK } }] });
+  });
+
+  it('`delete` runs end to end and answers the deleted id', async () => {
+    mock = installFetchMock([{ match: (url, init) => init?.method === 'DELETE' && url.endsWith(`/${POST_ID}`), respond: () => json({ success: true, deleted_id: POST_ID }) }]);
+
+    const result = await run(['delete', '--on', 'threads', '--id', POST_ID], env);
+
+    expect(result).toEqual({ exitCode: 0, answers: [{ ok: true, data: { platform: 'threads', id: POST_ID, deleted: true } }] });
+  });
+
+  it('`update --repost` runs end to end: the old post is deleted, then the new one published', async () => {
+    mock = installFetchMock([
+      { match: (url, init) => init?.method === 'DELETE' && url.endsWith(`/${POST_ID}`), respond: () => json({ success: true, deleted_id: POST_ID }) },
+      { match: (url, init) => init?.method === 'POST' && url.endsWith('/me/threads'), respond: () => json({ id: NEW_ID }) },
+      { match: (url) => url.includes(`/${NEW_ID}?fields=permalink`), respond: () => json({ id: NEW_ID, permalink: PERMALINK }) },
+    ]);
+
+    const result = await run(['update', '--on', 'threads', '--id', POST_ID, '--text', 'Fixed', '--repost'], env);
+
+    expect(result).toEqual({ exitCode: 0, answers: [{ ok: true, data: { platform: 'threads', id: NEW_ID, url: PERMALINK, replaced: POST_ID } }] });
+    expect(mock.calls.map((call) => call.init?.method)).toEqual(['DELETE', 'POST', 'GET']);
+  });
+});

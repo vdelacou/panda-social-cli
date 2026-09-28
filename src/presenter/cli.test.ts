@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import { imageUrlUnsafe } from '../domain/image-url.ts';
 import { DEFAULT_PROFILE, profileNameUnsafe } from '../domain/profile-name.ts';
 import { ok } from '../domain/result.ts';
+import { threadsPostIdUnsafe } from '../domain/threads-post-id.ts';
 import { parseCliArgs, renderFailure, renderSuccess } from './cli.ts';
 
 describe('reading the command line', () => {
@@ -101,6 +102,7 @@ describe('reading the agent entry points', () => {
 });
 
 const IMAGE = 'https://cdn.example.com/cat.jpg';
+const POST = '17890000000000001';
 
 describe('reading the Threads features', () => {
   it('`post --to threads --image https://…` reads as an image post, with or without text', () => {
@@ -119,5 +121,21 @@ describe('reading the Threads features', () => {
 
   it('`post ... --split` carries the split request', () => {
     expect(parseCliArgs(['post', '--to', 'threads', '--text', 'Long text', '--split'])).toEqual(ok({ command: 'post', platform: 'threads', text: 'Long text', split: true }));
+  });
+
+  it('`delete --on threads --id <id>` reads as a delete of that post', () => {
+    expect(parseCliArgs(['delete', '--on', 'threads', '--id', POST])).toEqual(ok({ command: 'delete', platform: 'threads', id: threadsPostIdUnsafe(POST) }));
+  });
+
+  it('a post id that is not numeric is refused before anything is sent', () => {
+    const result = parseCliArgs(['delete', '--on', 'threads', '--id', '../me']);
+
+    expect(!result.ok && result.error.code).toBe('invalid-post-id');
+  });
+
+  it('`update --on threads --id <id> --text … --repost` reads as a repost', () => {
+    expect(parseCliArgs(['update', '--on', 'threads', '--id', POST, '--text', 'Fixed', '--repost'])).toEqual(
+      ok({ command: 'update', platform: 'threads', id: threadsPostIdUnsafe(POST), text: 'Fixed', repost: true })
+    );
   });
 });

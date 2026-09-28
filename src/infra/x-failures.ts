@@ -1,6 +1,5 @@
-import { formatError } from '../domain/utilities/format-error.ts';
 import type { XError } from '../use-cases/ports/x.ts';
-import { isRecord, parsed, stringField } from './x-json.ts';
+import { isRecord, parsed, stringField } from './json-body.ts';
 
 // X answers a 403 with these details when the keys were made while the app was read-only,
 // and when a text repeats one of the account's recent posts.
@@ -33,11 +32,4 @@ export const classifyHttp = (status: number, text: string): XError => {
   if (status === 403) return { kind: forbiddenKind(text), message };
   if (status === 429) return { kind: 'rate-limited', message };
   return { kind: 'rejected', status, message };
-};
-
-const isTimeout = (error: unknown): boolean => error instanceof DOMException && error.name === 'TimeoutError';
-
-export const classifyThrown = (error: unknown): XError => {
-  if (isTimeout(error)) return { kind: 'timeout', message: formatError(error) };
-  return { kind: 'network-failed', message: formatError(error) };
 };

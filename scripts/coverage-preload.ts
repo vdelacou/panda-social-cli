@@ -17,16 +17,17 @@
 // --- src/infra/ ---
 import '../src/infra/credential-store-file.ts';
 import '../src/infra/image-files.ts';
+import '../src/infra/json-body.ts';
 import '../src/infra/logger.ts';
 import '../src/infra/threads-account.ts';
 import '../src/infra/threads-container.ts';
 import '../src/infra/threads-graph.ts';
 import '../src/infra/threads-http.ts';
+import '../src/infra/thrown-failure.ts';
 import '../src/infra/tty-terminal.ts';
 import '../src/infra/x-api.ts';
 import '../src/infra/x-failures.ts';
 import '../src/infra/x-http.ts';
-import '../src/infra/x-json.ts';
 import '../src/infra/x-signer.ts';
 
 // --- src/composition/ ---

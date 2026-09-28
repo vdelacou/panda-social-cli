@@ -2,8 +2,8 @@ import { err, ok } from '../domain/result.ts';
 import type { Result } from '../domain/result.ts';
 import { parseThreadsPostId } from '../domain/threads-post-id.ts';
 import type { ThreadsPostId } from '../domain/threads-post-id.ts';
-import { formatError } from '../domain/utilities/format-error.ts';
 import type { ThreadsError } from '../use-cases/ports/threads.ts';
+import { thrownFailure } from './thrown-failure.ts';
 
 export const THREADS_GRAPH_HOST = 'https://graph.threads.net';
 export const THREADS_GRAPH_BASE = `${THREADS_GRAPH_HOST}/v1.0`;
@@ -35,13 +35,6 @@ const classifyHttp = (status: number, body: string): ThreadsError => {
   return { kind: 'rejected', status, message: body };
 };
 
-const isTimeout = (error: unknown): boolean => error instanceof DOMException && error.name === 'TimeoutError';
-
-const classifyThrown = (error: unknown): ThreadsError => {
-  if (isTimeout(error)) return { kind: 'timeout', message: formatError(error) };
-  return { kind: 'network-failed', message: formatError(error) };
-};
-
 // `path` sits under the versioned base; the token refresh alone lives at the host root.
 export const request = async (
   config: ThreadsGraphConfig,
@@ -59,7 +52,7 @@ export const request = async (
     if (!response.ok) return err(classifyHttp(response.status, body));
     return ok(JSON.parse(body) as Readonly<Record<string, unknown>>);
   } catch (error) {
-    return err(classifyThrown(error));
+    return err(thrownFailure(error));
   }
 };
 

@@ -1,8 +1,9 @@
 import { err, ok } from '../domain/result.ts';
 import type { Result } from '../domain/result.ts';
 import type { XError } from '../use-cases/ports/x.ts';
-import { classifyHttp, classifyThrown } from './x-failures.ts';
-import { isRecord, parsed } from './x-json.ts';
+import { isRecord, parsed } from './json-body.ts';
+import { thrownFailure } from './thrown-failure.ts';
+import { classifyHttp } from './x-failures.ts';
 import type { XSigner } from './x-signer.ts';
 
 export const X_API_BASE = 'https://api.x.com';
@@ -45,6 +46,6 @@ export const request = async (config: XHttpConfig, call: XCall): Promise<Result<
     const body = parsed(text);
     return ok({ body: isRecord(body) ? body : {}, headers: response.headers });
   } catch (error) {
-    return err(classifyThrown(error));
+    return err(thrownFailure(error));
   }
 };

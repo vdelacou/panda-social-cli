@@ -8,7 +8,7 @@ import type { XPostId } from '../domain/x-post-id.ts';
 import type { X, XAccount, XError, XPostDraft, XPublishedPost } from '../use-cases/ports/x.ts';
 import { request } from './x-http.ts';
 import type { XHttpConfig } from './x-http.ts';
-import { recordField, stringField } from './x-json.ts';
+import { recordField, stringField } from './json-body.ts';
 import { createXSigner } from './x-signer.ts';
 
 export { X_API_BASE } from './x-http.ts';

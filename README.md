@@ -72,7 +72,7 @@ Every command prints one JSON line on stdout and exits 0 or 1; the guide and the
 
 Start with `panda-social help-json`. It answers with one JSON manifest: the output contract, every command with its usage line, parameters, examples and output, and the next step for every error code. `panda-social docs <command>` returns one command's page as markdown, and `panda-social --version` the installed version. The same content is committed as [docs/COMMANDS.md](docs/COMMANDS.md) and [docs/commands.json](docs/commands.json).
 
-An option a command does not take, or an extra argument, is refused rather than ignored: an unquoted `--text Hello from panda` fails with a hint to quote it.
+An option a command does not take, or an extra argument, is refused rather than ignored: an unquoted `--text Hello from panda` fails with a hint to quote it. A near miss names what it was meant to be: `--to thread` fails with a hint that starts `Did you mean "threads"?`, and so does a mistyped command, platform or option.
 
 [skills/SKILL.md](skills/SKILL.md) is an agent skill for the CLI: when to use it and when not, the user's approval before anything is posted or deleted, the setup handoff that keeps the token out of the chat, and what each answer means. For Claude Code, copy it to `~/.claude/skills/panda-social/SKILL.md`, or to `.claude/skills/panda-social/SKILL.md` in one project.
 

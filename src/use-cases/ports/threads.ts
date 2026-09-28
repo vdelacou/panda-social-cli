@@ -7,6 +7,11 @@ export type PublishedPost = {
   readonly url: string | null;
 };
 
+export type ThreadsAccount = {
+  readonly userId: string;
+  readonly username: string;
+};
+
 export type ThreadsError =
   | { readonly kind: 'unauthorized'; readonly message: string }
   | { readonly kind: 'rate-limited'; readonly message: string }
@@ -16,4 +21,5 @@ export type ThreadsError =
 
 export type Threads = {
   readonly publishText: (text: string) => Promise<Result<PublishedPost, ThreadsError>>;
+  readonly whoAmI: () => Promise<Result<ThreadsAccount, ThreadsError>>;
 };

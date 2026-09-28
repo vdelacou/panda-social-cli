@@ -16,5 +16,5 @@ export const STATUS: CommandSpec = {
   output:
     'Threads: `{"platform":"threads","profile":"<name>","account":{"userId":"<id>","username":"<username>"},"token":{"source":"saved","savedAt":"<time>","ageDays":<n>,"expiresAt":"<time, or null until the first refresh>","refreshed":<true when this run refreshed it>},"limits":{"posts":{"used":<n>,"total":250,"windowSeconds":86400},"replies":{...},"deletes":{...}}}`, with `token` `{"source":"environment"}` when PANDA_SOCIAL_THREADS_TOKEN is set. X: `{"platform":"x","profile":"<name>","account":{"userId":"<id>","username":"<username>"},"accessLevel":"read-write","keys":{"source":"saved","savedAt":"<time>"}}`, with `keys` `{"source":"environment"}` when the four PANDA_SOCIAL_X_ variables are set.',
   mutates: false,
-  errors: ['unknown-option', 'unexpected-argument', 'unknown-platform', 'invalid-profile', 'incomplete-environment', 'credits-depleted', ...CALL_ERRORS],
+  errors: ['unknown-option', 'unexpected-argument', 'unknown-platform', 'invalid-profile', 'incomplete-environment', 'credits-depleted', 'invalid-page-id', ...CALL_ERRORS],
 };

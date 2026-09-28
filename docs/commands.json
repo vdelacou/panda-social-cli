@@ -326,6 +326,10 @@
         "no-home",
         "cancelled",
         "invalid-keys",
+        "invalid-page-id",
+        "no-pages",
+        "choose-page",
+        "missing-page-task",
         "unauthorized",
         "read-only-keys",
         "credits-depleted",
@@ -386,6 +390,7 @@
         "invalid-profile",
         "incomplete-environment",
         "credits-depleted",
+        "invalid-page-id",
         "missing-credentials",
         "corrupt",
         "unreadable",
@@ -460,6 +465,10 @@
       "hint": "The setup stopped before the credentials were pasted. Run the same setup command again when you have them."
     },
     {
+      "code": "choose-page",
+      "hint": "Run the setup again with --page <id>, one of the Page ids the message lists; for a Page it does not list, generate a new token that grants it (step 4 of `panda-social setup facebook`)."
+    },
+    {
       "code": "corrupt",
       "hint": "The credentials file is not valid. Fix or delete ~/.panda-social/credentials.json, then run the setup again for each platform."
     },
@@ -477,7 +486,7 @@
     },
     {
       "code": "forbidden",
-      "hint": "The credentials lack a permission this action needs. Threads: add threads_delete (to delete) or threads_manage_replies (for --split) under Use cases, Access the Threads API, Customize, generate a new token, and run `panda-social setup threads` again. X: the message gives X's reason; an app outside the pay-per-use package is refused, so check it in the developer console."
+      "hint": "The credentials lack a permission this action needs. Threads: add threads_delete (to delete) or threads_manage_replies (for --split) under Use cases, Access the Threads API, Customize, generate a new token, and run `panda-social setup threads` again. X: the message gives X's reason; an app outside the pay-per-use package is refused, so check it in the developer console. Facebook: add the permission Meta names under Use cases, Manage everything on your Page, Customize, generate and extend a new token, and run `panda-social setup facebook` again."
     },
     {
       "code": "image-rejected",
@@ -485,7 +494,7 @@
     },
     {
       "code": "incomplete-environment",
-      "hint": "Set all four of PANDA_SOCIAL_X_API_KEY, PANDA_SOCIAL_X_API_SECRET, PANDA_SOCIAL_X_ACCESS_TOKEN and PANDA_SOCIAL_X_ACCESS_SECRET, or none of them to use the saved keys."
+      "hint": "Set all four of PANDA_SOCIAL_X_API_KEY, PANDA_SOCIAL_X_API_SECRET, PANDA_SOCIAL_X_ACCESS_TOKEN and PANDA_SOCIAL_X_ACCESS_SECRET, or none of them to use the saved keys. For Facebook, set both PANDA_SOCIAL_FACEBOOK_PAGE_ID and PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN, or neither to use the saved Page."
     },
     {
       "code": "invalid-image",
@@ -494,6 +503,10 @@
     {
       "code": "invalid-keys",
       "hint": "Paste the four X keys in this order, one per line: API Key, API Key Secret, Access Token, Access Token Secret."
+    },
+    {
+      "code": "invalid-page-id",
+      "hint": "A Facebook Page id is digits only, as `panda-social setup facebook` answers it, for example --page 104000000000001."
     },
     {
       "code": "invalid-post-id",
@@ -505,7 +518,11 @@
     },
     {
       "code": "missing-credentials",
-      "hint": "Connect the account with `panda-social setup threads` or `panda-social setup x` (add `--profile <name>` for another profile), or set PANDA_SOCIAL_THREADS_TOKEN, or all four PANDA_SOCIAL_X_ variables."
+      "hint": "Connect the account with `panda-social setup threads`, `panda-social setup x` or `panda-social setup facebook` (add `--profile <name>` for another profile), or set PANDA_SOCIAL_THREADS_TOKEN, all four PANDA_SOCIAL_X_ variables, or both PANDA_SOCIAL_FACEBOOK_ variables."
+    },
+    {
+      "code": "missing-page-task",
+      "hint": "Your role on the Page cannot create posts. Ask a Page admin for full control or content access (the Page's settings, Page access), then run `panda-social setup facebook` again."
     },
     {
       "code": "missing-text",
@@ -513,15 +530,19 @@
     },
     {
       "code": "network-failed",
-      "hint": "The platform could not be reached (graph.threads.net or api.x.com). Check the network, then retry."
+      "hint": "The platform could not be reached (graph.threads.net, api.x.com or graph.facebook.com). Check the network, then retry."
     },
     {
       "code": "no-home",
-      "hint": "Set HOME (USERPROFILE on Windows), or pass the credentials in the environment instead of saving them: PANDA_SOCIAL_THREADS_TOKEN, or the four PANDA_SOCIAL_X_ variables."
+      "hint": "Set HOME (USERPROFILE on Windows), or pass the credentials in the environment instead of saving them: PANDA_SOCIAL_THREADS_TOKEN, the four PANDA_SOCIAL_X_ variables, or the two PANDA_SOCIAL_FACEBOOK_ variables."
+    },
+    {
+      "code": "no-pages",
+      "hint": "The token grants no Page. Generate it again in the Graph API Explorer (step 4 of `panda-social setup facebook`) and choose your Page in the dialog; your Facebook account needs a role on that Page."
     },
     {
       "code": "rate-limited",
-      "hint": "Threads allows 250 posts and 100 deletes per 24 hours; X allows 100 posts and 50 deletes per 15 minutes, and 75 account checks. Wait, then retry."
+      "hint": "Threads allows 250 posts and 100 deletes per 24 hours; X allows 100 posts and 50 deletes per 15 minutes, and 75 account checks; Facebook limits calls per app, per user and per Page, and its message says which. Wait, then retry."
     },
     {
       "code": "read-only-keys",
@@ -545,7 +566,7 @@
     },
     {
       "code": "unauthorized",
-      "hint": "The platform refused the credentials. Threads: generate a new token (Meta app dashboard, Use cases, Access the Threads API, Settings, User Token Generator) and run `panda-social setup threads` again. X: regenerate the Access Token and Secret in the developer console and run `panda-social setup x` again."
+      "hint": "The platform refused the credentials. Threads: generate a new token (Meta app dashboard, Use cases, Access the Threads API, Settings, User Token Generator) and run `panda-social setup threads` again. X: regenerate the Access Token and Secret in the developer console and run `panda-social setup x` again. Facebook: the Page token stopped working (a changed password, a lost Page role, or a token not extended in step 5): generate and extend a new one (steps 4 and 5) and run `panda-social setup facebook` again."
     },
     {
       "code": "unexpected-argument",
@@ -561,7 +582,7 @@
     },
     {
       "code": "unknown-platform",
-      "hint": "Name a platform the command takes, threads or x, as its examples show."
+      "hint": "Name a platform the command takes, as `panda-social docs <command>` lists them."
     },
     {
       "code": "unreadable",

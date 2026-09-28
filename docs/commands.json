@@ -450,7 +450,7 @@
     },
     {
       "code": "invalid-image",
-      "hint": "Threads needs a public https URL to a JPEG or PNG image, 8 MB at most. Host a local file first, then pass its URL with --image."
+      "hint": "Threads needs a public https URL to a JPEG or PNG image, 8 MB at most: host a local file first, then pass its URL. X needs a local JPEG, PNG, GIF or WEBP file, 5 MB at most: download a remote image first, then pass its path."
     },
     {
       "code": "invalid-keys",

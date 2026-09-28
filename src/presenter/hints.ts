@@ -12,7 +12,8 @@ const HINTS: Readonly<Record<string, string>> = {
   'unknown-platform': 'Name a platform the command takes, as its examples show: threads for post, update and delete; threads or x for setup and status.',
   'missing-text': 'Pass the text of the post with --text (quoted when it contains spaces), an image URL with --image, or both.',
   'text-too-long': 'Threads allows 500 characters per post, an emoji counting its UTF-8 bytes. Shorten the text, or pass --split to post it as a thread of replies.',
-  'invalid-image': 'Threads needs a public https URL to a JPEG or PNG image, 8 MB at most. Host a local file first, then pass its URL with --image.',
+  'invalid-image':
+    'Threads needs a public https URL to a JPEG or PNG image, 8 MB at most: host a local file first, then pass its URL. X needs a local JPEG, PNG, GIF or WEBP file, 5 MB at most: download a remote image first, then pass its path.',
   'image-rejected': 'Threads could not download or read the image. Check that the URL opens in a private browser window and serves a JPEG or PNG of 8 MB at most, then retry.',
   'still-processing': 'Threads was still processing the image after 60 seconds, so nothing was published. Retry the post.',
   'invalid-post-id': 'Pass the numeric id that post returned, for example --id 17890000000000001.',

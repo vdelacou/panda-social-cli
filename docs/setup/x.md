@@ -33,6 +33,9 @@ The prices are the ones X's pricing page listed on 2026-09-28; the page has the 
 |---|---|---|
 | `panda-social setup x` | Whose keys these are, once | $0.01 |
 | `panda-social status x` | Whose keys these are, once | $0.01 |
+| `panda-social post --to x` | One post, one more per reply of a `--split` thread, and the upload of an image | $0.015 a post, $0.20 when its text contains a link |
+| `panda-social update --on x` | One edit, or with `--repost` a delete and a new post | As a post, plus $0.01 for the delete |
+| `panda-social delete --on x` | One delete | $0.01 |
 
 > Screenshot to add: `images/x-02-credits.png`.
 
@@ -102,9 +105,10 @@ On a server or in CI, you can set the four keys in the environment instead of sa
 
 ```bash
 panda-social status x
+panda-social post --to x --text "Hello from panda"
 ```
 
-`status x` answers with your username and user id, the access level X states for the keys (`read-write` when they can post, or null when X states none), and where the keys came from: saved, with the date, or the environment. It posts nothing.
+`status x` answers with your username and user id, the access level X states for the keys (`read-write` when they can post, or null when X states none), and where the keys came from: saved, with the date, or the environment. It posts nothing. The second command publishes a real post on your profile and answers with its id and its link.
 
 > Screenshot to add: `images/x-07-status.png`.
 
@@ -118,7 +122,11 @@ panda-social status x
 | `credits-depleted` | The app's credits are spent | Buy more (step 2), then retry |
 | `forbidden` | X refuses this action for the app, for example an app outside the pay-per-use package; the message gives X's reason | Check the app in the console, then retry |
 | `incomplete-environment` | Some of the four `PANDA_SOCIAL_X_` variables are set, not all | Set all four, or none to use the saved keys |
-| `rate-limited` | X allows 75 account checks per account every 15 minutes | Wait 15 minutes, then retry |
+| `rate-limited` | X allows, per account and every 15 minutes, 75 account checks, 100 posts and 50 deletes | Wait 15 minutes, then retry |
+| `text-too-long` | The text counts over 280 the way X counts: most characters 1, CJK characters and emoji 2, a link 23 | Shorten it, or pass `--split` to post a thread |
+| `invalid-image` | The image is a URL, a missing file, not a JPEG, PNG, GIF or WEBP, or over 5 MB | Download a remote image first and pass its path, or pick another file |
+| `duplicate-text` | The text repeats one of your recent posts, which X refuses | Change the text, or delete the earlier post |
+| `edit-refused` | X edits only for X Premium, a short while after posting and 5 times at most | Pass `--repost` to delete the post and publish the new version |
 
 Every error panda-social prints carries a `hint` with the next step, and `panda-social docs setup` has the full command page.
 

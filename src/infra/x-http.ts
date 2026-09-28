@@ -1,7 +1,8 @@
 import { err, ok } from '../domain/result.ts';
 import type { Result } from '../domain/result.ts';
-import { formatError } from '../domain/utilities/format-error.ts';
 import type { XError } from '../use-cases/ports/x.ts';
+import { classifyHttp, classifyThrown } from './x-failures.ts';
+import { isRecord, parsed } from './x-json.ts';
 import type { XSigner } from './x-signer.ts';
 
 export const X_API_BASE = 'https://api.x.com';
@@ -15,50 +16,35 @@ export type XHttpConfig = {
   readonly timeoutMs?: number;
 };
 
+// One call: a JSON body when it sends one, and its own deadline when the default is too short.
+export type XCall = {
+  readonly method: string;
+  readonly path: string;
+  readonly json?: unknown;
+  readonly timeoutMs?: number;
+};
+
 export type XAnswer = {
   readonly body: Readonly<Record<string, unknown>>;
   readonly headers: Headers;
 };
 
-// X answers a 403 with this detail when the keys were made while the app was read-only.
-const READ_ONLY_KEYS = /oauth1 app permissions/i;
+// The JSON body is not part of an OAuth 1.0a signature: only the method and the URL are signed.
+const initOf = (config: XHttpConfig, call: XCall, url: string): RequestInit => ({
+  method: call.method,
+  headers: { authorization: config.sign({ method: call.method, url }), ...(call.json !== undefined && { 'content-type': 'application/json' }) },
+  ...(call.json !== undefined && { body: JSON.stringify(call.json) }),
+});
 
-const classifyHttp = (status: number, body: string): XError => {
-  if (status === 401) return { kind: 'unauthorized', message: body };
-  if (status === 402) return { kind: 'credits-depleted', message: body };
-  if (status === 403) return { kind: READ_ONLY_KEYS.test(body) ? 'read-only-keys' : 'forbidden', message: body };
-  if (status === 429) return { kind: 'rate-limited', message: body };
-  return { kind: 'rejected', status, message: body };
-};
-
-const isTimeout = (error: unknown): boolean => error instanceof DOMException && error.name === 'TimeoutError';
-
-const classifyThrown = (error: unknown): XError => {
-  if (isTimeout(error)) return { kind: 'timeout', message: formatError(error) };
-  return { kind: 'network-failed', message: formatError(error) };
-};
-
-const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> => typeof value === 'object' && value !== null && !Array.isArray(value);
-
-export const request = async (config: XHttpConfig, method: string, path: string): Promise<Result<XAnswer, XError>> => {
-  const url = `${X_API_BASE}${path}`;
+export const request = async (config: XHttpConfig, call: XCall): Promise<Result<XAnswer, XError>> => {
+  const url = `${X_API_BASE}${call.path}`;
   try {
-    const response = await fetch(url, { method, headers: { authorization: config.sign({ method, url }) }, signal: AbortSignal.timeout(config.timeoutMs ?? DEFAULT_TIMEOUT_MS) });
+    const response = await fetch(url, { ...initOf(config, call, url), signal: AbortSignal.timeout(config.timeoutMs ?? call.timeoutMs ?? DEFAULT_TIMEOUT_MS) });
     const text = await response.text();
     if (!response.ok) return err(classifyHttp(response.status, text));
-    const body: unknown = JSON.parse(text);
+    const body = parsed(text);
     return ok({ body: isRecord(body) ? body : {}, headers: response.headers });
   } catch (error) {
     return err(classifyThrown(error));
   }
-};
-
-export const recordField = (body: Readonly<Record<string, unknown>>, field: string): Readonly<Record<string, unknown>> => {
-  const value = body[field];
-  return isRecord(value) ? value : {};
-};
-
-export const stringField = (body: Readonly<Record<string, unknown>>, field: string): string | undefined => {
-  const value = body[field];
-  return typeof value === 'string' ? value : undefined;
 };

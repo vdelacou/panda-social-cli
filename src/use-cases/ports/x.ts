@@ -5,6 +5,7 @@ export type XError =
   | { readonly kind: 'credits-depleted'; readonly message: string }
   | { readonly kind: 'read-only-keys'; readonly message: string }
   | { readonly kind: 'forbidden'; readonly message: string }
+  | { readonly kind: 'duplicate-text'; readonly message: string }
   | { readonly kind: 'rate-limited'; readonly message: string }
   | { readonly kind: 'rejected'; readonly status: number; readonly message: string }
   | { readonly kind: 'network-failed'; readonly message: string }

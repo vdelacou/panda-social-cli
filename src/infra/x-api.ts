@@ -2,8 +2,9 @@ import { err, ok } from '../domain/result.ts';
 import type { Result } from '../domain/result.ts';
 import type { XKeys } from '../domain/x-keys.ts';
 import type { X, XAccount, XError } from '../use-cases/ports/x.ts';
-import { recordField, request, stringField } from './x-http.ts';
+import { request } from './x-http.ts';
 import type { XHttpConfig } from './x-http.ts';
+import { recordField, stringField } from './x-json.ts';
 import { createXSigner } from './x-signer.ts';
 
 export { X_API_BASE } from './x-http.ts';
@@ -14,7 +15,7 @@ export type XApiConfig = {
 };
 
 const whoAmI = async (config: XHttpConfig): Promise<Result<XAccount, XError>> => {
-  const answer = await request(config, 'GET', '/2/users/me');
+  const answer = await request(config, { method: 'GET', path: '/2/users/me' });
   if (!answer.ok) return answer;
   const data = recordField(answer.value.body, 'data');
   const userId = stringField(data, 'id');

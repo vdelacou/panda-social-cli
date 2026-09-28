@@ -23,7 +23,9 @@ import '../src/infra/threads-graph.ts';
 import '../src/infra/threads-http.ts';
 import '../src/infra/tty-terminal.ts';
 import '../src/infra/x-api.ts';
+import '../src/infra/x-failures.ts';
 import '../src/infra/x-http.ts';
+import '../src/infra/x-json.ts';
 import '../src/infra/x-signer.ts';
 
 // --- src/composition/ ---

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { PassThrough } from 'node:stream';
@@ -131,6 +131,33 @@ describe('connecting Threads with `panda-social setup threads`', () => {
     expect(setup.exitCode).toBe(0);
     expect(posted.exitCode).toBe(0);
     expect(publishToken(mock)).toBe(`Bearer ${OVERRIDE}`);
+  });
+
+  it('a saved token 31 days old is refreshed before a post: the post goes out with the new token, which is saved with its expiry', async () => {
+    const fresh = ['fresh', 'threads', 'token'].join('-');
+    const file = path.join(home, '.panda-social', 'credentials.json');
+    const account = { userId: '26000000000000001', username: 'panda' };
+    const savedAt = new Date(Date.now() - 31 * 86_400_000).toISOString();
+    mkdirSync(path.dirname(file), { recursive: true });
+    writeFileSync(file, JSON.stringify({ version: 1, profiles: { default: { threads: { token: STORED, ...account, savedAt } } } }));
+    mock = installFetchMock([
+      {
+        match: (url) => url === 'https://graph.threads.net/refresh_access_token?grant_type=th_refresh_token',
+        respond: () => json({ access_token: fresh, token_type: 'bearer', expires_in: 5_184_000 }),
+      },
+      { match: (url, init) => init?.method === 'POST' && url.endsWith('/me/threads'), respond: () => json({ id: POST_ID }) },
+      { match: (url) => url.includes(`/${POST_ID}?fields=permalink`), respond: () => json({ id: POST_ID, permalink: PERMALINK }) },
+    ]);
+
+    const posted = await run(['post', '--to', 'threads', '--text', 'Hello from panda'], { HOME: home });
+
+    expect(posted.exitCode).toBe(0);
+    expect(new Headers(mock.calls[0]?.init?.headers).get('authorization')).toBe(`Bearer ${STORED}`);
+    expect(publishToken(mock)).toBe(`Bearer ${fresh}`);
+    expect(JSON.parse(readFileSync(file, 'utf8')) as unknown).toEqual({
+      version: 1,
+      profiles: { default: { threads: { token: fresh, ...account, savedAt: expect.any(String), expiresAt: expect.any(String) } } },
+    });
   });
 
   it('a profile with no saved token fails with a hint to run setup threads', async () => {

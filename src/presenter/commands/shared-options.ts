@@ -7,7 +7,8 @@ export const PROFILE_OPTION: OptionSpec = {
   type: 'string',
   placeholder: 'name',
   required: false,
-  description: 'The profile whose saved account acts. Defaults to "default". PANDA_SOCIAL_THREADS_TOKEN, when set, overrides the saved token.',
+  description:
+    'The profile whose saved account acts. Defaults to "default". A saved token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, when set, overrides the saved token.',
 };
 
 export const TEXT_OPTION: OptionSpec = {

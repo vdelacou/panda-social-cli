@@ -4,13 +4,13 @@ import { ok } from '../domain/result.ts';
 import type { Result } from '../domain/result.ts';
 import { createWinstonLogger } from '../infra/logger.ts';
 import { createThreadsGraph } from '../infra/threads-graph.ts';
-import type { DeleteCommand, Failure, PostCommand, PostContent, UpdateCommand } from '../presenter/cli.ts';
+import type { DeleteCommand, PostCommand, PostContent, UpdateCommand } from '../presenter/cli.ts';
 import { createDeletePost } from '../use-cases/delete-post.ts';
 import type { StepError } from '../use-cases/ports/step-error.ts';
 import { createPublishPost } from '../use-cases/publish-post.ts';
 import type { PublishPostDeps, PublishPostInput } from '../use-cases/publish-post.ts';
 import { createUpdatePost } from '../use-cases/update-post.ts';
-import { answer, fail } from './answer.ts';
+import { answer } from './answer.ts';
 import type { CliIo } from './cli-io.ts';
 import type { Config } from './env.ts';
 import { resolveThreadsToken } from './threads-token.ts';
@@ -18,11 +18,12 @@ import { resolveThreadsToken } from './threads-token.ts';
 // Every command that acts on a Threads account.
 export type ThreadsCommand = PostCommand | UpdateCommand | DeleteCommand;
 
-// The Threads adapter and the logger for the account saved in a profile.
-const threadsDeps = async (io: CliIo, config: Config, profile: ProfileName | undefined): Promise<Result<PublishPostDeps, Failure>> => {
-  const token = await resolveThreadsToken(config, profile ?? DEFAULT_PROFILE);
+// The logger, the profile's token (refreshed first when due) and the Threads adapter for it.
+const threadsDeps = async (io: CliIo, config: Config, profile: ProfileName): Promise<Result<PublishPostDeps, StepError>> => {
+  const logger = createWinstonLogger(config.logLevel, io.logStream);
+  const token = await resolveThreadsToken(config, profile, logger);
   if (!token.ok) return token;
-  return ok({ threads: createThreadsGraph({ token: token.value }), logger: createWinstonLogger(config.logLevel, io.logStream) });
+  return ok({ threads: createThreadsGraph({ token: token.value.token }), logger });
 };
 
 const contentOf = (command: PostContent): PublishPostInput => ({ text: command.text, imageUrl: command.imageUrl, split: command.split });
@@ -34,7 +35,7 @@ const act = async (deps: PublishPostDeps, command: ThreadsCommand): Promise<Resu
 };
 
 export const runThreads = async (io: CliIo, command: ThreadsCommand, config: Config): Promise<number> => {
-  const deps = await threadsDeps(io, config, command.profile);
-  if (!deps.ok) return fail(io, deps.error);
+  const deps = await threadsDeps(io, config, command.profile ?? DEFAULT_PROFILE);
+  if (!deps.ok) return answer(io, deps);
   return answer(io, await act(deps.value, command));
 };

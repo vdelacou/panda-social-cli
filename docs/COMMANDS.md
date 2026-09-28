@@ -34,7 +34,7 @@ panda-social post --to <platform> [--text <text>] [--profile <name>] [--image <u
 | --- | --- | --- |
 | `--to <platform>` | yes | The platform to post to. One of: threads. |
 | `--text <text>` | no | The text of the post, quoted when it contains spaces. Required unless --image is given. 500 characters at most on Threads, an emoji counting its UTF-8 bytes (a thumbs-up is 4). |
-| `--profile <name>` | no | The profile whose saved account acts. Defaults to "default". PANDA_SOCIAL_THREADS_TOKEN, when set, overrides the saved token. |
+| `--profile <name>` | no | The profile whose saved account acts. Defaults to "default". A saved token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, when set, overrides the saved token. |
 | `--image <url>` | no | A public https URL to a JPEG or PNG image, 8 MB at most. Threads downloads it itself, so a local file must be hosted first. |
 | `--split` | no | Post a text over the limit as a thread: the first post, then replies, each answering the one before. If a part fails, the parts already published are deleted. |
 
@@ -95,7 +95,7 @@ panda-social update --on <platform> --id <post-id> [--text <text>] [--profile <n
 | `--on <platform>` | yes | The platform the post is on. One of: threads. |
 | `--id <post-id>` | yes | The numeric id of the post, as post returned it. |
 | `--text <text>` | no | The text of the post, quoted when it contains spaces. Required unless --image is given. 500 characters at most on Threads, an emoji counting its UTF-8 bytes (a thumbs-up is 4). |
-| `--profile <name>` | no | The profile whose saved account acts. Defaults to "default". PANDA_SOCIAL_THREADS_TOKEN, when set, overrides the saved token. |
+| `--profile <name>` | no | The profile whose saved account acts. Defaults to "default". A saved token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, when set, overrides the saved token. |
 | `--image <url>` | no | A public https URL to a JPEG or PNG image, 8 MB at most. Threads downloads it itself, so a local file must be hosted first. |
 | `--split` | no | Post a text over the limit as a thread: the first post, then replies, each answering the one before. If a part fails, the parts already published are deleted. |
 | `--repost` | no | Delete the post and publish the new version. Without it, Threads updates are refused as unsupported. |
@@ -152,7 +152,7 @@ panda-social delete --on <platform> --id <post-id> [--profile <name>]
 | --- | --- | --- |
 | `--on <platform>` | yes | The platform the post is on. One of: threads. |
 | `--id <post-id>` | yes | The numeric id of the post, as post returned it. |
-| `--profile <name>` | no | The profile whose saved account acts. Defaults to "default". PANDA_SOCIAL_THREADS_TOKEN, when set, overrides the saved token. |
+| `--profile <name>` | no | The profile whose saved account acts. Defaults to "default". A saved token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, when set, overrides the saved token. |
 
 ### Examples
 

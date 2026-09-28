@@ -4,7 +4,7 @@ This page walks you through connecting an Instagram account to panda-social, onc
 
 At the end, panda-social keeps the token in `~/.panda-social/credentials.json`, readable by you only. The token lasts 60 days, and panda-social renews it once it is 30 days old, whenever a command runs: an account you use at least once a month stays connected. Left unused for 60 days, the token lapses and the setup runs again.
 
-This release connects the account and checks it with `status instagram`; `post` does not take Instagram yet.
+Through Instagram Login, panda-social publishes images with their captions; it cannot edit or delete a post, which you do in the Instagram app.
 
 There are two ways through the same six steps:
 
@@ -110,9 +110,12 @@ On a server or in CI, you can set the token in the environment instead of saving
 
 ```bash
 panda-social status instagram
+panda-social post --to instagram --image https://cdn.example.com/cat.jpg --text "Hello from panda"
 ```
 
-It answers with the account's id and username, the token (saved, with its date, its age in days and its expiry once renewed, or the environment), and the posts quota for the last 24 hours: how many API posts were used, of how many, over what window. It posts nothing. Meta's pages give 50 or 100 posts a day; the answer shows your account's own figure.
+`status instagram` answers with the account's id and username, the token (saved, with its date, its age in days and its expiry once renewed, or the environment), and the posts quota for the last 24 hours: how many API posts were used, of how many, over what window. It posts nothing. Meta's pages give 50 or 100 posts a day; the answer shows your account's own figure.
+
+The second command publishes a real post: replace the URL with a public https link to a JPEG of yours, 8 MB at most, between 4:5 (portrait) and 1.91:1 (landscape). Instagram downloads the image itself, so the link must open in a private browser window. The answer carries the post's id and its instagram.com link.
 
 > Screenshot to add: `images/instagram-08-status.png`.
 
@@ -126,7 +129,12 @@ It answers with the account's id and username, the token (saved, with its date, 
 | Instagram will not let the account log in to the app | It is a personal account | Switch it to a professional account (step 1) |
 | The app has no API setup with Instagram login | The app was made without the Instagram use case | Add the use case (Use cases, Add use cases), or create a new app as in step 2 |
 | `missing-credentials` | No token is saved for this profile, and `PANDA_SOCIAL_INSTAGRAM_TOKEN` is not set | Run the setup, adding `--profile <name>` for another profile |
-| `rate-limited` | Too many calls in a short time | Wait, then retry |
+| `rate-limited` | Too many calls in a short time, or the day's API posts are used up | Wait, then retry; `status instagram` shows the posts quota |
+| `missing-image` | Instagram has no text-only posts | Pass `--image` with a public https URL to a JPEG; the text becomes its caption |
+| `invalid-image` | The image is a local file or not an https URL | Host the file where it opens for everyone, then pass its https URL |
+| `image-rejected` | Instagram could not use the image: the URL does not open for everyone, or it is not a JPEG, weighs over 8 MB, or falls outside 4:5 to 1.91:1 | Check the URL in a private browser window, and the image's format, size and shape, then retry |
+| `still-processing` | Instagram had not finished with the image after a minute, so nothing was published | Retry the post |
+| `unsupported` | `update` or `delete` on Instagram, which Instagram Login does not allow | Change or delete the post in the Instagram app |
 
 Every error panda-social prints carries a `hint` with the next step, and `panda-social docs setup` has the full command page.
 

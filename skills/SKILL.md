@@ -2,19 +2,20 @@
 name: panda-social
 description: >
   Publish, edit, replace and delete posts on the user's own Threads and X accounts and
-  Facebook Page through the local panda-social CLI, as text, an image (a public URL on Threads,
-  a local file on X, either on Facebook), or a long text split into a thread of replies; check
-  a connected account and its limits; and walk a first-time user through connecting Threads, X,
+  Facebook Page, and publish images with captions to their Instagram account, through the
+  local panda-social CLI, as text, an image (a public URL on Threads and Instagram, a local
+  file on X, either on Facebook), or a long text split into a thread of replies; check a
+  connected account and its limits; and walk a first-time user through connecting Threads, X,
   a Facebook Page or an Instagram account. Use it whenever the user asks to post, share,
-  publish, tweet, thread, reword, edit, repost or delete something on Threads, X or their
-  Facebook Page, or asks whether their connection works or how many posts they have left
-  today. Do NOT use it to read a feed, replies, mentions or insights, to schedule a post for
-  later, or to post to Instagram, which the CLI does not do yet.
+  publish, tweet, thread, reword, edit, repost or delete something on Threads, X, Instagram or
+  their Facebook Page, or asks whether their connection works or how many posts they have
+  left today. Do NOT use it to read a feed, replies, mentions or insights, or to schedule a
+  post for later.
 ---
 
-# Post to Threads, X and Facebook with panda-social
+# Post to Threads, X, Facebook and Instagram with panda-social
 
-`panda-social` publishes to the user's own Threads and X accounts and Facebook Page with the credentials they connected once. Every command prints one JSON line on stdout, `{"ok":true,"data":...}` or `{"ok":false,"error":{"code":"...","message":"...","hint":"..."}}`, and exits 0 or 1; warnings and logs go to stderr. Your job: turn the request into the right command, get the user's approval for anything that publishes or deletes, run it, and report the outcome in plain words.
+`panda-social` publishes to the user's own Threads, X and Instagram accounts and Facebook Page with the credentials they connected once. Every command prints one JSON line on stdout, `{"ok":true,"data":...}` or `{"ok":false,"error":{"code":"...","message":"...","hint":"..."}}`, and exits 0 or 1; warnings and logs go to stderr. Your job: turn the request into the right command, get the user's approval for anything that publishes or deletes, run it, and report the outcome in plain words.
 
 ## Ground rules
 
@@ -46,7 +47,7 @@ Connecting X runs the same way with `panda-social setup x`: five steps as JSON t
 
 Connecting a Facebook Page runs the same way with `panda-social setup facebook`: five steps as JSON to relay one at a time (`docs/setup/facebook.md` has them with the usual failures). Step 3 publishes the app, since until then only people with a role on it see its posts: say so if the user wants to skip it. Then the user runs `panda-social setup facebook` in their own terminal and pastes the extended token of step 5 where it does not show; when the token grants several Pages, the CLI names them and asks for the id of the one to keep. `panda-social status facebook` then answers with the Page.
 
-Connecting Instagram runs the same way with `panda-social setup instagram`: six steps as JSON to relay one at a time (`docs/setup/instagram.md` has them with the usual failures). Step 1 switches the account to a professional one, whose profile is public: say so before it. Then the user runs `panda-social setup instagram` in their own terminal and pastes the token of step 6 where it does not show. `panda-social status instagram` then answers with their username and the day's posts quota. Posting to Instagram is not in the CLI yet.
+Connecting Instagram runs the same way with `panda-social setup instagram`: six steps as JSON to relay one at a time (`docs/setup/instagram.md` has them with the usual failures). Step 1 switches the account to a professional one, whose profile is public: say so before it. Then the user runs `panda-social setup instagram` in their own terminal and pastes the token of step 6 where it does not show. `panda-social status instagram` then answers with their username and the day's posts quota.
 
 For several accounts, the same commands take `--profile <name>` (lowercase letters, digits, `-` and `_`), for example `--profile brand-a`.
 
@@ -54,13 +55,14 @@ For several accounts, the same commands take `--profile <name>` (lowercase lette
 
 | The user wants | Command |
 |---|---|
-| A text post | `post --to threads --text "<text>"`, or `--to x`, or `--to facebook` |
-| An image post, with or without a caption | `post --to threads --image <https URL> --text "<caption>"`; on X, `post --to x --image <local file> --text "<caption>"`; on Facebook, either kind of image |
-| A text over the limit (500 on Threads, 280 on X; Facebook takes it whole) | the same with `--split` |
+| A text post | `post --to threads --text "<text>"`, or `--to x`, or `--to facebook`; Instagram has no text-only posts |
+| An image post, with or without a caption | `post --to threads --image <https URL> --text "<caption>"`; on X, `post --to x --image <local file> --text "<caption>"`; on Facebook, either kind of image; on Instagram, `post --to instagram --image <https URL to a JPEG> --text "<caption>"` |
+| A text over the limit (500 on Threads, 280 on X; Facebook and Instagram take it whole) | the same with `--split` |
 | A Threads post's wording changed | `update --on threads --id <post id> --text "<text>" --repost` |
 | An X post's wording changed | `update --on x --id <post id> --text "<text>"` edits it in place (X Premium); with `--repost` it deletes and republishes |
 | A Facebook post's wording changed | `update --on facebook --id <post id> --text "<text>"` edits it in place; a new image needs `--repost` |
 | A post deleted | `delete --on threads --id <post id>`, `--on x` or `--on facebook` |
+| An Instagram post changed or deleted | not through the CLI: `update` and `delete` answer `unsupported` there, so the user does it in the Instagram app |
 | To know the connection works | `status threads` or `status instagram`, with the day's quotas, `status x` or `status facebook` |
 
 For example:
@@ -78,6 +80,7 @@ panda-social status x --profile brand-a
 panda-social post --to facebook --image https://cdn.example.com/launch.jpg --text "Launch day: the beta is open"
 panda-social update --on facebook --id 104000000000001_122000000000001 --text "Launch day: the beta is open to everyone"
 panda-social delete --on facebook --id 104000000000001_122000000000001
+panda-social post --to instagram --image https://cdn.example.com/launch.jpg --text "Launch day: the beta is open"
 ```
 
 The post id is the `id` that `post` answered, on Facebook the Page id and the post number joined by an underscore; keep it if the user may want to change or delete the post later.
@@ -87,14 +90,15 @@ The post id is the `id` that `post` answered, on Facebook the Page id and the po
 - Threads allows 500 characters per post and counts an emoji as its UTF-8 bytes, so a thumbs-up costs 4. X allows 280 and counts its own way: most characters 1, CJK characters and emoji 2, a link 23 however long. The CLI counts as each platform does and refuses a longer text with `text-too-long`; offer `--split` or a shorter text.
 - `--split` posts a first post and then replies, each answering the one before, cut at a paragraph, line, sentence or word break. If a part fails, the parts already out are deleted, and `error.details` lists what was deleted and anything left behind: tell the user about both.
 - On Threads, an image is a public `https://` URL to a JPEG or PNG of 8 MB at most, because Threads downloads it itself; a file on the user's machine has to be hosted first, so ask them where. On X, it is a local JPEG, PNG, GIF or WEBP file of 5 MB at most, which the CLI checks and uploads; a URL is refused, so download a remote image first. On Facebook, it is either: an https URL Facebook downloads, or a local JPEG, PNG, GIF, BMP or TIFF file of 10 MB at most that the CLI checks and uploads; the text becomes its caption. `image-rejected` means the platform could not use the image.
+- On Instagram, a post is always an image: a public `https://` URL to a JPEG of 8 MB at most, with an aspect ratio between 4:5 and 1.91:1, which Instagram downloads itself; the text becomes its caption, sent whole (2,200 characters, 30 hashtags and 20 @ tags at most). A text alone is refused with `missing-image`: ask the user for an image. `still-processing` means Instagram had not finished with the image after a minute and nothing was published: offer to try again.
 - Facebook takes a long text whole, so `--split` changes nothing there. A Facebook post shows to everyone only once the user's Meta app is published (step 3 of the setup): if the user cannot see a post from a logged-out browser, point them there.
-- A success answers `{"platform":"threads","id":"...","url":"..."}`, or the same with `"platform":"x"` and an `https://x.com/i/status/<id>` link, or `"platform":"facebook"` and a facebook.com link, plus `replies` for a split thread: give the user the `url`. A `null` url on Threads means the post is up but its link could not be read back; say so, and do not post it again.
+- A success answers `{"platform":"threads","id":"...","url":"..."}`, or the same with `"platform":"x"` and an `https://x.com/i/status/<id>` link, `"platform":"facebook"` and a facebook.com link, or `"platform":"instagram"` and an instagram.com link, plus `replies` for a split thread: give the user the `url`. A `null` url on Threads or Instagram means the post is up but its link could not be read back; say so, and do not post it again.
 
 ## Accounts and limits
 
 - The saved Threads token lasts 60 days after its last refresh, and every command refreshes it once it is 30 days old, so a CLI that runs at least once a month keeps working. A refresh that fails leaves a warning on stderr and the command still runs.
 - On Threads, `unauthorized` means the token no longer works: the user generates a new one (step 6 of the setup) and runs `panda-social setup threads` again. `forbidden` means it lacks a permission from step 3: they add it, generate a new token, and run the setup again.
-- Threads allows 250 posts, 1,000 replies and 100 deletes per rolling 24 hours; `status threads` reports what is used. X allows 100 posts and 50 deletes per 15 minutes. On `rate-limited`, wait.
+- Threads allows 250 posts, 1,000 replies and 100 deletes per rolling 24 hours; `status threads` reports what is used. X allows 100 posts and 50 deletes per 15 minutes. Instagram allows 50 or 100 API posts per rolling 24 hours, and `status instagram` reports the account's own figure. On `rate-limited`, wait.
 - X keys never expire. On X, `unauthorized` means they were regenerated or revoked, and `read-only-keys` that the app could not post when they were made: the hint gives the fix, then the user runs `panda-social setup x` again. `credits-depleted` means the app's credits are spent: the user buys more in the X developer console.
 - `edit-refused` means the platform declined the edit: X edits only for X Premium accounts, shortly after posting and 5 times at most, and Facebook only the posts this Meta app made. Offer `--repost`, which deletes the post, so get a yes first. `unsupported` on Facebook means a new image, which an edit cannot change: `--repost` again. `duplicate-text` means the text repeats one of the account's recent posts: change it.
 - A Facebook Page token does not expire. `unauthorized` on Facebook means it stopped working (a changed password, a lost Page role, or a token not extended in step 5): the user makes and extends a new token (steps 4 and 5) and runs `panda-social setup facebook` again. `missing-page-task` means their role on the Page cannot create posts; `choose-page` lists the Pages the token grants, for `--page <id>`.
@@ -103,6 +107,6 @@ The post id is the `id` that `post` answered, on Facebook the Page id and the po
 
 ## Known limitations
 
-- Posting works on Threads, X and a Facebook Page; an Instagram account connects and answers `status`, and posting there comes next.
+- Instagram, connected through Instagram Login, can neither edit nor delete a post through the CLI: the user does it in the Instagram app.
 - Nothing is read back: no feed, replies, mentions or insights. No scheduling.
 - Threads has no edit, so `update` there always deletes and republishes; Facebook edits the text only.

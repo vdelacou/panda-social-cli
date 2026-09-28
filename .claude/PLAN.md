@@ -1,6 +1,6 @@
 # PLAN: panda-social-cli v1
 
-Current task: phase 1, the scaffold and the Threads walking skeleton. Resume from the first unchecked box.
+Current task: phase 2, Threads complete. Resume from the first unchecked box.
 
 ## What we are building
 
@@ -37,14 +37,14 @@ A Bun/TypeScript CLI and library, published to npm as `panda-social-cli` (bin `p
 - [x] 1.3 Memory and docs: `.claude/LESSONS.md` header, README with install steps, `git config core.hooksPath .githooks` and a `## Verify` block. Done when `check-docs.sh` passes. (Green once 1.4 added the first infra file: the generated preload is comment-only on an empty tree and unicorn's `no-empty-file` rejects it, an upstream atelier gap.)
 - [x] 1.4 Walking skeleton: `panda-social post --to threads --text "..."` from argv to the Threads API and back as a JSON envelope, through use-case, port, adapter (with a deadline) and presenter. Done when the proposed tests were confirmed, seen red, then green, and lint, typecheck, coverage (100/100/80) and mutation (90) pass. (22 tests, mutation 100 on 34 mutants; a live call with an invalid token got OAuth code 190 "Cannot parse access token", so Threads reads the `Authorization: Bearer` header.)
 - [x] 1.5 Packaging: `bun build --target=node` to `dist/cli.js` and `dist/index.js`, `.d.ts` emit, shebang. Done when the built CLI answers under Bun and under Node, and `bun pm pack --dry-run` lists only `dist/`, README, LICENSE and package.json. (`smoke:dist` passes under both and fails on a missing shebang or library bundle; the packed tarball typechecks in a `nodenext` consumer with `skipLibCheck: false`; `--version` moved to 2.2 with the registry.)
-- [ ] 1.6 Landing: commit slices of at most 10 files and 300 lines, each approved by the user before commit and before push.
+- [x] 1.6 Landing: commit slices of at most 10 files and 300 lines, each approved by the user before commit and before push. (Every step since lands the same way; CI's `check-commit-range.sh` holds each pushed commit to the same limits, with no bypass.)
 
 ## Phase 2: Threads, complete
 
 - [x] 2.1 `setup threads`: step-by-step guide on a terminal, the same steps as JSON without one (agents), `--token-stdin`, verify with `GET /me`, store per `--profile` in `~/.panda-social/credentials.json` (0600 in a 0700 folder); `post` reads it, `PANDA_SOCIAL_THREADS_TOKEN` overrides. Done when an invalid token is refused with a hint and a valid one is stored 0600. (47 tests, mutation 100 on 91 mutants; a pseudo-terminal run showed the 6 steps, kept the token off screen and refused a bad token live. A successful save with a real token is still to be seen.)
 - [x] 2.2 Command registry, `help-json`, `docs <command>`, generated `docs/COMMANDS.md` and `commands.json`, the error-hint table. (One file per command under `src/presenter/commands/`; the registry drives the parser, which now refuses unknown options and stray arguments, `help-json`, `docs`, `--version` and both generated files. 61 tests, mutation 100 on 91 mutants; every documented example runs through the real parser, and the error table is checked against the codes the commands declare, both ways. `docs:check` runs in CI and was seen red on registry drift and on a missing file.)
-- [ ] 2.3 `post` with an image URL, `delete`, `update --repost`, `--split` reply chains with rollback, publishing-limit readout.
-- [ ] 2.4 Token refresh (`th_refresh_token`), `status` command (who am I, token age, quota).
+- [x] 2.3 `post` with an image URL, `delete`, `update --repost`, `--split` reply chains with rollback. (101 tests, mutation 100 on 306 mutants. Text is counted the way Threads counts it, an emoji as its UTF-8 bytes, and split at a paragraph, line, sentence or word break; an image goes through a media container checked every 1.5 s for up to 60 s; a thread that breaks midway is deleted newest first and the error's `details` lists what stayed; `update --repost` deletes before it publishes. Landed as 16 slices, each green on its own. The publishing-limit readout moved to 2.4.)
+- [ ] 2.4 Token refresh (`th_refresh_token`), `status` command (who am I, token age, the publishing-limit readout).
 - [ ] 2.5 `docs/setup/threads.md` with the screenshot shot list, `skills/SKILL.md`.
 - [ ] 2.6 Live QA script the user runs with a real token: post, read back, delete.
 

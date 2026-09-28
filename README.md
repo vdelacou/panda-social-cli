@@ -2,7 +2,7 @@
 
 Post text, an image, or both to Threads, X, Facebook Pages and Instagram from one command line or one TypeScript library. It is built for AI agents first: every command answers in JSON, and every error names its cause and the next step to fix it.
 
-> Status: under construction. Threads works from source: guided setup, text posts, and commands that document themselves for agents. Images, delete, update and the other three platforms are next. Nothing is published to npm yet.
+> Status: under construction. Threads works from source: guided setup, text and image posts, long texts as reply threads, delete, update by reposting, and commands that document themselves for agents. Token refresh, a `status` command and the other three platforms are next. Nothing is published to npm yet.
 
 ## What each platform allows
 
@@ -21,13 +21,17 @@ The CLI can only do what each platform's API permits. As of September 2026:
 bun install
 bun run src/main.ts setup threads
 bun run src/main.ts post --to threads --text "Hello from panda"
+bun run src/main.ts post --to threads --image https://cdn.example.com/cat.jpg --text "A cat on the sofa"
+bun run src/main.ts delete --on threads --id 17890000000000001
 ```
 
 `setup threads` walks you through the six one-time steps (a Meta developer account, an app with the Threads API, its permissions, a tester invitation, and the token), one at a time. You paste the token without it showing on screen; the CLI checks it with Threads and saves it in `~/.panda-social/credentials.json`, readable by you only.
 
 An agent runs the same command without a terminal and gets the six steps as JSON, to relay to its human. It then finishes with `panda-social setup threads --token-stdin`, piping the token in.
 
-For several accounts, add `--profile brand-a` to `setup` and to `post`. `PANDA_SOCIAL_THREADS_TOKEN` overrides the saved token, which suits CI.
+Threads downloads images itself, so `--image` takes a public https URL, not a local file. A text over 500 characters is refused unless `--split` posts it as a thread of replies; if one reply fails, the parts already out are deleted and the error lists any that could not be. Threads has no edit: `update --on threads --id <id> --text "..." --repost` deletes the post and publishes the new version, which gets a new id and link.
+
+For several accounts, add `--profile brand-a` to `setup`, `post`, `update` and `delete`. `PANDA_SOCIAL_THREADS_TOKEN` overrides the saved token, which suits CI.
 
 Every command prints one JSON line on stdout and exits 0 or 1; the guide and the logs go to stderr.
 

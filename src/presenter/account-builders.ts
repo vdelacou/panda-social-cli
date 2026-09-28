@@ -6,44 +6,37 @@ import { err, ok } from '../domain/result.ts';
 import type { Result } from '../domain/result.ts';
 import { exampleOf, withProfile } from './builder-helpers.ts';
 import type { AccountPlatform, CliCommand } from './cli-command.ts';
-import { ACCOUNT_PLATFORMS, PLATFORMS } from './commands/shared-options.ts';
+import { ACCOUNT_PLATFORMS } from './commands/shared-options.ts';
 import type { Failure } from './failure.ts';
 import { hintFor } from './hints.ts';
-import type { Platform } from './post-command.ts';
-import { isPlatform, readProfile } from './post-flags.ts';
+import { readProfile } from './post-flags.ts';
 import type { Flags } from './read-flags.ts';
 
 const isAccountPlatform = (value: string): value is AccountPlatform => ACCOUNT_PLATFORMS.includes(value);
 
-const unknownPlatform = (platform: string, command: 'setup' | 'status', known: ReadonlyArray<string>): Failure => ({
-  code: 'unknown-platform',
-  message: `No ${command} exists for "${platform}".`,
-  hint: `Platforms with a ${command}: ${known.join(', ')}. Example: ${exampleOf(command)}`,
-});
-
-// setup and status name their platform as an argument: `setup x`, `status threads`. status
-// takes Instagram before setup does.
-const readSetupPlatform = (positionals: Flags['positionals']): Result<Platform, Failure> => {
+// setup and status name their platform as an argument: `setup x`, `status threads`.
+const readPlatform = (positionals: Flags['positionals'], command: 'setup' | 'status'): Result<AccountPlatform, Failure> => {
   const [platform = ''] = positionals;
-  return isPlatform(platform) ? ok(platform) : err(unknownPlatform(platform, 'setup', PLATFORMS));
-};
-
-const readStatusPlatform = (positionals: Flags['positionals']): Result<AccountPlatform, Failure> => {
-  const [platform = ''] = positionals;
-  return isAccountPlatform(platform) ? ok(platform) : err(unknownPlatform(platform, 'status', ACCOUNT_PLATFORMS));
+  if (isAccountPlatform(platform)) return ok(platform);
+  return err({
+    code: 'unknown-platform',
+    message: `No ${command} exists for "${platform}".`,
+    hint: `Platforms with a ${command}: ${ACCOUNT_PLATFORMS.join(', ')}. Example: ${exampleOf(command)}`,
+  });
 };
 
 // Each platform reads its secret from standard input under its own flag.
-const STDIN: Readonly<Record<Platform, { readonly flag: string; readonly other: string; readonly secret: string }>> = {
+const STDIN: Readonly<Record<AccountPlatform, { readonly flag: string; readonly other: string; readonly secret: string }>> = {
   threads: { flag: 'token-stdin', other: 'keys-stdin', secret: 'token' },
   x: { flag: 'keys-stdin', other: 'token-stdin', secret: 'keys' },
   facebook: { flag: 'token-stdin', other: 'keys-stdin', secret: 'token' },
+  instagram: { flag: 'token-stdin', other: 'keys-stdin', secret: 'token' },
 };
 
 const refusedOption = (message: string): Failure => ({ code: 'unknown-option', message, hint: hintFor('unknown-option') });
 
 // The other platform's stdin flag, and --page anywhere but Facebook, are refused by name.
-const wrongFlag = (platform: Platform, values: Flags['values']): Failure | undefined => {
+const wrongFlag = (platform: AccountPlatform, values: Flags['values']): Failure | undefined => {
   const stdin = STDIN[platform];
   if (values[stdin.other] === true) return refusedOption(`\`setup ${platform}\` reads its ${stdin.secret} with --${stdin.flag}, not --${stdin.other}.`);
   if (platform !== 'facebook' && values['page'] !== undefined) return refusedOption('--page picks a Facebook Page: only `setup facebook` takes it.');
@@ -58,17 +51,17 @@ const readPageId = (value: unknown): Result<FacebookPageId | undefined, Failure>
   return err({ code: 'invalid-page-id', message: parsed.error.message, hint: hintFor('invalid-page-id') });
 };
 
-const setupOf = (platform: Platform, profile: ProfileName, values: Flags['values']): Result<CliCommand, Failure> => {
+const setupOf = (platform: AccountPlatform, profile: ProfileName, values: Flags['values']): Result<CliCommand, Failure> => {
   if (platform === 'x') return ok({ command: 'setup', platform: 'x', profile, keysFromStdin: values['keys-stdin'] === true });
   const tokenFromStdin = values['token-stdin'] === true;
-  if (platform === 'threads') return ok({ command: 'setup', platform: 'threads', profile, tokenFromStdin });
+  if (platform === 'threads' || platform === 'instagram') return ok({ command: 'setup', platform, profile, tokenFromStdin });
   const pageId = readPageId(values['page']);
   if (!pageId.ok) return pageId;
   return ok({ command: 'setup', platform: 'facebook', profile, tokenFromStdin, ...(pageId.value && { pageId: pageId.value }) });
 };
 
 export const buildSetup = ({ values, positionals }: Flags): Result<CliCommand, Failure> => {
-  const platform = readSetupPlatform(positionals);
+  const platform = readPlatform(positionals, 'setup');
   if (!platform.ok) return platform;
   const wrong = wrongFlag(platform.value, values);
   if (wrong !== undefined) return err(wrong);
@@ -78,7 +71,7 @@ export const buildSetup = ({ values, positionals }: Flags): Result<CliCommand, F
 };
 
 export const buildStatus = ({ values, positionals }: Flags): Result<CliCommand, Failure> => {
-  const platform = readStatusPlatform(positionals);
+  const platform = readPlatform(positionals, 'status');
   if (!platform.ok) return platform;
   const profile = readProfile(values['profile']);
   if (!profile.ok) return profile;

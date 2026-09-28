@@ -11,6 +11,7 @@ export type {
   DocsCommand,
   FacebookSetupCommand,
   FacebookStatusCommand,
+  InstagramSetupCommand,
   InstagramStatusCommand,
   SetupCommand,
   StatusCommand,

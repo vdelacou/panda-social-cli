@@ -15,6 +15,7 @@ import { readStdin } from './cli-io.ts';
 import type { CliIo } from './cli-io.ts';
 import type { Config } from './env.ts';
 import { runSetupFacebook } from './run-setup-facebook.ts';
+import { runSetupInstagram } from './run-setup-instagram.ts';
 import { runSetupX } from './run-setup-x.ts';
 
 // A human at a terminal: the guide runs on stderr, so stdout keeps its one JSON line.
@@ -32,6 +33,7 @@ export const runSetup = async (io: CliIo, command: SetupCommand, config: Config)
     return fail(io, { code: 'no-home', message: 'No home folder is set, so the credentials have nowhere to be saved.', hint: hintFor('no-home') });
   if (command.platform === 'x') return runSetupX(io, command, config.credentialsFile);
   if (command.platform === 'facebook') return runSetupFacebook(io, command, config.credentialsFile);
+  if (command.platform === 'instagram') return runSetupInstagram(io, command, config.credentialsFile);
   const connectThreads = createConnectThreads({
     threadsFor: (token) => createThreadsGraph({ token }),
     store: createCredentialStoreFile(config.credentialsFile),

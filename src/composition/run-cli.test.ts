@@ -675,6 +675,62 @@ describe('connecting Instagram with `panda-social setup instagram`', () => {
     rmSync(home, { recursive: true, force: true });
   });
 
+  it('without a terminal, `setup instagram` prints the six Instagram steps as JSON with the command that finishes it', async () => {
+    const { exitCode, answers } = await run(['setup', 'instagram'], { HOME: home });
+
+    expect(exitCode).toBe(0);
+    expect(answers).toEqual([
+      {
+        ok: true,
+        data: {
+          platform: 'instagram',
+          profile: 'default',
+          steps: expect.arrayContaining([
+            expect.objectContaining({ step: 1, title: 'Switch your Instagram account to a professional account' }),
+            expect.objectContaining({ step: 6, title: 'Generate your access token' }),
+          ]),
+          finish: expect.stringContaining('panda-social setup instagram --token-stdin'),
+        },
+      },
+    ]);
+  });
+
+  it('a token piped to `setup instagram --token-stdin` is checked with Instagram and saved, and `status instagram` then answers with the account, the saved token and the posts quota', async () => {
+    mock = instagramGraph();
+
+    const setup = await run(['setup', 'instagram', '--token-stdin'], { HOME: home }, `${INSTAGRAM_TOKEN}\n`);
+    const status = await run(['status', 'instagram'], { HOME: home });
+
+    expect(setup).toEqual({ exitCode: 0, answers: [{ ok: true, data: { platform: 'instagram', profile: 'default', ...INSTAGRAM_ACCOUNT } }] });
+    expect(status).toEqual({
+      exitCode: 0,
+      answers: [
+        {
+          ok: true,
+          data: {
+            platform: 'instagram',
+            profile: 'default',
+            account: INSTAGRAM_ACCOUNT,
+            token: { source: 'saved', savedAt: expect.any(String), ageDays: 0, expiresAt: null, refreshed: false },
+            limits: { posts: { used: 2, total: 50, windowSeconds: 86_400 } },
+          },
+        },
+      ],
+    });
+    expect(lastAuthorization(mock)).toBe(`Bearer ${INSTAGRAM_TOKEN}`);
+  });
+
+  it('PANDA_SOCIAL_INSTAGRAM_TOKEN overrides the saved token for `status instagram`', async () => {
+    mock = instagramGraph();
+    const envToken = ['env', 'instagram', 'token'].join('-');
+
+    await run(['setup', 'instagram', '--token-stdin'], { HOME: home }, INSTAGRAM_TOKEN);
+    const status = await run(['status', 'instagram'], { HOME: home, PANDA_SOCIAL_INSTAGRAM_TOKEN: envToken });
+
+    expect(status.answers).toEqual([{ ok: true, data: expect.objectContaining({ token: { source: 'environment' } }) }]);
+    expect(lastAuthorization(mock)).toBe(`Bearer ${envToken}`);
+  });
+
   it('`status instagram` with no saved token fails with missing-credentials and a hint to run setup instagram', async () => {
     const status = await run(['status', 'instagram'], { HOME: home });
 

@@ -47,6 +47,7 @@ import '../src/composition/run-cli.ts';
 import '../src/composition/run-facebook.ts';
 import '../src/composition/run-instagram.ts';
 import '../src/composition/run-setup-facebook.ts';
+import '../src/composition/run-setup-instagram.ts';
 import '../src/composition/run-setup-x.ts';
 import '../src/composition/run-setup.ts';
 import '../src/composition/run-threads.ts';

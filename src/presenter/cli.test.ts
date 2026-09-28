@@ -259,3 +259,26 @@ describe('reading the Facebook post commands', () => {
     expect(!result.ok && result.error.code).toBe('invalid-post-id');
   });
 });
+
+describe('reading the Instagram commands', () => {
+  it('`setup instagram` reads as the Instagram setup of the default profile, and --token-stdin and --profile are carried', () => {
+    expect(parseCliArgs(['setup', 'instagram'])).toEqual(ok({ command: 'setup', platform: 'instagram', profile: DEFAULT_PROFILE, tokenFromStdin: false }));
+    expect(parseCliArgs(['setup', 'instagram', '--token-stdin', '--profile', 'brand-a'])).toEqual(
+      ok({ command: 'setup', platform: 'instagram', profile: profileNameUnsafe('brand-a'), tokenFromStdin: true })
+    );
+  });
+
+  it('`setup instagram --keys-stdin` is refused naming --token-stdin, and `setup instagram --page` is refused as an option of setup facebook only', () => {
+    const keys = parseCliArgs(['setup', 'instagram', '--keys-stdin']);
+    const page = parseCliArgs(['setup', 'instagram', '--page', '104000000000001']);
+
+    expect(!keys.ok && keys.error.code).toBe('unknown-option');
+    expect(!keys.ok && keys.error.message).toContain('--token-stdin');
+    expect(!page.ok && page.error.code).toBe('unknown-option');
+    expect(!page.ok && page.error.message).toContain('setup facebook');
+  });
+
+  it('`status instagram` reads as a status check of the Instagram account', () => {
+    expect(parseCliArgs(['status', 'instagram'])).toEqual(ok({ command: 'status', platform: 'instagram' }));
+  });
+});

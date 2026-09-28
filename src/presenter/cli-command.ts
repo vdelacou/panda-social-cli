@@ -3,7 +3,7 @@ import type { ProfileName } from '../domain/profile-name.ts';
 import type { CommandName } from './command-spec.ts';
 import type { DeleteCommand, Platform, PostCommand, UpdateCommand } from './post-command.ts';
 
-// The platforms status takes: Instagram, before setup and posting do.
+// setup and status take Instagram before post, update and delete do (5.2).
 export type AccountPlatform = Platform | 'instagram';
 
 export type ThreadsSetupCommand = {
@@ -29,7 +29,14 @@ export type FacebookSetupCommand = {
   readonly pageId?: FacebookPageId;
 };
 
-export type SetupCommand = ThreadsSetupCommand | XSetupCommand | FacebookSetupCommand;
+export type InstagramSetupCommand = {
+  readonly command: 'setup';
+  readonly platform: 'instagram';
+  readonly profile: ProfileName;
+  readonly tokenFromStdin: boolean;
+};
+
+export type SetupCommand = ThreadsSetupCommand | XSetupCommand | FacebookSetupCommand | InstagramSetupCommand;
 
 // `profile` is absent when --profile is not given: the default profile applies.
 export type ThreadsStatusCommand = {

@@ -61,3 +61,4 @@ import '../src/presenter/setup-guide.ts';
 import '../src/presenter/setup-steps-text.ts';
 import '../src/presenter/threads-setup-steps.ts';
 import '../src/presenter/usage.ts';
+import '../src/presenter/x-setup-steps.ts';

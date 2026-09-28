@@ -347,3 +347,51 @@ describe('reading a post to several platforms', () => {
     }
   });
 });
+
+// The error a command line fails with, or a note that it did not fail.
+const failureOf = (argv: ReadonlyArray<string>): { readonly code: string; readonly message: string; readonly hint: string } => {
+  const result = parseCliArgs(argv);
+  return result.ok ? { code: 'none', message: 'the command line was read', hint: '' } : result.error;
+};
+
+describe('naming what a mistyped name was meant to be (D41)', () => {
+  it('`pots` and `docs udpate` are refused as unknown-command, and each hint starts with the command meant', () => {
+    const command = failureOf(['pots']);
+    const docs = failureOf(['docs', 'udpate']);
+
+    expect(command.code).toBe('unknown-command');
+    expect(command.hint).toStartWith('Did you mean "post"? Commands: post, update, delete, setup, status, help-json, docs.');
+    expect(docs.code).toBe('unknown-command');
+    expect(docs.hint).toStartWith('Did you mean "update"? Commands: ');
+  });
+
+  it('`post --to thread` keeps its code and message, and the hint starts with threads; a list names facebook for `facebok`, and `delete --on Instagram` names instagram', () => {
+    const post = failureOf(['post', '--to', 'thread', '--text', 'Hello']);
+
+    expect([post.code, post.message]).toEqual(['unknown-platform', 'Unknown platform: "thread".']);
+    expect(post.hint).toStartWith('Did you mean "threads"? Supported platforms: threads, x, facebook, instagram.');
+    expect(failureOf(['post', '--to', 'threads,facebok', '--text', 'Hello']).hint).toStartWith('Did you mean "facebook"? Supported platforms: ');
+    expect(failureOf(['delete', '--on', 'Instagram', '--id', '17900000000000001']).hint).toStartWith('Did you mean "instagram"? Supported platforms: ');
+  });
+
+  it('`setup instgram` and `status X` start the hint with the platform meant', () => {
+    expect(failureOf(['setup', 'instgram']).hint).toStartWith('Did you mean "instagram"? Platforms with a setup: ');
+    expect(failureOf(['status', 'X']).hint).toStartWith('Did you mean "x"? Platforms with a status: ');
+  });
+
+  it('`--txt` on post and `--token` on setup start the unknown-option hint with the option meant', () => {
+    const text = failureOf(['post', '--to', 'threads', '--txt', 'Hello']);
+    const token = failureOf(['setup', 'threads', '--token', 'abc']);
+
+    expect(text.code).toBe('unknown-option');
+    expect(text.hint).toStartWith('Did you mean "--text"? Options for post: ');
+    expect(token.code).toBe('unknown-option');
+    expect(token.hint).toStartWith('Did you mean "--token-stdin"? Options for setup: ');
+  });
+
+  it('a name close to nothing keeps the hint as it was: `list`, `--to myspace` and `--message`', () => {
+    expect(failureOf(['list']).hint).toStartWith('Commands: ');
+    expect(failureOf(['post', '--to', 'myspace', '--text', 'Hello']).hint).toStartWith('Supported platforms: ');
+    expect(failureOf(['post', '--to', 'threads', '--text', 'Hello', '--message', 'Hi']).hint).toStartWith('Options for post: ');
+  });
+});

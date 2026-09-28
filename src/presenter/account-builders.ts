@@ -7,6 +7,7 @@ import type { Result } from '../domain/result.ts';
 import { exampleOf, withProfile } from './builder-helpers.ts';
 import type { CliCommand } from './cli-command.ts';
 import { PLATFORMS } from './commands/shared-options.ts';
+import { didYouMean } from './did-you-mean.ts';
 import type { Failure } from './failure.ts';
 import { hintFor } from './hints.ts';
 import type { Platform } from './post-command.ts';
@@ -20,7 +21,7 @@ const readPlatform = (positionals: Flags['positionals'], command: 'setup' | 'sta
   return err({
     code: 'unknown-platform',
     message: `No ${command} exists for "${platform}".`,
-    hint: `Platforms with a ${command}: ${PLATFORMS.join(', ')}. Example: ${exampleOf(command)}`,
+    hint: `${didYouMean(platform, PLATFORMS)}Platforms with a ${command}: ${PLATFORMS.join(', ')}. Example: ${exampleOf(command)}`,
   });
 };
 

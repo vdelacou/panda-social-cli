@@ -4,8 +4,10 @@ import type { Result } from '../domain/result.ts';
 import type { CliCommand } from './cli-command.ts';
 import { buildSetup, buildStatus } from './account-builders.ts';
 import { exampleOf, withProfile } from './builder-helpers.ts';
-import { COMMANDS, findCommand } from './command-registry.ts';
+import { findCommand } from './command-registry.ts';
+import { COMMAND_NAMES } from './command-spec.ts';
 import type { CommandName } from './command-spec.ts';
+import { didYouMean } from './did-you-mean.ts';
 import type { Failure } from './failure.ts';
 import type { Platform, PlatformContent, PostCommand, PostTarget } from './post-command.ts';
 import { readContent, readFacebookContent, readThreadsContent, readXContent } from './post-content.ts';
@@ -14,10 +16,10 @@ import type { Flags } from './read-flags.ts';
 import { BIN } from './usage.ts';
 
 // Each builder turns the flags the registry accepted into one typed command.
-export const unknownCommand = (message: string): Failure => ({
+export const unknownCommand = (message: string, typed: string): Failure => ({
   code: 'unknown-command',
   message,
-  hint: `Commands: ${COMMANDS.map((command) => command.name).join(', ')}. Run \`${BIN} help-json\` for all of them.`,
+  hint: `${didYouMean(typed, COMMAND_NAMES)}Commands: ${COMMAND_NAMES.join(', ')}. Run \`${BIN} help-json\` for all of them.`,
 });
 
 // Every platform's content is read before anything is posted (D38); in a list, a refusal
@@ -84,7 +86,7 @@ const buildUpdate = (flags: Flags): Result<CliCommand, Failure> => {
 const buildDocs = ({ positionals }: Flags): Result<CliCommand, Failure> => {
   const [target = ''] = positionals;
   const spec = findCommand(target);
-  if (spec === undefined) return err(unknownCommand(target === '' ? 'Name the command to document.' : `No documentation for "${target}".`));
+  if (spec === undefined) return err(unknownCommand(target === '' ? 'Name the command to document.' : `No documentation for "${target}".`, target));
   return ok({ command: 'docs', target: spec.name });
 };
 

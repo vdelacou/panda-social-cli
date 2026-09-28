@@ -2,6 +2,7 @@ import { parseArgs } from 'node:util';
 import { err, ok } from '../domain/result.ts';
 import type { Result } from '../domain/result.ts';
 import type { CommandSpec } from './command-spec.ts';
+import { didYouMean } from './did-you-mean.ts';
 import type { Failure } from './failure.ts';
 import { hintFor } from './hints.ts';
 import { BIN } from './usage.ts';
@@ -11,10 +12,12 @@ export type Flags = {
   readonly positionals: ReadonlyArray<string>;
 };
 
-const optionsHint = (spec: CommandSpec): string => {
-  const flags = spec.options.map((option) => `--${option.name}`);
+// The hint for an option the command does not take: the one meant, when one is close, then all of them.
+const optionsHint = (spec: CommandSpec, unknown: string): string => {
+  const names = spec.options.map((option) => option.name);
+  const flags = names.map((name) => `--${name}`);
   const listed = flags.length === 0 ? `${spec.name} takes no options.` : `Options for ${spec.name}: ${flags.join(', ')}.`;
-  return `${listed} Run \`${BIN} docs ${spec.name}\` for details.`;
+  return `${didYouMean(unknown, names, '--')}${listed} Run \`${BIN} docs ${spec.name}\` for details.`;
 };
 
 // No option takes several values (parseArgs keeps the last one of a repeated flag), so a
@@ -28,7 +31,7 @@ export const readFlags = (spec: CommandSpec, args: ReadonlyArray<string>): Resul
   const options = Object.fromEntries(spec.options.map((option) => [option.name, { type: option.type }]));
   const parsed = parseArgs({ args: [...args], options, strict: false, allowPositionals: true });
   const unknown = Object.keys(parsed.values).find((key) => spec.options.every((option) => option.name !== key));
-  if (unknown !== undefined) return err({ code: 'unknown-option', message: `${spec.name} has no --${unknown} option.`, hint: optionsHint(spec) });
+  if (unknown !== undefined) return err({ code: 'unknown-option', message: `${spec.name} has no --${unknown} option.`, hint: optionsHint(spec, unknown) });
   const extra = parsed.positionals.at(spec.arguments.length);
   if (extra !== undefined) return err({ code: 'unexpected-argument', message: `Unexpected argument for ${spec.name}: "${extra}".`, hint: hintFor('unexpected-argument') });
   const values = Object.fromEntries(Object.entries(parsed.values).map(([key, value]) => [key, scalar(value)]));

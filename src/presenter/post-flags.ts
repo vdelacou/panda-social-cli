@@ -7,6 +7,7 @@ import type { Result } from '../domain/result.ts';
 import { parseThreadsPostId } from '../domain/threads-post-id.ts';
 import { parseXPostId } from '../domain/x-post-id.ts';
 import { PLATFORMS } from './commands/shared-options.ts';
+import { didYouMean } from './did-you-mean.ts';
 import type { Failure } from './failure.ts';
 import { hintFor } from './hints.ts';
 import type { Platform, PostTarget } from './post-command.ts';
@@ -17,7 +18,11 @@ type Values = Flags['values'];
 export const isPlatform = (value: unknown): value is Platform => typeof value === 'string' && PLATFORMS.includes(value);
 
 const unknownPlatform = (name: string, example: string): Result<never, Failure> =>
-  err({ code: 'unknown-platform', message: `Unknown platform: "${name}".`, hint: `Supported platforms: ${PLATFORMS.join(', ')}. Example: ${example}` });
+  err({
+    code: 'unknown-platform',
+    message: `Unknown platform: "${name}".`,
+    hint: `${didYouMean(name, PLATFORMS)}Supported platforms: ${PLATFORMS.join(', ')}. Example: ${example}`,
+  });
 
 // The --on of update and delete: one platform.
 export const readPlatform = (values: Values, example: string): Result<Platform, Failure> => {

@@ -37,6 +37,8 @@ import '../src/composition/run-threads.ts';
 import '../src/composition/threads-token.ts';
 
 // --- src/presenter/ ---
+import '../src/presenter/account-builders.ts';
+import '../src/presenter/builder-helpers.ts';
 import '../src/presenter/cli-command.ts';
 import '../src/presenter/cli.ts';
 import '../src/presenter/command-builders.ts';

@@ -1,28 +1,23 @@
-import { DEFAULT_PROFILE } from '../domain/profile-name.ts';
 import type { ProfileName } from '../domain/profile-name.ts';
 import { err, ok } from '../domain/result.ts';
 import type { Result } from '../domain/result.ts';
 import type { ThreadsPostId } from '../domain/threads-post-id.ts';
 import type { CliCommand } from './cli-command.ts';
-import { COMMANDS, findCommand, specFor } from './command-registry.ts';
+import { buildSetup, buildStatus } from './account-builders.ts';
+import { exampleOf, withProfile } from './builder-helpers.ts';
+import { COMMANDS, findCommand } from './command-registry.ts';
 import type { CommandName } from './command-spec.ts';
-import { SETUP_PLATFORMS } from './commands/setup.ts';
-import { THREADS_ONLY } from './commands/shared-options.ts';
 import type { Failure } from './failure.ts';
 import { readContent, readPlatform, readPostId, readProfile } from './post-flags.ts';
 import type { Flags } from './read-flags.ts';
-import { BIN, commandLine } from './usage.ts';
+import { BIN } from './usage.ts';
 
 // Each builder turns the flags the registry accepted into one typed command.
-const exampleOf = (name: CommandName): string => commandLine(specFor(name).examples[0]?.argv ?? [name]);
-
 export const unknownCommand = (message: string): Failure => ({
   code: 'unknown-command',
   message,
   hint: `Commands: ${COMMANDS.map((command) => command.name).join(', ')}. Run \`${BIN} help-json\` for all of them.`,
 });
-
-const withProfile = (profile: ProfileName | undefined): { readonly profile?: ProfileName } => (profile ? { profile } : {});
 
 const buildPost = ({ values }: Flags): Result<CliCommand, Failure> => {
   const platform = readPlatform(values, 'to', exampleOf('post'));
@@ -58,34 +53,6 @@ const buildUpdate = (flags: Flags): Result<CliCommand, Failure> => {
   const content = readContent(flags.values, exampleOf('update'));
   if (!content.ok) return content;
   return ok({ command: 'update', ...target.value, ...content.value, repost: flags.values['repost'] === true });
-};
-
-const buildSetup = ({ values, positionals }: Flags): Result<CliCommand, Failure> => {
-  const [platform = ''] = positionals;
-  if (!SETUP_PLATFORMS.includes(platform)) {
-    return err({
-      code: 'unknown-platform',
-      message: `No setup exists for "${platform}".`,
-      hint: `Platforms with a setup: ${SETUP_PLATFORMS.join(', ')}. Example: ${exampleOf('setup')}`,
-    });
-  }
-  const profile = readProfile(values['profile']);
-  if (!profile.ok) return profile;
-  return ok({ command: 'setup', platform: 'threads', profile: profile.value ?? DEFAULT_PROFILE, tokenFromStdin: values['token-stdin'] === true });
-};
-
-const buildStatus = ({ values, positionals }: Flags): Result<CliCommand, Failure> => {
-  const [platform = ''] = positionals;
-  if (!THREADS_ONLY.includes(platform)) {
-    return err({
-      code: 'unknown-platform',
-      message: `No status exists for "${platform}".`,
-      hint: `Platforms with a status: ${THREADS_ONLY.join(', ')}. Example: ${exampleOf('status')}`,
-    });
-  }
-  const profile = readProfile(values['profile']);
-  if (!profile.ok) return profile;
-  return ok({ command: 'status', platform: 'threads', ...withProfile(profile.value) });
 };
 
 const buildDocs = ({ positionals }: Flags): Result<CliCommand, Failure> => {

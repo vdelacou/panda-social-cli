@@ -1,11 +1,11 @@
 import type { CommandSpec } from '../command-spec.ts';
-import { ID_OPTION, IMAGE_OPTION, ON_OPTION, PROFILE_OPTION, PUBLISH_ERRORS, SPLIT_OPTION, TEXT_OPTION, CALL_ERRORS } from './shared-options.ts';
+import { CALL_ERRORS, ID_OPTION, IMAGE_OPTION, ON_OPTION, PROFILE_OPTION, PUBLISH_ERRORS, SPLIT_OPTION, TEXT_OPTION, X_CALL_ERRORS } from './shared-options.ts';
 
 export const UPDATE: CommandSpec = {
   name: 'update',
-  summary: 'Replace a Threads post. Threads has no edit, so --repost deletes it and publishes the new version.',
+  summary: 'Replace a post: an edit in place on X, or with --repost on either platform, delete it and publish the new version.',
   description:
-    'Threads cannot edit a published post, so update refuses unless --repost is given. With --repost it deletes the old post first, then publishes the new text or image as post does: the new post gets a new id and link, and the old one takes its likes and replies with it. If the delete fails, nothing is published; if the publish fails after the delete, the error says the old post is gone.',
+    'On X, update edits the post in place and answers the new version with the id it edited; X allows it with X Premium only, for a short window after posting (30 minutes or 1 hour, X pages differ) and 5 times at most, and one edited post stays one post, so the text must fit 280. Threads cannot edit a published post, so there update refuses unless --repost is given. With --repost, on either platform, it deletes the old post first, then publishes the new text or image as post does: the new post gets a new id and link, and the old one takes its likes and replies with it. If the delete fails, nothing is published; if the publish fails after the delete, the error says the old post is gone.',
   arguments: [],
   options: [
     ON_OPTION,
@@ -14,12 +14,30 @@ export const UPDATE: CommandSpec = {
     PROFILE_OPTION,
     IMAGE_OPTION,
     SPLIT_OPTION,
-    { name: 'repost', type: 'boolean', required: false, description: 'Delete the post and publish the new version. Without it, Threads updates are refused as unsupported.' },
+    {
+      name: 'repost',
+      type: 'boolean',
+      required: false,
+      description: 'Delete the post and publish the new version instead of editing it. Required on Threads, which cannot edit; on X it replaces the edit.',
+    },
   ],
   examples: [
     { argv: ['update', '--on', 'threads', '--id', '17890000000000001', '--text', 'Hello from panda, typo fixed', '--repost'], explanation: 'Replace a post with corrected text.' },
+    { argv: ['update', '--on', 'x', '--id', '1880000000000000001', '--text', 'Hello from panda, typo fixed'], explanation: 'Edit an X post in place (X Premium).' },
   ],
-  output: 'The new post and the id it replaced: `{"platform":"threads","id":"<new id>","url":"<link or null>","replaced":"<old id>"}`, plus `"replies"` for a --split thread.',
+  output:
+    'The new post: `{"platform":"<platform>","id":"<new id>","url":"<link>","edited":"<old id>"}` after an edit on X, or `"replaced":"<old id>"` in place of `edited` after a repost, plus `"replies"` for a --split thread.',
   mutates: true,
-  errors: ['unknown-option', 'unexpected-argument', 'unknown-platform', 'invalid-post-id', 'invalid-profile', 'unsupported', ...PUBLISH_ERRORS, ...CALL_ERRORS],
+  errors: [
+    'unknown-option',
+    'unexpected-argument',
+    'unknown-platform',
+    'invalid-post-id',
+    'invalid-profile',
+    'unsupported',
+    'edit-refused',
+    ...PUBLISH_ERRORS,
+    ...CALL_ERRORS,
+    ...X_CALL_ERRORS,
+  ],
 };

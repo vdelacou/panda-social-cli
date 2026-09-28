@@ -9,15 +9,20 @@ const HINTS: Readonly<Record<string, string>> = {
   'unknown-command': 'Run `panda-social help-json` for every command, or `panda-social docs <command>` for one.',
   'unknown-option': 'Run `panda-social docs <command>` for the options that command takes.',
   'unexpected-argument': 'Quote any value that contains spaces, for example --text "Hello from panda".',
-  'unknown-platform': 'Name a platform the command takes, as its examples show: threads for post, update and delete; threads or x for setup and status.',
-  'missing-text': 'Pass the text of the post with --text (quoted when it contains spaces), an image URL with --image, or both.',
-  'text-too-long': 'Threads allows 500 characters per post, an emoji counting its UTF-8 bytes. Shorten the text, or pass --split to post it as a thread of replies.',
+  'unknown-platform': 'Name a platform the command takes, threads or x, as its examples show.',
+  'missing-text': 'Pass the text of the post with --text (quoted when it contains spaces), an image with --image (a URL on Threads, a local file on X), or both.',
+  'text-too-long':
+    'Threads allows 500 characters per post, an emoji counting its UTF-8 bytes; X allows 280, most characters counting 1, CJK characters and emoji 2, a link 23. Shorten the text, or pass --split to post it as a thread of replies; an X edit is one post, so pass --repost there instead.',
   'invalid-image':
     'Threads needs a public https URL to a JPEG or PNG image, 8 MB at most: host a local file first, then pass its URL. X needs a local JPEG, PNG, GIF or WEBP file, 5 MB at most: download a remote image first, then pass its path.',
-  'image-rejected': 'Threads could not download or read the image. Check that the URL opens in a private browser window and serves a JPEG or PNG of 8 MB at most, then retry.',
+  'image-rejected':
+    'The platform could not use the image. Threads: check that the URL opens in a private browser window and serves a JPEG or PNG of 8 MB at most. X: check that the file opens as a JPEG, PNG, GIF or WEBP image. Then retry.',
   'still-processing': 'Threads was still processing the image after 60 seconds, so nothing was published. Retry the post.',
-  'invalid-post-id': 'Pass the numeric id that post returned, for example --id 17890000000000001.',
+  'invalid-post-id': 'Pass the numeric id that post returned, for example --id 17890000000000001 on Threads or --id 1880000000000000001 on X.',
   unsupported: 'Threads cannot edit a published post. Pass --repost to delete it and publish the new version: it gets a new id and link, and loses its likes and replies.',
+  'edit-refused':
+    'X edits a post only for an X Premium account, within a short window after posting (30 minutes or 1 hour, X pages differ) and 5 times at most. Pass --repost to delete the post and publish the new version instead: it gets a new id and link, and loses its likes and replies.',
+  'duplicate-text': "X refuses a post whose text repeats one of the account's recent posts. Change the text, or delete the earlier post first.",
   forbidden:
     "The credentials lack a permission this action needs. Threads: add threads_delete (to delete) or threads_manage_replies (for --split) under Use cases, Access the Threads API, Customize, generate a new token, and run `panda-social setup threads` again. X: the message gives X's reason; an app outside the pay-per-use package is refused, so check it in the developer console.",
   'read-only-keys':

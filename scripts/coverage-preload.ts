@@ -32,6 +32,7 @@ import '../src/composition/cli-io.ts';
 import '../src/composition/env.ts';
 import '../src/composition/package-info.ts';
 import '../src/composition/run-cli.ts';
+import '../src/composition/run-setup-x.ts';
 import '../src/composition/run-setup.ts';
 import '../src/composition/run-threads.ts';
 import '../src/composition/run-x.ts';

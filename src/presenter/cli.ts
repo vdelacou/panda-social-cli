@@ -14,8 +14,10 @@ export type {
   PostContent,
   SetupCommand,
   StatusCommand,
+  ThreadsSetupCommand,
   ThreadsStatusCommand,
   UpdateCommand,
+  XSetupCommand,
   XStatusCommand,
 } from './cli-command.ts';
 export type { Failure } from './failure.ts';

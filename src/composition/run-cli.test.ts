@@ -296,6 +296,50 @@ describe('connecting X with `panda-social setup x`', () => {
     rmSync(home, { recursive: true, force: true });
   });
 
+  it('without a terminal, `setup x` prints the five X steps as JSON with the command that finishes it', async () => {
+    const { exitCode, answers } = await run(['setup', 'x'], { HOME: home });
+
+    expect(exitCode).toBe(0);
+    expect(answers).toEqual([
+      {
+        ok: true,
+        data: {
+          platform: 'x',
+          profile: 'default',
+          steps: expect.arrayContaining([
+            expect.objectContaining({ step: 1, title: 'Sign in to the X developer console' }),
+            expect.objectContaining({ step: 5, title: 'Generate the four keys' }),
+          ]),
+          finish: expect.stringContaining('panda-social setup x --keys-stdin'),
+        },
+      },
+    ]);
+  });
+
+  it('four keys piped to `setup x --keys-stdin` are checked with X and saved, and `status x` then answers from them', async () => {
+    mock = xApi();
+
+    const setup = await run(['setup', 'x', '--keys-stdin'], { HOME: home }, `${X_KEY_LINES.join('\n')}\n`);
+    const status = await run(['status', 'x'], { HOME: home });
+
+    expect(setup).toEqual({ exitCode: 0, answers: [{ ok: true, data: { platform: 'x', profile: 'default', userId: X_USER.id, username: 'panda', note: expect.any(String) } }] });
+    expect(status).toEqual({
+      exitCode: 0,
+      answers: [
+        {
+          ok: true,
+          data: {
+            platform: 'x',
+            profile: 'default',
+            account: { userId: X_USER.id, username: 'panda' },
+            accessLevel: 'read-write',
+            keys: { source: 'saved', savedAt: expect.any(String) },
+          },
+        },
+      ],
+    });
+  });
+
   it('the four PANDA_SOCIAL_X_ variables override the saved keys, and setting only some of them fails naming the missing ones', async () => {
     mock = xApi();
     const env = {

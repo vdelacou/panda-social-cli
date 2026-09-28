@@ -9,7 +9,7 @@ Every command prints one JSON line on stdout: `{"ok":true,"data":...}` on succes
 | [`post`](#post) | Publish a text post, an image, or both, to Threads. |
 | [`update`](#update) | Replace a Threads post. Threads has no edit, so --repost deletes it and publishes the new version. |
 | [`delete`](#delete) | Delete a Threads post by its id. |
-| [`setup`](#setup) | Connect a Threads account and save its token under a profile. |
+| [`setup`](#setup) | Connect a Threads or X account and save its credentials under a profile. |
 | [`status`](#status) | Check a connected Threads or X account: whose credentials they are and whether they still work, with the Threads quotas. |
 | [`help-json`](#help-json) | Describe every command, option, example and error code as JSON. Start here. |
 | [`docs`](#docs) | Show one command's full documentation as markdown. |
@@ -187,20 +187,21 @@ The deleted post: `{"platform":"threads","id":"<post id>","deleted":true}`.
 
 ## setup
 
-On a terminal, walks a first-time user through the six one-time steps (a Meta developer account, an app with the Threads API, its permissions, a tester invitation, the token) one at a time, then reads the token without showing it. Without a terminal it answers with the same steps as JSON, for an agent to relay to its human, and the command that finishes the setup. With --token-stdin it reads the token from standard input. Every token is checked with Threads before it is saved in ~/.panda-social/credentials.json, readable by its owner only.
+On a terminal, walks a first-time user through the one-time steps of the platform (six for Threads, five for X) one at a time, then reads the Threads token or the four X keys without showing them. Without a terminal it answers with the same steps as JSON, for an agent to relay to its human, and the command that finishes the setup. With --token-stdin (Threads) or --keys-stdin (X, four lines: API Key, API Key Secret, Access Token, Access Token Secret) it reads them from standard input. The credentials are checked with the platform before they are saved in ~/.panda-social/credentials.json, readable by its owner only; X keys that X reports as read-only are refused. Checking X keys spends about $0.01 of X credits.
 
 ### Usage
 
 ```bash
-panda-social setup <platform> [--token-stdin] [--profile <name>]
+panda-social setup <platform> [--token-stdin] [--keys-stdin] [--profile <name>]
 ```
 
 ### Parameters
 
 | Parameter | Required | Description |
 | --- | --- | --- |
-| `<platform>` | yes | The platform to connect. One of: threads. |
-| `--token-stdin` | no | Read the token from standard input instead of asking for it. |
+| `<platform>` | yes | The platform to connect. One of: threads, x. |
+| `--token-stdin` | no | Threads: read the token from standard input instead of asking for it. |
+| `--keys-stdin` | no | X: read the four keys from standard input, one per line: API Key, API Key Secret, Access Token, Access Token Secret. |
 | `--profile <name>` | no | The profile to save the account under. Defaults to "default". |
 
 ### Examples
@@ -212,11 +213,15 @@ panda-social setup threads
 panda-social setup threads --token-stdin
 # Save a second account under the brand-a profile.
 panda-social setup threads --token-stdin --profile brand-a
+# On a terminal, the guided X setup; without one, the steps as JSON.
+panda-social setup x
+# Save four X keys piped in, one per line, once X confirms they can post.
+panda-social setup x --keys-stdin
 ```
 
 ### Output
 
-The connected account, `{"platform":"threads","profile":"<name>","userId":"<id>","username":"<username>"}`. Without a terminal and without --token-stdin, the guide instead: `{"platform":"threads","profile":"<name>","steps":[{"step":1,"title":"...","actions":["..."],"url":"..."}],"finish":"<the command that completes the setup>"}`.
+The connected account, `{"platform":"threads","profile":"<name>","userId":"<id>","username":"<username>"}`, and for X the same with `"platform":"x"` and a `note` on credits. Without a terminal and without --token-stdin or --keys-stdin, the guide instead: `{"platform":"threads","profile":"<name>","steps":[{"step":1,"title":"...","actions":["..."],"url":"..."}],"finish":"<the command that completes the setup>"}`.
 
 ### Errors
 

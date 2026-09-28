@@ -14,6 +14,7 @@ import { answer, fail, succeed } from './answer.ts';
 import { readStdin } from './cli-io.ts';
 import type { CliIo } from './cli-io.ts';
 import type { Config } from './env.ts';
+import { runSetupX } from './run-setup-x.ts';
 
 // A human at a terminal: the guide runs on stderr, so stdout keeps its one JSON line.
 const runGuided = async (streams: NonNullable<CliIo['terminal']>, profile: ProfileName, connectThreads: ConnectThreads): ReturnType<ConnectThreads> => {
@@ -28,6 +29,7 @@ const runGuided = async (streams: NonNullable<CliIo['terminal']>, profile: Profi
 export const runSetup = async (io: CliIo, command: SetupCommand, config: Config): Promise<number> => {
   if (config.credentialsFile === undefined)
     return fail(io, { code: 'no-home', message: 'No home folder is set, so the credentials have nowhere to be saved.', hint: hintFor('no-home') });
+  if (command.platform === 'x') return runSetupX(io, command, config.credentialsFile);
   const connectThreads = createConnectThreads({
     threadsFor: (token) => createThreadsGraph({ token }),
     store: createCredentialStoreFile(config.credentialsFile),

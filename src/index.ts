@@ -8,8 +8,19 @@
  *
  *   import { createXApi } from 'panda-social-cli';
  *   const posted = await createXApi({ keys }).createPost({ text: 'Hello from panda' });
+ *
+ *   import { createFacebookGraph } from 'panda-social-cli';
+ *   const posted = await createFacebookGraph({ token: pageToken }).publishText(pageId, 'Hello from panda');
  */
 
+export { FACEBOOK_IMAGE_MAX_BYTES, parseFacebookImage } from './domain/facebook-image.ts';
+export type { FacebookImage, FacebookImageError, FacebookImageFormat } from './domain/facebook-image.ts';
+export { parseFacebookPageId } from './domain/facebook-page.ts';
+export type { FacebookPageId, FacebookPageIdError, GrantedPage } from './domain/facebook-page.ts';
+export { parseFacebookPostId } from './domain/facebook-post-id.ts';
+export type { FacebookPostId, FacebookPostIdError } from './domain/facebook-post-id.ts';
+export { parseImageUrl } from './domain/image-url.ts';
+export type { ImageUrl, ImageUrlError } from './domain/image-url.ts';
 export { err, ok } from './domain/result.ts';
 export type { Result } from './domain/result.ts';
 export type { ThreadsUserId } from './domain/threads-user-id.ts';
@@ -20,12 +31,15 @@ export { parseXPostId } from './domain/x-post-id.ts';
 export type { XPostId, XPostIdError } from './domain/x-post-id.ts';
 export { splitForX, X_TEXT_LIMIT, xTextLength } from './domain/x-text.ts';
 
+export { createFacebookGraph, FACEBOOK_GRAPH_BASE } from './infra/facebook-graph.ts';
+export type { FacebookGraphConfig } from './infra/facebook-graph.ts';
 export { createWinstonLogger } from './infra/logger.ts';
 export { createThreadsGraph, THREADS_GRAPH_BASE } from './infra/threads-graph.ts';
 export type { ThreadsGraphConfig } from './infra/threads-graph.ts';
 export { createXApi, X_API_BASE } from './infra/x-api.ts';
 export type { XApiConfig } from './infra/x-api.ts';
 
+export type { Facebook, FacebookError, FacebookPage, FacebookPhoto, FacebookPublishedPost } from './use-cases/ports/facebook.ts';
 export type { Logger, LogMeta } from './use-cases/ports/logger.ts';
 export type { StepError } from './use-cases/ports/step-error.ts';
 export type { PublishedPost, PublishingLimits, Quota, RefreshedToken, Threads, ThreadsAccount, ThreadsError } from './use-cases/ports/threads.ts';

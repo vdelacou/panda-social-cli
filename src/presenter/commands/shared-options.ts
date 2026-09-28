@@ -3,7 +3,7 @@ import type { OptionSpec } from '../command-spec.ts';
 // The platforms every command takes.
 export const PLATFORMS: ReadonlyArray<string> = ['threads', 'x', 'facebook'];
 
-// The platforms status takes: Instagram, before setup and posting do.
+// The platforms setup and status take: Instagram connects before it posts (5.2).
 export const ACCOUNT_PLATFORMS: ReadonlyArray<string> = [...PLATFORMS, 'instagram'];
 
 export const PROFILE_OPTION: OptionSpec = {
@@ -12,7 +12,7 @@ export const PROFILE_OPTION: OptionSpec = {
   placeholder: 'name',
   required: false,
   description:
-    'The profile whose saved account acts. Defaults to "default". A saved Threads token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, all four PANDA_SOCIAL_X_ variables, or both PANDA_SOCIAL_FACEBOOK_PAGE_ID and PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN, when set, override the saved credentials.',
+    'The profile whose saved account acts. Defaults to "default". A saved Threads or Instagram token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, PANDA_SOCIAL_INSTAGRAM_TOKEN, all four PANDA_SOCIAL_X_ variables, or both PANDA_SOCIAL_FACEBOOK_PAGE_ID and PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN, when set, override the saved credentials.',
 };
 
 export const TEXT_OPTION: OptionSpec = {

@@ -40,7 +40,7 @@
           "flag": "--profile",
           "value": "<name>",
           "required": false,
-          "description": "The profile whose saved account acts. Defaults to \"default\". A saved Threads token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, all four PANDA_SOCIAL_X_ variables, or both PANDA_SOCIAL_FACEBOOK_PAGE_ID and PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN, when set, override the saved credentials."
+          "description": "The profile whose saved account acts. Defaults to \"default\". A saved Threads or Instagram token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, PANDA_SOCIAL_INSTAGRAM_TOKEN, all four PANDA_SOCIAL_X_ variables, or both PANDA_SOCIAL_FACEBOOK_PAGE_ID and PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN, when set, override the saved credentials."
         },
         {
           "flag": "--image",
@@ -150,7 +150,7 @@
           "flag": "--profile",
           "value": "<name>",
           "required": false,
-          "description": "The profile whose saved account acts. Defaults to \"default\". A saved Threads token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, all four PANDA_SOCIAL_X_ variables, or both PANDA_SOCIAL_FACEBOOK_PAGE_ID and PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN, when set, override the saved credentials."
+          "description": "The profile whose saved account acts. Defaults to \"default\". A saved Threads or Instagram token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, PANDA_SOCIAL_INSTAGRAM_TOKEN, all four PANDA_SOCIAL_X_ variables, or both PANDA_SOCIAL_FACEBOOK_PAGE_ID and PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN, when set, override the saved credentials."
         },
         {
           "flag": "--image",
@@ -242,7 +242,7 @@
           "flag": "--profile",
           "value": "<name>",
           "required": false,
-          "description": "The profile whose saved account acts. Defaults to \"default\". A saved Threads token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, all four PANDA_SOCIAL_X_ variables, or both PANDA_SOCIAL_FACEBOOK_PAGE_ID and PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN, when set, override the saved credentials."
+          "description": "The profile whose saved account acts. Defaults to \"default\". A saved Threads or Instagram token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, PANDA_SOCIAL_INSTAGRAM_TOKEN, all four PANDA_SOCIAL_X_ variables, or both PANDA_SOCIAL_FACEBOOK_PAGE_ID and PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN, when set, override the saved credentials."
         }
       ],
       "examples": [
@@ -284,8 +284,8 @@
     },
     {
       "name": "setup",
-      "summary": "Connect a Threads account, X keys or a Facebook Page, and save the credentials under a profile.",
-      "description": "On a terminal, walks a first-time user through the one-time steps of the platform (six for Threads, five for X and for Facebook) one at a time, then reads the Threads token, the four X keys or the Facebook token without showing them. Without a terminal it answers with the same steps as JSON, for an agent to relay to its human, and the command that finishes the setup. With --token-stdin (Threads, Facebook) or --keys-stdin (X, four lines: API Key, API Key Secret, Access Token, Access Token Secret) it reads them from standard input. The credentials are checked with the platform before they are saved in ~/.panda-social/credentials.json, readable by its owner only; X keys that X reports as read-only are refused. Checking X keys spends about $0.01 of X credits. For Facebook, the token is the long-lived user token of step 5: the CLI reads the Pages it grants, saves the chosen Page's own token, which does not expire, and never the user token; --page names the Page when the token grants several, and a Page on which the user cannot create content is refused.",
+      "summary": "Connect a Threads account, X keys, a Facebook Page or an Instagram account, and save the credentials under a profile.",
+      "description": "On a terminal, walks a first-time user through the one-time steps of the platform (six for Threads and Instagram, five for X and for Facebook) one at a time, then reads the Threads token, the four X keys, the Facebook token or the Instagram token without showing them. Without a terminal it answers with the same steps as JSON, for an agent to relay to its human, and the command that finishes the setup. With --token-stdin (Threads, Facebook, Instagram) or --keys-stdin (X, four lines: API Key, API Key Secret, Access Token, Access Token Secret) it reads them from standard input. The credentials are checked with the platform before they are saved in ~/.panda-social/credentials.json, readable by its owner only; X keys that X reports as read-only are refused. Checking X keys spends about $0.01 of X credits. For Facebook, the token is the long-lived user token of step 5: the CLI reads the Pages it grants, saves the chosen Page's own token, which does not expire, and never the user token; --page names the Page when the token grants several, and a Page on which the user cannot create content is refused. For Instagram, the token is the one the app dashboard generates for a professional account (Instagram Login, no Facebook Page needed); it lasts 60 days and renews itself once it is 30 days old, as the Threads token does; `post` does not take Instagram yet.",
       "usage": "panda-social setup <platform> [--token-stdin] [--keys-stdin] [--page <page-id>] [--profile <name>]",
       "arguments": [
         {
@@ -295,7 +295,8 @@
           "values": [
             "threads",
             "x",
-            "facebook"
+            "facebook",
+            "instagram"
           ]
         }
       ],
@@ -303,7 +304,7 @@
         {
           "flag": "--token-stdin",
           "required": false,
-          "description": "Threads and Facebook: read the token from standard input instead of asking for it."
+          "description": "Threads, Facebook and Instagram: read the token from standard input instead of asking for it."
         },
         {
           "flag": "--keys-stdin",
@@ -351,9 +352,17 @@
         {
           "command": "panda-social setup facebook --token-stdin --page 104000000000001",
           "explanation": "Save the Page 104000000000001 with a token piped in, once Meta confirms the token grants it."
+        },
+        {
+          "command": "panda-social setup instagram",
+          "explanation": "On a terminal, the guided Instagram setup; without one, the steps as JSON."
+        },
+        {
+          "command": "panda-social setup instagram --token-stdin",
+          "explanation": "Save an Instagram token piped in on standard input, once Instagram confirms whose it is."
         }
       ],
-      "output": "The connected account, `{\"platform\":\"threads\",\"profile\":\"<name>\",\"userId\":\"<id>\",\"username\":\"<username>\"}`, for X the same with `\"platform\":\"x\"` and a `note` on credits, and for Facebook `{\"platform\":\"facebook\",\"profile\":\"<name>\",\"pageId\":\"<id>\",\"pageName\":\"<name>\",\"note\":\"<posts stay private until the app is published>\"}`. Without a terminal and without --token-stdin or --keys-stdin, the guide instead: `{\"platform\":\"threads\",\"profile\":\"<name>\",\"steps\":[{\"step\":1,\"title\":\"...\",\"actions\":[\"...\"],\"url\":\"...\"}],\"finish\":\"<the command that completes the setup>\"}`.",
+      "output": "The connected account, `{\"platform\":\"threads\",\"profile\":\"<name>\",\"userId\":\"<id>\",\"username\":\"<username>\"}`, for X the same with `\"platform\":\"x\"` and a `note` on credits, for Instagram the same with `\"platform\":\"instagram\"`, and for Facebook `{\"platform\":\"facebook\",\"profile\":\"<name>\",\"pageId\":\"<id>\",\"pageName\":\"<name>\",\"note\":\"<posts stay private until the app is published>\"}`. Without a terminal and without --token-stdin or --keys-stdin, the guide instead: `{\"platform\":\"threads\",\"profile\":\"<name>\",\"steps\":[{\"step\":1,\"title\":\"...\",\"actions\":[\"...\"],\"url\":\"...\"}],\"finish\":\"<the command that completes the setup>\"}`.",
       "mutates": true,
       "errors": [
         "unknown-option",
@@ -382,8 +391,8 @@
     },
     {
       "name": "status",
-      "summary": "Check a connected Threads, X or Facebook account: whose credentials they are and whether they still work, with the Threads quotas.",
-      "description": "Asks the platform whose credentials the profile holds. For Threads it also reads the rolling 24-hour quotas for posts, replies and deletes, and a saved token 30 days old or more is refreshed first, as every Threads command does: running status now and then keeps an idle token alive, since Threads lets a token lapse 60 days after its last refresh. For X it reports the access level X states for the keys (null when X states none); X shows neither the credit balance nor the rate windows to these keys, and the check spends about $0.01 of X credits. For Facebook it asks Meta which Page the token belongs to. It never posts.",
+      "summary": "Check a connected Threads, X, Facebook or Instagram account: whose credentials they are and whether they still work, with the Threads and Instagram quotas.",
+      "description": "Asks the platform whose credentials the profile holds. For Threads it also reads the rolling 24-hour quotas for posts, replies and deletes, and a saved token 30 days old or more is refreshed first, as every Threads command does: running status now and then keeps an idle token alive, since Threads lets a token lapse 60 days after its last refresh. For X it reports the access level X states for the keys (null when X states none); X shows neither the credit balance nor the rate windows to these keys, and the check spends about $0.01 of X credits. For Facebook it asks Meta which Page the token belongs to. For Instagram it reads the rolling 24-hour posts quota, and a saved token 30 days old or more is renewed first, as on Threads. It never posts.",
       "usage": "panda-social status <platform> [--profile <name>]",
       "arguments": [
         {
@@ -393,7 +402,8 @@
           "values": [
             "threads",
             "x",
-            "facebook"
+            "facebook",
+            "instagram"
           ]
         }
       ],
@@ -402,7 +412,7 @@
           "flag": "--profile",
           "value": "<name>",
           "required": false,
-          "description": "The profile whose saved account acts. Defaults to \"default\". A saved Threads token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, all four PANDA_SOCIAL_X_ variables, or both PANDA_SOCIAL_FACEBOOK_PAGE_ID and PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN, when set, override the saved credentials."
+          "description": "The profile whose saved account acts. Defaults to \"default\". A saved Threads or Instagram token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, PANDA_SOCIAL_INSTAGRAM_TOKEN, all four PANDA_SOCIAL_X_ variables, or both PANDA_SOCIAL_FACEBOOK_PAGE_ID and PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN, when set, override the saved credentials."
         }
       ],
       "examples": [
@@ -421,9 +431,13 @@
         {
           "command": "panda-social status facebook",
           "explanation": "Check the Facebook Page saved in the default profile."
+        },
+        {
+          "command": "panda-social status instagram",
+          "explanation": "Check the Instagram account saved in the default profile."
         }
       ],
-      "output": "Threads: `{\"platform\":\"threads\",\"profile\":\"<name>\",\"account\":{\"userId\":\"<id>\",\"username\":\"<username>\"},\"token\":{\"source\":\"saved\",\"savedAt\":\"<time>\",\"ageDays\":<n>,\"expiresAt\":\"<time, or null until the first refresh>\",\"refreshed\":<true when this run refreshed it>},\"limits\":{\"posts\":{\"used\":<n>,\"total\":250,\"windowSeconds\":86400},\"replies\":{...},\"deletes\":{...}}}`, with `token` `{\"source\":\"environment\"}` when PANDA_SOCIAL_THREADS_TOKEN is set. X: `{\"platform\":\"x\",\"profile\":\"<name>\",\"account\":{\"userId\":\"<id>\",\"username\":\"<username>\"},\"accessLevel\":\"read-write\",\"keys\":{\"source\":\"saved\",\"savedAt\":\"<time>\"}}`, with `keys` `{\"source\":\"environment\"}` when the four PANDA_SOCIAL_X_ variables are set. Facebook: `{\"platform\":\"facebook\",\"profile\":\"<name>\",\"page\":{\"id\":\"<id>\",\"name\":\"<name>\"},\"token\":{\"source\":\"saved\",\"savedAt\":\"<time>\"}}`, with `token` `{\"source\":\"environment\"}` when PANDA_SOCIAL_FACEBOOK_PAGE_ID and PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN are set.",
+      "output": "Threads: `{\"platform\":\"threads\",\"profile\":\"<name>\",\"account\":{\"userId\":\"<id>\",\"username\":\"<username>\"},\"token\":{\"source\":\"saved\",\"savedAt\":\"<time>\",\"ageDays\":<n>,\"expiresAt\":\"<time, or null until the first refresh>\",\"refreshed\":<true when this run refreshed it>},\"limits\":{\"posts\":{\"used\":<n>,\"total\":250,\"windowSeconds\":86400},\"replies\":{...},\"deletes\":{...}}}`, with `token` `{\"source\":\"environment\"}` when PANDA_SOCIAL_THREADS_TOKEN is set. X: `{\"platform\":\"x\",\"profile\":\"<name>\",\"account\":{\"userId\":\"<id>\",\"username\":\"<username>\"},\"accessLevel\":\"read-write\",\"keys\":{\"source\":\"saved\",\"savedAt\":\"<time>\"}}`, with `keys` `{\"source\":\"environment\"}` when the four PANDA_SOCIAL_X_ variables are set. Facebook: `{\"platform\":\"facebook\",\"profile\":\"<name>\",\"page\":{\"id\":\"<id>\",\"name\":\"<name>\"},\"token\":{\"source\":\"saved\",\"savedAt\":\"<time>\"}}`, with `token` `{\"source\":\"environment\"}` when PANDA_SOCIAL_FACEBOOK_PAGE_ID and PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN are set. Instagram: `{\"platform\":\"instagram\",\"profile\":\"<name>\",\"account\":{\"userId\":\"<id>\",\"username\":\"<username>\"},\"token\":{...as for Threads},\"limits\":{\"posts\":{\"used\":<n>,\"total\":<n>,\"windowSeconds\":86400}}}`, with `token` `{\"source\":\"environment\"}` when PANDA_SOCIAL_INSTAGRAM_TOKEN is set.",
       "mutates": false,
       "errors": [
         "unknown-option",

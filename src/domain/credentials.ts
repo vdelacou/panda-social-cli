@@ -1,4 +1,5 @@
 import type { ProfileName } from './profile-name.ts';
+import type { XKeys } from './x-keys.ts';
 
 export type ThreadsCredentials = {
   readonly token: string;
@@ -11,8 +12,16 @@ export type ThreadsCredentials = {
   readonly expiresAt?: string;
 };
 
+// X's OAuth 1.0a keys never expire: nothing refreshes them.
+export type XCredentials = XKeys & {
+  readonly userId: string;
+  readonly username: string;
+  readonly savedAt: string;
+};
+
 export type ProfileCredentials = {
   readonly threads?: ThreadsCredentials;
+  readonly x?: XCredentials;
 };
 
 export type CredentialsFile = {
@@ -46,3 +55,8 @@ export const refreshedCredentials = (credentials: ThreadsCredentials, refresh: {
 
 export const threadsCredentialsFor = (file: CredentialsFile, profile: ProfileName): ThreadsCredentials | undefined =>
   Object.hasOwn(file.profiles, profile) ? file.profiles[profile].threads : undefined;
+
+export const withXCredentials = (file: CredentialsFile, profile: ProfileName, x: XCredentials): CredentialsFile => ({
+  version: 1,
+  profiles: { ...file.profiles, [profile]: { ...file.profiles[profile], x } },
+});

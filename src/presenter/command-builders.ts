@@ -8,7 +8,8 @@ import { exampleOf, withProfile } from './builder-helpers.ts';
 import { COMMANDS, findCommand } from './command-registry.ts';
 import type { CommandName } from './command-spec.ts';
 import type { Failure } from './failure.ts';
-import { readContent, readPlatform, readPostId, readProfile } from './post-flags.ts';
+import { readContent } from './post-content.ts';
+import { readPlatform, readPostId, readProfile } from './post-flags.ts';
 import type { Flags } from './read-flags.ts';
 import { BIN } from './usage.ts';
 

@@ -63,6 +63,8 @@ import '../src/presenter/contract.ts';
 import '../src/presenter/failure.ts';
 import '../src/presenter/hints.ts';
 import '../src/presenter/manifest.ts';
+import '../src/presenter/post-command.ts';
+import '../src/presenter/post-content.ts';
 import '../src/presenter/post-flags.ts';
 import '../src/presenter/read-flags.ts';
 import '../src/presenter/setup-guide.ts';

@@ -9,8 +9,11 @@ export type FacebookPageIdError = { readonly kind: 'invalid-page-id'; readonly m
 
 const DIGITS = /^\d+$/;
 
+// A Graph id, a Page's or a post's own number, is digits only.
+export const isGraphNumber = (raw: string): boolean => DIGITS.test(raw);
+
 export const parseFacebookPageId = (raw: string): Result<FacebookPageId, FacebookPageIdError> => {
-  if (!DIGITS.test(raw)) return err({ kind: 'invalid-page-id', message: `Not a Facebook Page id: "${raw}".` });
+  if (!isGraphNumber(raw)) return err({ kind: 'invalid-page-id', message: `Not a Facebook Page id: "${raw}".` });
   return ok(raw as FacebookPageId);
 };
 

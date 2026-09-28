@@ -6,7 +6,7 @@ describe('the manifest an agent reads first', () => {
     const manifest = buildManifest();
     const post = manifest.commands.find((command) => command.name === 'post');
 
-    expect(manifest.commands.map((command) => command.name)).toEqual(['post', 'setup', 'help-json', 'docs']);
+    expect(manifest.commands.map((command) => command.name)).toEqual(['post', 'delete', 'setup', 'help-json', 'docs']);
     expect(post?.usage).toBe('panda-social post --to <platform> [--text <text>] [--profile <name>] [--image <url>] [--split]');
     expect(post?.options.map((option) => option.flag)).toEqual(['--to', '--text', '--profile', '--image', '--split']);
     expect(post?.examples[0]).toEqual({ command: 'panda-social post --to threads --text "Hello from panda"', explanation: expect.any(String) });

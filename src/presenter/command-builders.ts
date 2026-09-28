@@ -2,12 +2,13 @@ import { DEFAULT_PROFILE } from '../domain/profile-name.ts';
 import type { ProfileName } from '../domain/profile-name.ts';
 import { err, ok } from '../domain/result.ts';
 import type { Result } from '../domain/result.ts';
+import type { ThreadsPostId } from '../domain/threads-post-id.ts';
 import type { CliCommand } from './cli-command.ts';
 import { COMMANDS, findCommand, specFor } from './command-registry.ts';
 import type { CommandName } from './command-spec.ts';
 import { SETUP_PLATFORMS } from './commands/setup.ts';
 import type { Failure } from './failure.ts';
-import { readContent, readPlatform, readProfile } from './post-flags.ts';
+import { readContent, readPlatform, readPostId, readProfile } from './post-flags.ts';
 import type { Flags } from './read-flags.ts';
 import { BIN, commandLine } from './usage.ts';
 
@@ -30,6 +31,24 @@ const buildPost = ({ values }: Flags): Result<CliCommand, Failure> => {
   const profile = readProfile(values['profile']);
   if (!profile.ok) return profile;
   return ok({ command: 'post', platform: platform.value, ...content.value, ...withProfile(profile.value) });
+};
+
+type Target = { readonly platform: 'threads'; readonly id: ThreadsPostId; readonly profile?: ProfileName };
+
+// The post a delete or an update acts on: its platform, its id and the profile it belongs to.
+const readTarget = ({ values }: Flags, example: string): Result<Target, Failure> => {
+  const platform = readPlatform(values, 'on', example);
+  if (!platform.ok) return platform;
+  const id = readPostId(values['id']);
+  if (!id.ok) return id;
+  const profile = readProfile(values['profile']);
+  if (!profile.ok) return profile;
+  return ok({ platform: platform.value, id: id.value, ...withProfile(profile.value) });
+};
+
+const buildDelete = (flags: Flags): Result<CliCommand, Failure> => {
+  const target = readTarget(flags, exampleOf('delete'));
+  return target.ok ? ok({ command: 'delete', ...target.value }) : target;
 };
 
 const buildSetup = ({ values, positionals }: Flags): Result<CliCommand, Failure> => {
@@ -55,6 +74,7 @@ const buildDocs = ({ positionals }: Flags): Result<CliCommand, Failure> => {
 
 export const BUILDERS: Readonly<Record<CommandName, (flags: Flags) => Result<CliCommand, Failure>>> = {
   post: buildPost,
+  delete: buildDelete,
   setup: buildSetup,
   'help-json': () => ok({ command: 'help-json' }),
   docs: buildDocs,

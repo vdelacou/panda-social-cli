@@ -82,7 +82,7 @@ describe('reading the agent entry points', () => {
     const result = parseCliArgs(['docs', 'myspace']);
 
     expect(!result.ok && result.error.code).toBe('unknown-command');
-    expect(!result.ok && result.error.hint).toContain('post, setup, help-json, docs');
+    expect(!result.ok && result.error.hint).toContain('post, delete, setup, help-json, docs');
   });
 
   it('an unknown option is refused, and the hint lists the command options', () => {

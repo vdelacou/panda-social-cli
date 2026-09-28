@@ -39,6 +39,7 @@ import '../src/presenter/command-builders.ts';
 import '../src/presenter/command-docs.ts';
 import '../src/presenter/command-registry.ts';
 import '../src/presenter/command-spec.ts';
+import '../src/presenter/commands/delete.ts';
 import '../src/presenter/commands/docs.ts';
 import '../src/presenter/commands/help-json.ts';
 import '../src/presenter/commands/post.ts';

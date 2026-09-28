@@ -94,6 +94,60 @@
       ]
     },
     {
+      "name": "delete",
+      "summary": "Delete a Threads post by its id.",
+      "description": "Deletes one post from the account saved in the profile. Replies, the other parts of a --split thread included, are posts of their own: delete each id. Threads allows 100 deletes per 24 hours, and the token needs the threads_delete permission.",
+      "usage": "panda-social delete --on <platform> --id <post-id> [--profile <name>]",
+      "arguments": [],
+      "options": [
+        {
+          "flag": "--on",
+          "value": "<platform>",
+          "required": true,
+          "description": "The platform the post is on.",
+          "values": [
+            "threads"
+          ]
+        },
+        {
+          "flag": "--id",
+          "value": "<post-id>",
+          "required": true,
+          "description": "The numeric id of the post, as post returned it."
+        },
+        {
+          "flag": "--profile",
+          "value": "<name>",
+          "required": false,
+          "description": "The profile whose saved account acts. Defaults to \"default\". PANDA_SOCIAL_THREADS_TOKEN, when set, overrides the saved token."
+        }
+      ],
+      "examples": [
+        {
+          "command": "panda-social delete --on threads --id 17890000000000001",
+          "explanation": "Delete one post from the default profile."
+        }
+      ],
+      "output": "The deleted post: `{\"platform\":\"threads\",\"id\":\"<post id>\",\"deleted\":true}`.",
+      "mutates": true,
+      "errors": [
+        "unknown-option",
+        "unexpected-argument",
+        "unknown-platform",
+        "invalid-post-id",
+        "invalid-profile",
+        "missing-credentials",
+        "corrupt",
+        "unreadable",
+        "unauthorized",
+        "forbidden",
+        "rate-limited",
+        "rejected",
+        "network-failed",
+        "timeout"
+      ]
+    },
+    {
       "name": "setup",
       "summary": "Connect a Threads account and save its token under a profile.",
       "description": "On a terminal, walks a first-time user through the six one-time steps (a Meta developer account, an app with the Threads API, its permissions, a tester invitation, the token) one at a time, then reads the token without showing it. Without a terminal it answers with the same steps as JSON, for an agent to relay to its human, and the command that finishes the setup. With --token-stdin it reads the token from standard input. Every token is checked with Threads before it is saved in ~/.panda-social/credentials.json, readable by its owner only.",
@@ -186,6 +240,7 @@
           "description": "The command to document.",
           "values": [
             "post",
+            "delete",
             "setup",
             "help-json",
             "docs"
@@ -230,6 +285,10 @@
       "hint": "Threads needs a public https URL to a JPEG or PNG image, 8 MB at most. Host a local file first, then pass its URL with --image."
     },
     {
+      "code": "invalid-post-id",
+      "hint": "Pass the numeric id that post returned, for example --id 17890000000000001."
+    },
+    {
       "code": "invalid-profile",
       "hint": "Use lowercase letters, digits, - and _, starting with a letter or digit, 40 characters at most. Example: --profile brand-a"
     },
@@ -251,11 +310,11 @@
     },
     {
       "code": "rate-limited",
-      "hint": "Threads allows 250 posts per 24 hours. Wait, then retry."
+      "hint": "Threads allows 250 posts and 100 deletes per 24 hours. Wait, then retry."
     },
     {
       "code": "rejected",
-      "hint": "Threads rejected the request; the message says why. Fix what it names (the text or the image URL), then retry."
+      "hint": "Threads rejected the request; the message says why. Fix what it names (the text, the image URL or the post id), then retry."
     },
     {
       "code": "still-processing",
@@ -267,7 +326,7 @@
     },
     {
       "code": "timeout",
-      "hint": "Threads did not answer in time. The post may still have gone out: check the profile before retrying."
+      "hint": "Threads did not answer in time, so the post or the delete may still have gone through: check the profile before retrying."
     },
     {
       "code": "unauthorized",
@@ -287,7 +346,7 @@
     },
     {
       "code": "unknown-platform",
-      "hint": "Threads is the only platform so far: pass --to threads, or run `panda-social setup threads`."
+      "hint": "Threads is the only platform so far: name threads, as the command examples show."
     },
     {
       "code": "unreadable",

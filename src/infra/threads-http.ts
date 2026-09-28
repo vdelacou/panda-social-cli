@@ -14,14 +14,20 @@ const DEFAULT_TIMEOUT_MS = 10_000;
 export type ThreadsGraphConfig = {
   readonly token: string;
   readonly timeoutMs?: number;
+  // The wait between container status checks; tests pass one that returns at once.
+  readonly sleep?: (ms: number) => Promise<void>;
+  readonly pollAttempts?: number;
 };
 
 // An expired or revoked Threads token answers 400 with OAuthException code 190, not 401.
 const OAUTH_TOKEN_ERROR = /"code":\s*190\b/;
+// Subcode 2207052: Meta could not download the image at the URL it was given.
+const IMAGE_FETCH_FAILED = /"error_subcode":\s*2207052\b/;
 
 const classifyHttp = (status: number, body: string): ThreadsError => {
   if (status === 401 || status === 403 || OAUTH_TOKEN_ERROR.test(body)) return { kind: 'unauthorized', message: body };
   if (status === 429) return { kind: 'rate-limited', message: body };
+  if (IMAGE_FETCH_FAILED.test(body)) return { kind: 'image-rejected', message: body };
   return { kind: 'rejected', status, message: body };
 };
 

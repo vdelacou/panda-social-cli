@@ -17,6 +17,7 @@
 // --- src/infra/ ---
 import '../src/infra/credential-store-file.ts';
 import '../src/infra/logger.ts';
+import '../src/infra/threads-container.ts';
 import '../src/infra/threads-graph.ts';
 import '../src/infra/threads-http.ts';
 import '../src/infra/tty-terminal.ts';

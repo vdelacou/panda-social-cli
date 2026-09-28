@@ -1,7 +1,9 @@
+import type { ImageUrl } from '../domain/image-url.ts';
 import { err, ok } from '../domain/result.ts';
 import type { Result } from '../domain/result.ts';
 import type { ThreadsPostId } from '../domain/threads-post-id.ts';
 import type { PublishedPost, Threads, ThreadsAccount, ThreadsError } from '../use-cases/ports/threads.ts';
+import { createAndPublish } from './threads-container.ts';
 import { idFrom, request, stringField } from './threads-http.ts';
 import type { ThreadsGraphConfig } from './threads-http.ts';
 
@@ -21,11 +23,14 @@ const withPermalink = async (config: ThreadsGraphConfig, id: Result<ThreadsPostI
   return ok({ id: id.value, url: await readPermalink(config, id.value) });
 };
 
-// auto_publish_text publishes a text post in one call.
+// A text post needs no container wait: auto_publish_text publishes it in one call.
 const publishText = async (config: ThreadsGraphConfig, text: string): Promise<Result<PublishedPost, ThreadsError>> => {
   const created = await request(config, '/me/threads', { method: 'POST', body: new URLSearchParams({ media_type: 'TEXT', text, auto_publish_text: 'true' }) });
   return withPermalink(config, created.ok ? idFrom(created.value) : created);
 };
+
+const publishImage = async (config: ThreadsGraphConfig, imageUrl: ImageUrl, text: string | undefined): Promise<Result<PublishedPost, ThreadsError>> =>
+  withPermalink(config, await createAndPublish(config, { media_type: 'IMAGE', image_url: imageUrl, ...(text !== undefined && { text }) }));
 
 const whoAmI = async (config: ThreadsGraphConfig): Promise<Result<ThreadsAccount, ThreadsError>> => {
   const answer = await request(config, '/me?fields=id,username', { method: 'GET' });
@@ -38,5 +43,6 @@ const whoAmI = async (config: ThreadsGraphConfig): Promise<Result<ThreadsAccount
 
 export const createThreadsGraph = (config: ThreadsGraphConfig): Threads => ({
   publishText: async (text) => publishText(config, text),
+  publishImage: async (imageUrl, text) => publishImage(config, imageUrl, text),
   whoAmI: async () => whoAmI(config),
 });

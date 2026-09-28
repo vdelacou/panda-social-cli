@@ -17,4 +17,6 @@ export const succeed = (io: CliIo, data: unknown): number => {
 };
 
 export const answer = (io: CliIo, result: Result<unknown, StepError>): number =>
-  result.ok ? succeed(io, result.value) : fail(io, { code: result.error.cause, message: result.error.message, hint: hintFor(result.error.cause) });
+  result.ok
+    ? succeed(io, result.value)
+    : fail(io, { code: result.error.cause, message: result.error.message, hint: hintFor(result.error.cause), ...(result.error.details && { details: result.error.details }) });

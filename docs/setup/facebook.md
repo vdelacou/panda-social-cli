@@ -104,9 +104,10 @@ On a server or in CI, you can set the Page in the environment instead of saving 
 
 ```bash
 panda-social status facebook
+panda-social post --to facebook --text "Hello from panda"
 ```
 
-`status facebook` answers with the Page the token belongs to, its id and name, and where the token came from: saved, with the date, or the environment. It posts nothing. Posting to the Page comes in a later version of panda-social.
+`status facebook` answers with the Page the token belongs to, its id and name, and where the token came from: saved, with the date, or the environment. It posts nothing. The second command publishes a real post on the Page and answers with its id, the Page id and the post number joined by an underscore, and its link. Open the link in a private browser window: if the post is missing there, the app is not published yet (step 3).
 
 > Screenshot to add: `images/facebook-08-status.png`.
 
@@ -123,6 +124,11 @@ panda-social status facebook
 | The Explorer will not generate a user token | Some apps need the Facebook Login for Business product first | In the app dashboard, add Facebook Login for Business (Add product, Set up), leave its settings as they are, then generate again |
 | `incomplete-environment` | One of the two `PANDA_SOCIAL_FACEBOOK_` variables is set, not both | Set both, or neither to use the saved Page |
 | `invalid-page-id` | A Page id with something other than digits | Use the id the setup answered, or one that `choose-page` lists |
+| A post shows to you but not to others | The app is not published, so its posts show only to people with a role on it | Publish it (step 3); the posts already made then show too |
+| `invalid-image` | The image is not an https URL or a local JPEG, PNG, GIF, BMP or TIFF file, or is over 10 MB | Pass an https URL, or pick another file |
+| `image-rejected` | Facebook could not use the image: the URL does not open for everyone, or the file is damaged | Check that the URL opens in a private browser window, or that the file opens as an image, then retry |
+| `duplicate-text` | The text repeats one of the Page's recent posts, which Facebook refuses | Change the text, or delete the earlier post |
+| `edit-refused` | Facebook edits only the posts this app made, not those written on facebook.com or by another app | Pass `--repost` to delete the post and publish the new version |
 
 Every error panda-social prints carries a `hint` with the next step, and `panda-social docs setup` has the full command page.
 

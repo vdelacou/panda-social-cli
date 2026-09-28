@@ -1,20 +1,20 @@
 ---
 name: panda-social
 description: >
-  Publish, edit, replace and delete posts on the user's own Threads and X accounts through
-  the local panda-social CLI, as text, an image (a public URL on Threads, a local file on X),
-  or a long text split into a thread of replies; check a connected account and its limits;
-  and walk a first-time user through connecting Threads, X or a Facebook Page. Use it whenever
-  the user asks to post, share, publish, tweet, thread, reword, edit, repost or delete
-  something on Threads or X, to connect a Facebook Page, or asks whether their Threads, X or
-  Facebook connection works or how many posts they have left today. Do NOT use it to read a
-  feed, replies, mentions or insights, to schedule a post for later, or to post on Facebook or
-  Instagram, which the CLI does not do yet.
+  Publish, edit, replace and delete posts on the user's own Threads and X accounts and
+  Facebook Page through the local panda-social CLI, as text, an image (a public URL on Threads,
+  a local file on X, either on Facebook), or a long text split into a thread of replies; check
+  a connected account and its limits; and walk a first-time user through connecting Threads, X
+  or a Facebook Page. Use it whenever the user asks to post, share, publish, tweet, thread,
+  reword, edit, repost or delete something on Threads, X or their Facebook Page, or asks
+  whether their connection works or how many posts they have left today. Do NOT use it to read
+  a feed, replies, mentions or insights, to schedule a post for later, or for Instagram, which
+  the CLI does not do yet.
 ---
 
-# Post to Threads and X with panda-social
+# Post to Threads, X and Facebook with panda-social
 
-`panda-social` publishes to the user's own Threads and X accounts with the credentials they connected once. Every command prints one JSON line on stdout, `{"ok":true,"data":...}` or `{"ok":false,"error":{"code":"...","message":"...","hint":"..."}}`, and exits 0 or 1; warnings and logs go to stderr. Your job: turn the request into the right command, get the user's approval for anything that publishes or deletes, run it, and report the outcome in plain words.
+`panda-social` publishes to the user's own Threads and X accounts and Facebook Page with the credentials they connected once. Every command prints one JSON line on stdout, `{"ok":true,"data":...}` or `{"ok":false,"error":{"code":"...","message":"...","hint":"..."}}`, and exits 0 or 1; warnings and logs go to stderr. Your job: turn the request into the right command, get the user's approval for anything that publishes or deletes, run it, and report the outcome in plain words.
 
 ## Ground rules
 
@@ -52,12 +52,13 @@ For several accounts, the same commands take `--profile <name>` (lowercase lette
 
 | The user wants | Command |
 |---|---|
-| A text post | `post --to threads --text "<text>"`, or `--to x` |
-| An image post, with or without a caption | `post --to threads --image <https URL> --text "<caption>"`; on X, `post --to x --image <local file> --text "<caption>"` |
-| A text over the limit (500 on Threads, 280 on X) | the same with `--split` |
+| A text post | `post --to threads --text "<text>"`, or `--to x`, or `--to facebook` |
+| An image post, with or without a caption | `post --to threads --image <https URL> --text "<caption>"`; on X, `post --to x --image <local file> --text "<caption>"`; on Facebook, either kind of image |
+| A text over the limit (500 on Threads, 280 on X; Facebook takes it whole) | the same with `--split` |
 | A Threads post's wording changed | `update --on threads --id <post id> --text "<text>" --repost` |
 | An X post's wording changed | `update --on x --id <post id> --text "<text>"` edits it in place (X Premium); with `--repost` it deletes and republishes |
-| A post deleted | `delete --on threads --id <post id>`, or `--on x` |
+| A Facebook post's wording changed | `update --on facebook --id <post id> --text "<text>"` edits it in place; a new image needs `--repost` |
+| A post deleted | `delete --on threads --id <post id>`, `--on x` or `--on facebook` |
 | To know the connection works | `status threads`, with the day's quotas, `status x` or `status facebook` |
 
 For example:
@@ -72,16 +73,20 @@ panda-social post --to x --image ./launch.png --text "Launch day: the beta is op
 panda-social update --on x --id 1880000000000000001 --text "Launch day: the beta is open to everyone"
 panda-social delete --on x --id 1880000000000000001
 panda-social status x --profile brand-a
+panda-social post --to facebook --image https://cdn.example.com/launch.jpg --text "Launch day: the beta is open"
+panda-social update --on facebook --id 104000000000001_122000000000001 --text "Launch day: the beta is open to everyone"
+panda-social delete --on facebook --id 104000000000001_122000000000001
 ```
 
-The post id is the `id` that `post` answered; keep it if the user may want to change or delete the post later.
+The post id is the `id` that `post` answered, on Facebook the Page id and the post number joined by an underscore; keep it if the user may want to change or delete the post later.
 
 ## Text, images and threads
 
 - Threads allows 500 characters per post and counts an emoji as its UTF-8 bytes, so a thumbs-up costs 4. X allows 280 and counts its own way: most characters 1, CJK characters and emoji 2, a link 23 however long. The CLI counts as each platform does and refuses a longer text with `text-too-long`; offer `--split` or a shorter text.
 - `--split` posts a first post and then replies, each answering the one before, cut at a paragraph, line, sentence or word break. If a part fails, the parts already out are deleted, and `error.details` lists what was deleted and anything left behind: tell the user about both.
-- On Threads, an image is a public `https://` URL to a JPEG or PNG of 8 MB at most, because Threads downloads it itself; a file on the user's machine has to be hosted first, so ask them where. On X, it is a local JPEG, PNG, GIF or WEBP file of 5 MB at most, which the CLI checks and uploads; a URL is refused, so download a remote image first. `image-rejected` means the platform could not use the image.
-- A success answers `{"platform":"threads","id":"...","url":"..."}`, or the same with `"platform":"x"` and an `https://x.com/i/status/<id>` link, plus `replies` for a split thread: give the user the `url`. A `null` url on Threads means the post is up but its link could not be read back; say so, and do not post it again.
+- On Threads, an image is a public `https://` URL to a JPEG or PNG of 8 MB at most, because Threads downloads it itself; a file on the user's machine has to be hosted first, so ask them where. On X, it is a local JPEG, PNG, GIF or WEBP file of 5 MB at most, which the CLI checks and uploads; a URL is refused, so download a remote image first. On Facebook, it is either: an https URL Facebook downloads, or a local JPEG, PNG, GIF, BMP or TIFF file of 10 MB at most that the CLI checks and uploads; the text becomes its caption. `image-rejected` means the platform could not use the image.
+- Facebook takes a long text whole, so `--split` changes nothing there. A Facebook post shows to everyone only once the user's Meta app is published (step 3 of the setup): if the user cannot see a post from a logged-out browser, point them there.
+- A success answers `{"platform":"threads","id":"...","url":"..."}`, or the same with `"platform":"x"` and an `https://x.com/i/status/<id>` link, or `"platform":"facebook"` and a facebook.com link, plus `replies` for a split thread: give the user the `url`. A `null` url on Threads means the post is up but its link could not be read back; say so, and do not post it again.
 
 ## Accounts and limits
 
@@ -89,12 +94,12 @@ The post id is the `id` that `post` answered; keep it if the user may want to ch
 - On Threads, `unauthorized` means the token no longer works: the user generates a new one (step 6 of the setup) and runs `panda-social setup threads` again. `forbidden` means it lacks a permission from step 3: they add it, generate a new token, and run the setup again.
 - Threads allows 250 posts, 1,000 replies and 100 deletes per rolling 24 hours; `status threads` reports what is used. X allows 100 posts and 50 deletes per 15 minutes. On `rate-limited`, wait.
 - X keys never expire. On X, `unauthorized` means they were regenerated or revoked, and `read-only-keys` that the app could not post when they were made: the hint gives the fix, then the user runs `panda-social setup x` again. `credits-depleted` means the app's credits are spent: the user buys more in the X developer console.
-- `edit-refused` means X declined the edit: it edits only for X Premium accounts, shortly after posting and 5 times at most. Offer `--repost`, which deletes the post, so get a yes first. `duplicate-text` means the text repeats one of the account's recent posts: change it.
+- `edit-refused` means the platform declined the edit: X edits only for X Premium accounts, shortly after posting and 5 times at most, and Facebook only the posts this Meta app made. Offer `--repost`, which deletes the post, so get a yes first. `unsupported` on Facebook means a new image, which an edit cannot change: `--repost` again. `duplicate-text` means the text repeats one of the account's recent posts: change it.
 - A Facebook Page token does not expire. `unauthorized` on Facebook means it stopped working (a changed password, a lost Page role, or a token not extended in step 5): the user makes and extends a new token (steps 4 and 5) and runs `panda-social setup facebook` again. `missing-page-task` means their role on the Page cannot create posts; `choose-page` lists the Pages the token grants, for `--page <id>`.
 - `PANDA_SOCIAL_THREADS_TOKEN`, when set, is used instead of the saved Threads token and is never refreshed; the four `PANDA_SOCIAL_X_` variables, when all set, replace the saved X keys; `PANDA_SOCIAL_FACEBOOK_PAGE_ID` and `PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN`, when both set, replace the saved Page.
 
 ## Known limitations
 
-- Posting works on Threads and X. A Facebook Page can be connected and checked, and posting to it comes next; Instagram after that.
+- Posting works on Threads, X and a Facebook Page; Instagram comes next.
 - Nothing is read back: no feed, replies, mentions or insights. No scheduling.
-- Threads has no edit, so `update` there always deletes and republishes.
+- Threads has no edit, so `update` there always deletes and republishes; Facebook edits the text only.

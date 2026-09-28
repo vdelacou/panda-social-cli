@@ -51,6 +51,14 @@ const buildDelete = (flags: Flags): Result<CliCommand, Failure> => {
   return target.ok ? ok({ command: 'delete', ...target.value }) : target;
 };
 
+const buildUpdate = (flags: Flags): Result<CliCommand, Failure> => {
+  const target = readTarget(flags, exampleOf('update'));
+  if (!target.ok) return target;
+  const content = readContent(flags.values, exampleOf('update'));
+  if (!content.ok) return content;
+  return ok({ command: 'update', ...target.value, ...content.value, repost: flags.values['repost'] === true });
+};
+
 const buildSetup = ({ values, positionals }: Flags): Result<CliCommand, Failure> => {
   const [platform = ''] = positionals;
   if (!SETUP_PLATFORMS.includes(platform)) {
@@ -74,6 +82,7 @@ const buildDocs = ({ positionals }: Flags): Result<CliCommand, Failure> => {
 
 export const BUILDERS: Readonly<Record<CommandName, (flags: Flags) => Result<CliCommand, Failure>>> = {
   post: buildPost,
+  update: buildUpdate,
   delete: buildDelete,
   setup: buildSetup,
   'help-json': () => ok({ command: 'help-json' }),

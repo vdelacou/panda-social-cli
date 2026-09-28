@@ -16,6 +16,7 @@ const HINTS: Readonly<Record<string, string>> = {
   'image-rejected': 'Threads could not download or read the image. Check that the URL opens in a private browser window and serves a JPEG or PNG of 8 MB at most, then retry.',
   'still-processing': 'Threads was still processing the image after 60 seconds, so nothing was published. Retry the post.',
   'invalid-post-id': 'Pass the numeric id that post returned, for example --id 17890000000000001.',
+  unsupported: 'Threads cannot edit a published post. Pass --repost to delete it and publish the new version: it gets a new id and link, and loses its likes and replies.',
   forbidden:
     'The token lacks a permission this action needs: threads_delete to delete, threads_manage_replies for --split. Add it under Use cases, Access the Threads API, Customize, generate a new token, and run `panda-social setup threads` again.',
   'invalid-profile': 'Use lowercase letters, digits, - and _, starting with a letter or digit, 40 characters at most. Example: --profile brand-a',

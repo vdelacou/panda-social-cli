@@ -94,6 +94,88 @@
       ]
     },
     {
+      "name": "update",
+      "summary": "Replace a Threads post. Threads has no edit, so --repost deletes it and publishes the new version.",
+      "description": "Threads cannot edit a published post, so update refuses unless --repost is given. With --repost it deletes the old post first, then publishes the new text or image as post does: the new post gets a new id and link, and the old one takes its likes and replies with it. If the delete fails, nothing is published; if the publish fails after the delete, the error says the old post is gone.",
+      "usage": "panda-social update --on <platform> --id <post-id> [--text <text>] [--profile <name>] [--image <url>] [--split] [--repost]",
+      "arguments": [],
+      "options": [
+        {
+          "flag": "--on",
+          "value": "<platform>",
+          "required": true,
+          "description": "The platform the post is on.",
+          "values": [
+            "threads"
+          ]
+        },
+        {
+          "flag": "--id",
+          "value": "<post-id>",
+          "required": true,
+          "description": "The numeric id of the post, as post returned it."
+        },
+        {
+          "flag": "--text",
+          "value": "<text>",
+          "required": false,
+          "description": "The text of the post, quoted when it contains spaces. Required unless --image is given. 500 characters at most on Threads, an emoji counting its UTF-8 bytes (a thumbs-up is 4)."
+        },
+        {
+          "flag": "--profile",
+          "value": "<name>",
+          "required": false,
+          "description": "The profile whose saved account acts. Defaults to \"default\". PANDA_SOCIAL_THREADS_TOKEN, when set, overrides the saved token."
+        },
+        {
+          "flag": "--image",
+          "value": "<url>",
+          "required": false,
+          "description": "A public https URL to a JPEG or PNG image, 8 MB at most. Threads downloads it itself, so a local file must be hosted first."
+        },
+        {
+          "flag": "--split",
+          "required": false,
+          "description": "Post a text over the limit as a thread: the first post, then replies, each answering the one before. If a part fails, the parts already published are deleted."
+        },
+        {
+          "flag": "--repost",
+          "required": false,
+          "description": "Delete the post and publish the new version. Without it, Threads updates are refused as unsupported."
+        }
+      ],
+      "examples": [
+        {
+          "command": "panda-social update --on threads --id 17890000000000001 --text \"Hello from panda, typo fixed\" --repost",
+          "explanation": "Replace a post with corrected text."
+        }
+      ],
+      "output": "The new post and the id it replaced: `{\"platform\":\"threads\",\"id\":\"<new id>\",\"url\":\"<link or null>\",\"replaced\":\"<old id>\"}`, plus `\"replies\"` for a --split thread.",
+      "mutates": true,
+      "errors": [
+        "unknown-option",
+        "unexpected-argument",
+        "unknown-platform",
+        "invalid-post-id",
+        "invalid-profile",
+        "unsupported",
+        "missing-text",
+        "invalid-image",
+        "text-too-long",
+        "image-rejected",
+        "still-processing",
+        "missing-credentials",
+        "corrupt",
+        "unreadable",
+        "unauthorized",
+        "forbidden",
+        "rate-limited",
+        "rejected",
+        "network-failed",
+        "timeout"
+      ]
+    },
+    {
       "name": "delete",
       "summary": "Delete a Threads post by its id.",
       "description": "Deletes one post from the account saved in the profile. Replies, the other parts of a --split thread included, are posts of their own: delete each id. Threads allows 100 deletes per 24 hours, and the token needs the threads_delete permission.",
@@ -240,6 +322,7 @@
           "description": "The command to document.",
           "values": [
             "post",
+            "update",
             "delete",
             "setup",
             "help-json",
@@ -351,6 +434,10 @@
     {
       "code": "unreadable",
       "hint": "The credentials file could not be read. Check that ~/.panda-social/credentials.json belongs to you."
+    },
+    {
+      "code": "unsupported",
+      "hint": "Threads cannot edit a published post. Pass --repost to delete it and publish the new version: it gets a new id and link, and loses its likes and replies."
     },
     {
       "code": "write-failed",

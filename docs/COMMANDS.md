@@ -7,6 +7,7 @@ Every command prints one JSON line on stdout: `{"ok":true,"data":...}` on succes
 | Command | What it does |
 | --- | --- |
 | [`post`](#post) | Publish a text post, an image, or both, to Threads. |
+| [`update`](#update) | Replace a Threads post. Threads has no edit, so --repost deletes it and publishes the new version. |
 | [`delete`](#delete) | Delete a Threads post by its id. |
 | [`setup`](#setup) | Connect a Threads account and save its token under a profile. |
 | [`help-json`](#help-json) | Describe every command, option, example and error code as JSON. Start here. |
@@ -62,6 +63,64 @@ The new post: `{"platform":"threads","id":"<post id>","url":"<link, or null when
 | `unexpected-argument` | Quote any value that contains spaces, for example --text "Hello from panda". |
 | `unknown-platform` | Threads is the only platform so far: name threads, as the command examples show. |
 | `invalid-profile` | Use lowercase letters, digits, - and _, starting with a letter or digit, 40 characters at most. Example: --profile brand-a |
+| `missing-text` | Pass the text of the post with --text (quoted when it contains spaces), an image URL with --image, or both. |
+| `invalid-image` | Threads needs a public https URL to a JPEG or PNG image, 8 MB at most. Host a local file first, then pass its URL with --image. |
+| `text-too-long` | Threads allows 500 characters per post, an emoji counting its UTF-8 bytes. Shorten the text, or pass --split to post it as a thread of replies. |
+| `image-rejected` | Threads could not download or read the image. Check that the URL opens in a private browser window and serves a JPEG or PNG of 8 MB at most, then retry. |
+| `still-processing` | Threads was still processing the image after 60 seconds, so nothing was published. Retry the post. |
+| `missing-credentials` | Connect an account with `panda-social setup threads` (add `--profile <name>` for another profile), or set PANDA_SOCIAL_THREADS_TOKEN. |
+| `corrupt` | The credentials file is not valid. Fix or delete ~/.panda-social/credentials.json, then run `panda-social setup threads`. |
+| `unreadable` | The credentials file could not be read. Check that ~/.panda-social/credentials.json belongs to you. |
+| `unauthorized` | Threads refused the token. Generate a new one (Meta app dashboard, Use cases, Access the Threads API, Settings, User Token Generator) and run `panda-social setup threads` again. |
+| `forbidden` | The token lacks a permission this action needs: threads_delete to delete, threads_manage_replies for --split. Add it under Use cases, Access the Threads API, Customize, generate a new token, and run `panda-social setup threads` again. |
+| `rate-limited` | Threads allows 250 posts and 100 deletes per 24 hours. Wait, then retry. |
+| `rejected` | Threads rejected the request; the message says why. Fix what it names (the text, the image URL or the post id), then retry. |
+| `network-failed` | graph.threads.net could not be reached. Check the network, then retry. |
+| `timeout` | Threads did not answer in time, so the post or the delete may still have gone through: check the profile before retrying. |
+
+## update
+
+Threads cannot edit a published post, so update refuses unless --repost is given. With --repost it deletes the old post first, then publishes the new text or image as post does: the new post gets a new id and link, and the old one takes its likes and replies with it. If the delete fails, nothing is published; if the publish fails after the delete, the error says the old post is gone.
+
+### Usage
+
+```bash
+panda-social update --on <platform> --id <post-id> [--text <text>] [--profile <name>] [--image <url>] [--split] [--repost]
+```
+
+### Parameters
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `--on <platform>` | yes | The platform the post is on. One of: threads. |
+| `--id <post-id>` | yes | The numeric id of the post, as post returned it. |
+| `--text <text>` | no | The text of the post, quoted when it contains spaces. Required unless --image is given. 500 characters at most on Threads, an emoji counting its UTF-8 bytes (a thumbs-up is 4). |
+| `--profile <name>` | no | The profile whose saved account acts. Defaults to "default". PANDA_SOCIAL_THREADS_TOKEN, when set, overrides the saved token. |
+| `--image <url>` | no | A public https URL to a JPEG or PNG image, 8 MB at most. Threads downloads it itself, so a local file must be hosted first. |
+| `--split` | no | Post a text over the limit as a thread: the first post, then replies, each answering the one before. If a part fails, the parts already published are deleted. |
+| `--repost` | no | Delete the post and publish the new version. Without it, Threads updates are refused as unsupported. |
+
+### Examples
+
+```bash
+# Replace a post with corrected text.
+panda-social update --on threads --id 17890000000000001 --text "Hello from panda, typo fixed" --repost
+```
+
+### Output
+
+The new post and the id it replaced: `{"platform":"threads","id":"<new id>","url":"<link or null>","replaced":"<old id>"}`, plus `"replies"` for a --split thread.
+
+### Errors
+
+| Code | Next step |
+| --- | --- |
+| `unknown-option` | Run `panda-social docs <command>` for the options that command takes. |
+| `unexpected-argument` | Quote any value that contains spaces, for example --text "Hello from panda". |
+| `unknown-platform` | Threads is the only platform so far: name threads, as the command examples show. |
+| `invalid-post-id` | Pass the numeric id that post returned, for example --id 17890000000000001. |
+| `invalid-profile` | Use lowercase letters, digits, - and _, starting with a letter or digit, 40 characters at most. Example: --profile brand-a |
+| `unsupported` | Threads cannot edit a published post. Pass --repost to delete it and publish the new version: it gets a new id and link, and loses its likes and replies. |
 | `missing-text` | Pass the text of the post with --text (quoted when it contains spaces), an image URL with --image, or both. |
 | `invalid-image` | Threads needs a public https URL to a JPEG or PNG image, 8 MB at most. Host a local file first, then pass its URL with --image. |
 | `text-too-long` | Threads allows 500 characters per post, an emoji counting its UTF-8 bytes. Shorten the text, or pass --split to post it as a thread of replies. |
@@ -223,7 +282,7 @@ panda-social docs <command>
 
 | Parameter | Required | Description |
 | --- | --- | --- |
-| `<command>` | yes | The command to document. One of: post, delete, setup, help-json, docs. |
+| `<command>` | yes | The command to document. One of: post, update, delete, setup, help-json, docs. |
 
 ### Examples
 
@@ -272,4 +331,5 @@ Every failure carries one of these codes. Its `hint` says what to do next.
 | `unknown-option` | Run `panda-social docs <command>` for the options that command takes. |
 | `unknown-platform` | Threads is the only platform so far: name threads, as the command examples show. |
 | `unreadable` | The credentials file could not be read. Check that ~/.panda-social/credentials.json belongs to you. |
+| `unsupported` | Threads cannot edit a published post. Pass --repost to delete it and publish the new version: it gets a new id and link, and loses its likes and replies. |
 | `write-failed` | The token could not be saved. Check that your home folder is writable, then run the setup again. |

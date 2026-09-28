@@ -5,10 +5,11 @@ import { DOCS } from './commands/docs.ts';
 import { HELP_JSON } from './commands/help-json.ts';
 import { POST } from './commands/post.ts';
 import { SETUP } from './commands/setup.ts';
+import { UPDATE } from './commands/update.ts';
 
 // The one description of the command surface: the parser, help-json, docs <command>
 // and the generated docs/COMMANDS.md and docs/commands.json all read it.
-const REGISTRY: Readonly<Record<CommandName, CommandSpec>> = { post: POST, delete: DELETE, setup: SETUP, 'help-json': HELP_JSON, docs: DOCS };
+const REGISTRY: Readonly<Record<CommandName, CommandSpec>> = { post: POST, update: UPDATE, delete: DELETE, setup: SETUP, 'help-json': HELP_JSON, docs: DOCS };
 
 export const COMMANDS: ReadonlyArray<CommandSpec> = COMMAND_NAMES.map((name) => REGISTRY[name]);
 

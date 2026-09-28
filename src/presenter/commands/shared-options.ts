@@ -34,6 +34,10 @@ export const SPLIT_OPTION: OptionSpec = {
   description: 'Post a text over the limit as a thread: the first post, then replies, each answering the one before. If a part fails, the parts already published are deleted.',
 };
 
+export const ON_OPTION: OptionSpec = { name: 'on', type: 'string', placeholder: 'platform', required: true, description: 'The platform the post is on.', values: THREADS_ONLY };
+
+export const ID_OPTION: OptionSpec = { name: 'id', type: 'string', placeholder: 'post-id', required: true, description: 'The numeric id of the post, as post returned it.' };
+
 // The failures any command that reaches Threads with a saved token can return.
 export const THREADS_CALL_ERRORS: ReadonlyArray<string> = [
   'missing-credentials',

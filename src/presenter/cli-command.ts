@@ -1,5 +1,6 @@
 import type { ImageUrl } from '../domain/image-url.ts';
 import type { ProfileName } from '../domain/profile-name.ts';
+import type { ThreadsPostId } from '../domain/threads-post-id.ts';
 import type { CommandName } from './command-spec.ts';
 
 // What a post carries; each key is absent rather than empty when its flag is not given.
@@ -16,6 +17,21 @@ export type PostCommand = PostContent & {
   readonly profile?: ProfileName;
 };
 
+export type DeleteCommand = {
+  readonly command: 'delete';
+  readonly platform: 'threads';
+  readonly id: ThreadsPostId;
+  readonly profile?: ProfileName;
+};
+
+export type UpdateCommand = PostContent & {
+  readonly command: 'update';
+  readonly platform: 'threads';
+  readonly id: ThreadsPostId;
+  readonly repost: boolean;
+  readonly profile?: ProfileName;
+};
+
 export type SetupCommand = {
   readonly command: 'setup';
   readonly platform: 'threads';
@@ -25,4 +41,4 @@ export type SetupCommand = {
 
 export type DocsCommand = { readonly command: 'docs'; readonly target: CommandName };
 
-export type CliCommand = PostCommand | SetupCommand | DocsCommand | { readonly command: 'help-json' } | { readonly command: 'version' };
+export type CliCommand = PostCommand | UpdateCommand | DeleteCommand | SetupCommand | DocsCommand | { readonly command: 'help-json' } | { readonly command: 'version' };

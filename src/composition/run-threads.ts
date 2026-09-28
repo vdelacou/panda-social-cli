@@ -4,17 +4,19 @@ import { ok } from '../domain/result.ts';
 import type { Result } from '../domain/result.ts';
 import { createWinstonLogger } from '../infra/logger.ts';
 import { createThreadsGraph } from '../infra/threads-graph.ts';
-import type { Failure, PostCommand, PostContent } from '../presenter/cli.ts';
+import type { DeleteCommand, Failure, PostCommand, PostContent, UpdateCommand } from '../presenter/cli.ts';
+import { createDeletePost } from '../use-cases/delete-post.ts';
 import type { StepError } from '../use-cases/ports/step-error.ts';
 import { createPublishPost } from '../use-cases/publish-post.ts';
 import type { PublishPostDeps, PublishPostInput } from '../use-cases/publish-post.ts';
+import { createUpdatePost } from '../use-cases/update-post.ts';
 import { answer, fail } from './answer.ts';
 import type { CliIo } from './cli-io.ts';
 import type { Config } from './env.ts';
 import { resolveThreadsToken } from './threads-token.ts';
 
 // Every command that acts on a Threads account.
-export type ThreadsCommand = PostCommand;
+export type ThreadsCommand = PostCommand | UpdateCommand | DeleteCommand;
 
 // The Threads adapter and the logger for the account saved in a profile.
 const threadsDeps = async (io: CliIo, config: Config, profile: ProfileName | undefined): Promise<Result<PublishPostDeps, Failure>> => {
@@ -26,6 +28,8 @@ const threadsDeps = async (io: CliIo, config: Config, profile: ProfileName | und
 const contentOf = (command: PostContent): PublishPostInput => ({ text: command.text, imageUrl: command.imageUrl, split: command.split });
 
 const act = async (deps: PublishPostDeps, command: ThreadsCommand): Promise<Result<unknown, StepError>> => {
+  if (command.command === 'delete') return createDeletePost(deps)({ id: command.id });
+  if (command.command === 'update') return createUpdatePost(deps)({ ...contentOf(command), id: command.id, repost: command.repost });
   return createPublishPost(deps)(contentOf(command));
 };
 

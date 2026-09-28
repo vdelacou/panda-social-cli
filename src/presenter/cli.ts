@@ -20,6 +20,10 @@ export type {
 } from './cli-command.ts';
 export type {
   DeleteCommand,
+  FacebookDeleteCommand,
+  FacebookPostCommand,
+  FacebookPostContent,
+  FacebookUpdateCommand,
   PostCommand,
   ThreadsDeleteCommand,
   ThreadsPostCommand,

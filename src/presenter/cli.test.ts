@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { facebookPageIdUnsafe } from '../domain/facebook-page.ts';
+import { facebookPostIdUnsafe } from '../domain/facebook-post-id.ts';
 import { imagePathUnsafe } from '../domain/image-path.ts';
 import { imageUrlUnsafe } from '../domain/image-url.ts';
 import { DEFAULT_PROFILE, profileNameUnsafe } from '../domain/profile-name.ts';
@@ -228,5 +229,33 @@ describe('reading the Facebook commands', () => {
 
   it('`status facebook` reads as a status check of the Facebook Page', () => {
     expect(parseCliArgs(['status', 'facebook'])).toEqual(ok({ command: 'status', platform: 'facebook' }));
+  });
+});
+
+describe('reading the Facebook post commands', () => {
+  it('`post --to facebook` reads a text with an https image URL or a local image path, and --split is accepted and left out of the post', () => {
+    expect(parseCliArgs(['post', '--to', 'facebook', '--text', 'A cat on the sofa', '--image', 'https://cdn.example.com/cat.jpg', '--split'])).toEqual(
+      ok({ command: 'post', platform: 'facebook', text: 'A cat on the sofa', imageUrl: imageUrlUnsafe('https://cdn.example.com/cat.jpg') })
+    );
+    expect(parseCliArgs(['post', '--to', 'facebook', '--image', './chart.png'])).toEqual(ok({ command: 'post', platform: 'facebook', imagePath: imagePathUnsafe('./chart.png') }));
+  });
+
+  it('`post --to facebook --image http://cdn.example.com/cat.jpg` is refused as invalid-image: Facebook takes https URLs only', () => {
+    const result = parseCliArgs(['post', '--to', 'facebook', '--image', 'http://cdn.example.com/cat.jpg']);
+
+    expect(!result.ok && result.error.code).toBe('invalid-image');
+  });
+
+  it('`update --on facebook` and `delete --on facebook` read a Facebook post id, and an id without its Page part is refused as invalid-post-id', () => {
+    expect(parseCliArgs(['update', '--on', 'facebook', '--id', '104000000000001_122000000000001', '--text', 'Fixed'])).toEqual(
+      ok({ command: 'update', platform: 'facebook', id: facebookPostIdUnsafe('104000000000001_122000000000001'), text: 'Fixed', repost: false })
+    );
+    expect(parseCliArgs(['delete', '--on', 'facebook', '--id', '104000000000001_122000000000001'])).toEqual(
+      ok({ command: 'delete', platform: 'facebook', id: facebookPostIdUnsafe('104000000000001_122000000000001') })
+    );
+
+    const result = parseCliArgs(['delete', '--on', 'facebook', '--id', '122000000000001']);
+
+    expect(!result.ok && result.error.code).toBe('invalid-post-id');
   });
 });

@@ -5,7 +5,7 @@ import path from 'node:path';
 import { PassThrough } from 'node:stream';
 import packageJson from '../../package.json' with { type: 'json' };
 import { installFetchMock } from '../test-helpers/fetch-mock.ts';
-import type { FetchMock } from '../test-helpers/fetch-mock.ts';
+import type { FetchMock, FetchMockCall } from '../test-helpers/fetch-mock.ts';
 import { runCli } from './run-cli.ts';
 
 const POST_ID = '17890000000000001';
@@ -567,5 +567,82 @@ describe('connecting a Facebook Page with `panda-social setup facebook`', () => 
       expect(answer).toEqual({ exitCode: 1, answers: [{ ok: false, error: { code: 'invalid-page-id', message: expect.any(String), hint: expect.any(String) } }] });
     }
     expect(mock.calls).toEqual([]);
+  });
+});
+
+const FACEBOOK_FEED = 'https://graph.facebook.com/v26.0/104000000000001/feed';
+const FACEBOOK_PHOTOS = 'https://graph.facebook.com/v26.0/104000000000001/photos';
+const FACEBOOK_POSTED = '104000000000001_122000000000001';
+const FACEBOOK_POST = `https://graph.facebook.com/v26.0/${FACEBOOK_POSTED}`;
+const FACEBOOK_LINK = 'https://www.facebook.com/104000000000001/posts/122000000000001';
+
+// graph.facebook.com as the posting commands meet it: the setup's Page list, the feed, the photos, an edit and a delete.
+const facebookPostingGraph = (): FetchMock =>
+  installFetchMock([
+    {
+      match: (url, init) => init?.method === 'GET' && url === FACEBOOK_ACCOUNTS,
+      respond: () => Response.json({ data: [{ access_token: BAKERY_TOKEN, name: 'Panda Bakery', id: '104000000000001', tasks: ['CREATE_CONTENT'] }] }),
+    },
+    { match: (url, init) => init?.method === 'POST' && url === FACEBOOK_FEED, respond: () => Response.json({ id: FACEBOOK_POSTED }) },
+    { match: (url, init) => init?.method === 'POST' && url === FACEBOOK_PHOTOS, respond: () => Response.json({ id: '123000000000001', post_id: FACEBOOK_POSTED }) },
+    { match: (url, init) => url === FACEBOOK_POST && (init?.method === 'POST' || init?.method === 'DELETE'), respond: () => Response.json({ success: true }) },
+  ]);
+
+// The fields of a form body, as Meta reads them.
+const formFields = (call: FetchMockCall | undefined): Readonly<Record<string, string>> => Object.fromEntries(new URLSearchParams(String(call?.init?.body)));
+
+describe('posting to a Facebook Page with `panda-social post --to facebook`', () => {
+  let home = '';
+  let mock: FetchMock | undefined;
+  beforeEach(() => {
+    home = mkdtempSync(path.join(tmpdir(), 'panda-social-'));
+  });
+  afterEach(() => {
+    mock?.restore();
+    rmSync(home, { recursive: true, force: true });
+  });
+
+  it("`post --to facebook` with a saved Page posts to that Page's feed with its Page token, and prints the id and link", async () => {
+    mock = facebookPostingGraph();
+    await run(['setup', 'facebook', '--token-stdin'], { HOME: home }, FACEBOOK_USER_TOKEN);
+
+    const posted = await run(['post', '--to', 'facebook', '--text', 'Hello from panda'], { HOME: home });
+
+    const feed = mock.calls.find((call) => call.url === FACEBOOK_FEED);
+    expect(posted).toEqual({ exitCode: 0, answers: [{ ok: true, data: { platform: 'facebook', id: FACEBOOK_POSTED, url: FACEBOOK_LINK } }] });
+    expect(formFields(feed)).toEqual({ message: 'Hello from panda' });
+    expect(new Headers(feed?.init?.headers).get('authorization')).toBe(`Bearer ${BAKERY_TOKEN}`);
+  });
+
+  it("`post --to facebook --image <file>` uploads the file to the Page's photos, and --image <https URL> passes the URL", async () => {
+    mock = facebookPostingGraph();
+    const chart = path.join(home, 'chart.png');
+    writeFileSync(chart, PNG_BYTES);
+    await run(['setup', 'facebook', '--token-stdin'], { HOME: home }, FACEBOOK_USER_TOKEN);
+
+    const uploaded = await run(['post', '--to', 'facebook', '--image', chart, '--text', 'The chart'], { HOME: home });
+    const linked = await run(['post', '--to', 'facebook', '--image', 'https://cdn.example.com/cat.jpg'], { HOME: home });
+
+    const [upload, byUrl] = mock.calls.filter((call) => call.url === FACEBOOK_PHOTOS);
+    const body = upload?.init?.body;
+    expect([uploaded.exitCode, linked.exitCode]).toEqual([0, 0]);
+    expect(body instanceof FormData ? [body.get('caption'), body.get('source') instanceof File] : []).toEqual(['The chart', true]);
+    expect(formFields(byUrl)).toEqual({ url: 'https://cdn.example.com/cat.jpg' });
+  });
+
+  it('`update --on facebook` edits the post in place and `delete --on facebook` deletes it, both with the Page token', async () => {
+    mock = facebookPostingGraph();
+    await run(['setup', 'facebook', '--token-stdin'], { HOME: home }, FACEBOOK_USER_TOKEN);
+
+    const edited = await run(['update', '--on', 'facebook', '--id', FACEBOOK_POSTED, '--text', 'Fixed'], { HOME: home });
+    const deleted = await run(['delete', '--on', 'facebook', '--id', FACEBOOK_POSTED], { HOME: home });
+
+    const calls = mock.calls.filter((call) => call.url === FACEBOOK_POST).map((call) => [call.init?.method, new Headers(call.init?.headers).get('authorization')]);
+    expect(edited.answers).toEqual([{ ok: true, data: { platform: 'facebook', id: FACEBOOK_POSTED, url: FACEBOOK_LINK, edited: FACEBOOK_POSTED } }]);
+    expect(deleted.answers).toEqual([{ ok: true, data: { platform: 'facebook', id: FACEBOOK_POSTED, deleted: true } }]);
+    expect(calls).toEqual([
+      ['POST', `Bearer ${BAKERY_TOKEN}`],
+      ['DELETE', `Bearer ${BAKERY_TOKEN}`],
+    ]);
   });
 });

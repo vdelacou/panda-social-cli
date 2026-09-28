@@ -8,7 +8,7 @@ import { COMMANDS, findCommand } from './command-registry.ts';
 import type { CommandName } from './command-spec.ts';
 import type { Failure } from './failure.ts';
 import type { PostTarget } from './post-command.ts';
-import { readContent, readThreadsContent, readXContent } from './post-content.ts';
+import { readContent, readFacebookContent, readThreadsContent, readXContent } from './post-content.ts';
 import { readPlatform, readPostId, readProfile } from './post-flags.ts';
 import type { Flags } from './read-flags.ts';
 import { BIN } from './usage.ts';
@@ -55,6 +55,10 @@ const buildUpdate = (flags: Flags): Result<CliCommand, Failure> => {
   const repost = flags.values['repost'] === true;
   if (target.value.platform === 'x') {
     const content = readXContent(flags.values, exampleOf('update'));
+    return content.ok ? ok({ command: 'update', ...target.value, ...content.value, repost }) : content;
+  }
+  if (target.value.platform === 'facebook') {
+    const content = readFacebookContent(flags.values, exampleOf('update'));
     return content.ok ? ok({ command: 'update', ...target.value, ...content.value, repost }) : content;
   }
   const content = readThreadsContent(flags.values, exampleOf('update'));

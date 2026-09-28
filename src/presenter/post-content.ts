@@ -6,7 +6,7 @@ import { err, ok } from '../domain/result.ts';
 import type { Result } from '../domain/result.ts';
 import type { Failure } from './failure.ts';
 import { hintFor } from './hints.ts';
-import type { Platform, PlatformContent, ThreadsPostContent, XPostContent } from './post-command.ts';
+import type { FacebookPostContent, Platform, PlatformContent, ThreadsPostContent, XPostContent } from './post-command.ts';
 import type { Flags } from './read-flags.ts';
 
 type Values = Flags['values'];
@@ -51,9 +51,35 @@ export const readXContent = (values: Values, example: string): Result<XPostConte
   return ok({ ...content, ...(image.value !== undefined && { imagePath: image.value }) });
 };
 
+// Facebook downloads an https URL itself and takes a local file the CLI uploads (D26): a
+// scheme and `://` mark the URL, as they do for the paths X refuses.
+const readFacebookImage = (value: unknown): Result<{ readonly imageUrl: ImageUrl } | { readonly imagePath: ImagePath } | undefined, Failure> => {
+  if (value === undefined) return ok(undefined);
+  const raw = typeof value === 'string' ? value : '';
+  if (raw.includes('://')) {
+    const url = parseImageUrl(raw);
+    return url.ok ? ok({ imageUrl: url.value }) : invalidImage(url.error.message);
+  }
+  const path = parseImagePath(raw);
+  return path.ok ? ok({ imagePath: path.value }) : invalidImage(path.error.message);
+};
+
+// --split is read and left out: Facebook takes a long text whole (D26).
+export const readFacebookContent = (values: Values, example: string): Result<FacebookPostContent, Failure> => {
+  const image = readFacebookImage(values['image']);
+  if (!image.ok) return image;
+  const { text } = textAndSplit(values);
+  if (image.value === undefined) return text === undefined ? missingContent(example) : ok({ text });
+  return ok({ ...(text !== undefined && { text }), ...image.value });
+};
+
 export const readContent = (values: Values, platform: Platform, example: string): Result<PlatformContent, Failure> => {
   if (platform === 'x') {
     const content = readXContent(values, example);
+    return content.ok ? ok({ platform, ...content.value }) : content;
+  }
+  if (platform === 'facebook') {
+    const content = readFacebookContent(values, example);
     return content.ok ? ok({ platform, ...content.value }) : content;
   }
   const content = readThreadsContent(values, example);

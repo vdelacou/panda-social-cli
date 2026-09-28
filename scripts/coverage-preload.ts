@@ -73,6 +73,7 @@ import '../src/presenter/contract.ts';
 import '../src/presenter/facebook-setup-steps.ts';
 import '../src/presenter/failure.ts';
 import '../src/presenter/hints.ts';
+import '../src/presenter/instagram-setup-steps.ts';
 import '../src/presenter/manifest.ts';
 import '../src/presenter/post-command.ts';
 import '../src/presenter/post-content.ts';

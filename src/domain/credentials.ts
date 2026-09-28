@@ -29,10 +29,21 @@ export type FacebookCredentials = {
   readonly savedAt: string;
 };
 
+// Instagram Login (D31): the token renews as the Threads one does, and `userId` is the
+// professional account id, checked before it reaches a URL.
+export type InstagramCredentials = {
+  readonly token: string;
+  readonly userId: string;
+  readonly username: string;
+  readonly savedAt: string;
+  readonly expiresAt?: string;
+};
+
 export type ProfileCredentials = {
   readonly threads?: ThreadsCredentials;
   readonly x?: XCredentials;
   readonly facebook?: FacebookCredentials;
+  readonly instagram?: InstagramCredentials;
 };
 
 export type CredentialsFile = {
@@ -65,3 +76,8 @@ export const withFacebookCredentials = (file: CredentialsFile, profile: ProfileN
 
 export const facebookCredentialsFor = (file: CredentialsFile, profile: ProfileName): FacebookCredentials | undefined =>
   Object.hasOwn(file.profiles, profile) ? file.profiles[profile].facebook : undefined;
+
+export const withInstagramCredentials = (file: CredentialsFile, profile: ProfileName, instagram: InstagramCredentials): CredentialsFile => ({
+  version: 1,
+  profiles: { ...file.profiles, [profile]: { ...file.profiles[profile], instagram } },
+});

@@ -4,8 +4,50 @@
   "private": true,
   "description": "Post text and images to Threads, X, Facebook Pages and Instagram from one CLI or TypeScript library, built for AI agents first.",
   "license": "MIT",
-  "module": "src/main.ts",
+  "keywords": [
+    "threads",
+    "twitter",
+    "x",
+    "facebook",
+    "instagram",
+    "social-media",
+    "cli",
+    "ai-agent",
+    "llm",
+    "bun",
+    "typescript"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vdelacou/panda-social-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/vdelacou/panda-social-cli/issues"
+  },
+  "homepage": "https://github.com/vdelacou/panda-social-cli#readme",
   "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "panda-social": "./dist/cli.js"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20",
+    "bun": ">=1.3"
+  },
   "scripts": {
     "start": "bun run src/main.ts",
     "lint": "eslint --cache --max-warnings=0",
@@ -16,7 +58,11 @@
     "coverage": "bun run scripts/check-coverage.ts",
     "mutate": "stryker run",
     "mutate:changed": "bash scripts/mutate-changed.sh",
-    "mutate:staged": "bash scripts/mutate-staged.sh"
+    "mutate:staged": "bash scripts/mutate-staged.sh",
+    "build": "rm -rf dist && bun run build:js && bun run build:types",
+    "build:js": "bun build src/main.ts --target=node --format=esm --packages=external --banner='#!/usr/bin/env node' --outfile=dist/cli.js && bun build src/index.ts --target=node --format=esm --packages=external --outfile=dist/index.js",
+    "build:types": "tsc -p tsconfig.build.json && bun run scripts/fix-dts-extensions.ts",
+    "smoke:dist": "bun run scripts/smoke-dist.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

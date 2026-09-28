@@ -13,5 +13,5 @@ export const runPost = async (io: CliIo, command: PostCommand, config: Config): 
   if (!token.ok) return fail(io, token.error);
   const logger = createWinstonLogger(config.logLevel, io.logStream);
   const publishPost = createPublishPost({ threads: createThreadsGraph({ token: token.value }), logger });
-  return answer(io, await publishPost({ text: command.text }));
+  return answer(io, await publishPost({ text: command.text, imageUrl: command.imageUrl, split: command.split }));
 };

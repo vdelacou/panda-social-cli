@@ -233,6 +233,12 @@ export default [
     },
   },
   {
+    // A test proving that an insecure URL is refused needs that URL as its fixture, and the
+    // rule's autofix rewrote one to https, silently changing what the test checked.
+    files: ['**/*.test.ts'],
+    rules: { 'unicorn/prefer-https': 'off' },
+  },
+  {
     // The test seams swap a global and restore it (installFetchMock, references/testing-infra.md);
     // production code never assigns one.
     files: ['src/test-helpers/**/*.ts', '**/*.test.ts'],

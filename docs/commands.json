@@ -1,0 +1,257 @@
+{
+  "bin": "panda-social",
+  "contract": "Every command prints one JSON line on stdout: `{\"ok\":true,\"data\":...}` on success, or `{\"ok\":false,\"error\":{\"code\":\"...\",\"message\":\"...\",\"hint\":\"...\"}}` on failure, and exits 0 or 1. The `hint` names the next step for the `code`. The interactive setup guide and the logs go to stderr, never to stdout.",
+  "flags": [
+    {
+      "flag": "--version",
+      "description": "Print the package name and version."
+    },
+    {
+      "flag": "--help",
+      "description": "Print the manifest, as help-json does. `<command> --help` prints that command page, as `docs <command>` does."
+    }
+  ],
+  "commands": [
+    {
+      "name": "post",
+      "summary": "Publish a text post to Threads.",
+      "description": "Publishes the text as a new post on the account saved in the profile, and answers with the post id and its link. Threads allows 500 characters and 250 posts per 24 hours. Publishing is never retried: a post that timed out may still have gone out, so check the profile before posting again.",
+      "usage": "panda-social post --to <platform> --text <text> [--profile <name>]",
+      "arguments": [],
+      "options": [
+        {
+          "flag": "--to",
+          "value": "<platform>",
+          "required": true,
+          "description": "The platform to post to.",
+          "values": [
+            "threads"
+          ]
+        },
+        {
+          "flag": "--text",
+          "value": "<text>",
+          "required": true,
+          "description": "The text of the post, quoted when it contains spaces. 500 characters at most on Threads."
+        },
+        {
+          "flag": "--profile",
+          "value": "<name>",
+          "required": false,
+          "description": "The profile whose saved account posts. Defaults to \"default\". PANDA_SOCIAL_THREADS_TOKEN, when set, overrides the saved token."
+        }
+      ],
+      "examples": [
+        {
+          "command": "panda-social post --to threads --text \"Hello from panda\"",
+          "explanation": "Post from the account saved in the default profile."
+        },
+        {
+          "command": "panda-social post --to threads --text \"Launch day\" --profile brand-a",
+          "explanation": "Post from the account saved in the brand-a profile."
+        }
+      ],
+      "output": "The new post: `{\"platform\":\"threads\",\"id\":\"<post id>\",\"url\":\"<link, or null when Threads did not return one>\"}`.",
+      "mutates": true,
+      "errors": [
+        "unknown-option",
+        "unexpected-argument",
+        "unknown-platform",
+        "missing-text",
+        "invalid-profile",
+        "missing-credentials",
+        "corrupt",
+        "unreadable",
+        "unauthorized",
+        "rate-limited",
+        "rejected",
+        "network-failed",
+        "timeout"
+      ]
+    },
+    {
+      "name": "setup",
+      "summary": "Connect a Threads account and save its token under a profile.",
+      "description": "On a terminal, walks a first-time user through the six one-time steps (a Meta developer account, an app with the Threads API, its permissions, a tester invitation, the token) one at a time, then reads the token without showing it. Without a terminal it answers with the same steps as JSON, for an agent to relay to its human, and the command that finishes the setup. With --token-stdin it reads the token from standard input. Every token is checked with Threads before it is saved in ~/.panda-social/credentials.json, readable by its owner only.",
+      "usage": "panda-social setup <platform> [--token-stdin] [--profile <name>]",
+      "arguments": [
+        {
+          "name": "platform",
+          "required": true,
+          "description": "The platform to connect.",
+          "values": [
+            "threads"
+          ]
+        }
+      ],
+      "options": [
+        {
+          "flag": "--token-stdin",
+          "required": false,
+          "description": "Read the token from standard input instead of asking for it."
+        },
+        {
+          "flag": "--profile",
+          "value": "<name>",
+          "required": false,
+          "description": "The profile to save the account under. Defaults to \"default\"."
+        }
+      ],
+      "examples": [
+        {
+          "command": "panda-social setup threads",
+          "explanation": "On a terminal, the guided setup; without one, the steps as JSON."
+        },
+        {
+          "command": "panda-social setup threads --token-stdin",
+          "explanation": "Save a token piped in on standard input, once Threads confirms it."
+        },
+        {
+          "command": "panda-social setup threads --token-stdin --profile brand-a",
+          "explanation": "Save a second account under the brand-a profile."
+        }
+      ],
+      "output": "The connected account, `{\"platform\":\"threads\",\"profile\":\"<name>\",\"userId\":\"<id>\",\"username\":\"<username>\"}`. Without a terminal and without --token-stdin, the guide instead: `{\"platform\":\"threads\",\"profile\":\"<name>\",\"steps\":[{\"step\":1,\"title\":\"...\",\"actions\":[\"...\"],\"url\":\"...\"}],\"finish\":\"<the command that completes the setup>\"}`.",
+      "mutates": true,
+      "errors": [
+        "unknown-option",
+        "unexpected-argument",
+        "unknown-platform",
+        "invalid-profile",
+        "no-home",
+        "cancelled",
+        "unauthorized",
+        "rate-limited",
+        "rejected",
+        "network-failed",
+        "timeout",
+        "corrupt",
+        "unreadable",
+        "write-failed"
+      ]
+    },
+    {
+      "name": "help-json",
+      "summary": "Describe every command, option, example and error code as JSON. Start here.",
+      "description": "The manifest an agent reads on first contact: the output contract, the global flags, every command with its usage line, parameters, examples and error codes, and the next step for every error code. The same manifest ships as docs/commands.json.",
+      "usage": "panda-social help-json",
+      "arguments": [],
+      "options": [],
+      "examples": [
+        {
+          "command": "panda-social help-json",
+          "explanation": "Read the whole command surface in one call."
+        }
+      ],
+      "output": "The manifest: `{\"name\",\"version\",\"bin\",\"contract\",\"flags\":[...],\"commands\":[...],\"errors\":[{\"code\",\"hint\"}]}`.",
+      "mutates": false,
+      "errors": [
+        "unknown-option",
+        "unexpected-argument"
+      ]
+    },
+    {
+      "name": "docs",
+      "summary": "Show one command's full documentation as markdown.",
+      "description": "The long form of one command: what it does, its usage line, every parameter, examples ready to paste into a shell, its output and its error codes. docs/COMMANDS.md collects every page.",
+      "usage": "panda-social docs <command>",
+      "arguments": [
+        {
+          "name": "command",
+          "required": true,
+          "description": "The command to document.",
+          "values": [
+            "post",
+            "setup",
+            "help-json",
+            "docs"
+          ]
+        }
+      ],
+      "options": [],
+      "examples": [
+        {
+          "command": "panda-social docs post",
+          "explanation": "Read the post page."
+        }
+      ],
+      "output": "The page: `{\"command\":\"<name>\",\"markdown\":\"<the page>\"}`.",
+      "mutates": false,
+      "errors": [
+        "unknown-option",
+        "unexpected-argument",
+        "unknown-command"
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": "cancelled",
+      "hint": "The setup stopped before a token was pasted. Run `panda-social setup threads` again when you have it."
+    },
+    {
+      "code": "corrupt",
+      "hint": "The credentials file is not valid. Fix or delete ~/.panda-social/credentials.json, then run `panda-social setup threads`."
+    },
+    {
+      "code": "invalid-profile",
+      "hint": "Use lowercase letters, digits, - and _, starting with a letter or digit, 40 characters at most. Example: --profile brand-a"
+    },
+    {
+      "code": "missing-credentials",
+      "hint": "Connect an account with `panda-social setup threads` (add `--profile <name>` for another profile), or set PANDA_SOCIAL_THREADS_TOKEN."
+    },
+    {
+      "code": "missing-text",
+      "hint": "Pass the text of the post with --text, quoted when it contains spaces."
+    },
+    {
+      "code": "network-failed",
+      "hint": "graph.threads.net could not be reached. Check the network, then retry."
+    },
+    {
+      "code": "no-home",
+      "hint": "Set HOME (USERPROFILE on Windows), or pass the token in PANDA_SOCIAL_THREADS_TOKEN instead of saving it."
+    },
+    {
+      "code": "rate-limited",
+      "hint": "Threads allows 250 posts per 24 hours. Wait, then retry."
+    },
+    {
+      "code": "rejected",
+      "hint": "Threads rejected the request. Check the text (500 characters at most), then retry."
+    },
+    {
+      "code": "timeout",
+      "hint": "Threads did not answer in time. The post may still have gone out: check the profile before retrying."
+    },
+    {
+      "code": "unauthorized",
+      "hint": "Threads refused the token. Generate a new one (Meta app dashboard, Use cases, Access the Threads API, Settings, User Token Generator) and run `panda-social setup threads` again."
+    },
+    {
+      "code": "unexpected-argument",
+      "hint": "Quote any value that contains spaces, for example --text \"Hello from panda\"."
+    },
+    {
+      "code": "unknown-command",
+      "hint": "Run `panda-social help-json` for every command, or `panda-social docs <command>` for one."
+    },
+    {
+      "code": "unknown-option",
+      "hint": "Run `panda-social docs <command>` for the options that command takes."
+    },
+    {
+      "code": "unknown-platform",
+      "hint": "Threads is the only platform so far: pass --to threads, or run `panda-social setup threads`."
+    },
+    {
+      "code": "unreadable",
+      "hint": "The credentials file could not be read. Check that ~/.panda-social/credentials.json belongs to you."
+    },
+    {
+      "code": "write-failed",
+      "hint": "The token could not be saved. Check that your home folder is writable, then run the setup again."
+    }
+  ]
+}

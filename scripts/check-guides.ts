@@ -1,12 +1,12 @@
 #!/usr/bin/env bun
 /*
- * The second half of docs:check: the two hand-written pages people follow must not drift
- * from the code.
+ * The second half of docs:check: the hand-written pages people follow must not drift from
+ * the code.
  *
- *   - Every `panda-social` line in a bash block of skills/SKILL.md or docs/setup/threads.md
- *     is a command line the real parser accepts.
- *   - Every setup step the CLI shows (THREADS_SETUP_STEPS) is in the guide: its title as a
- *     `## Step N: <title>` heading, each action as a `- <action>` line, its URL as `Open <url>`.
+ *   - Every `panda-social` line in a bash block of skills/SKILL.md or a setup guide under
+ *     docs/setup/ is a command line the real parser accepts.
+ *   - Every setup step the CLI shows (THREADS_SETUP_STEPS, X_SETUP_STEPS) is in its guide:
+ *     `## Step N: <title>`, then each action as `- <action>` and the URL as `Open <url>`.
  *   - The skill's frontmatter names it panda-social and keeps its description within the
  *     1,024 characters an agent harness loads.
  *
@@ -14,9 +14,14 @@
  */
 import { parseCliArgs } from '../src/presenter/cli.ts';
 import { THREADS_SETUP_STEPS } from '../src/presenter/threads-setup-steps.ts';
+import { X_SETUP_STEPS } from '../src/presenter/x-setup-steps.ts';
+import type { SetupStep } from '../src/domain/setup-step.ts';
 
 const SKILL = 'skills/SKILL.md';
-const GUIDE = 'docs/setup/threads.md';
+const GUIDES: ReadonlyArray<{ readonly file: string; readonly steps: ReadonlyArray<SetupStep> }> = [
+  { file: 'docs/setup/threads.md', steps: THREADS_SETUP_STEPS },
+  { file: 'docs/setup/x.md', steps: X_SETUP_STEPS },
+];
 const DESCRIPTION_LIMIT = 1024;
 
 type Line = { readonly number: number; readonly text: string };
@@ -54,12 +59,12 @@ const commandFindings = (file: string, text: string): ReadonlyArray<string> =>
       return parsed.ok ? [] : [`${file}:${line.number}: \`${line.text}\` is refused by the CLI: ${parsed.error.code}, ${parsed.error.message}`];
     });
 
-const stepFindings = (guide: string): ReadonlyArray<string> => {
+const stepFindings = (file: string, guide: string, steps: ReadonlyArray<SetupStep>): ReadonlyArray<string> => {
   const lines = new Set(guide.split('\n'));
-  return THREADS_SETUP_STEPS.flatMap((step, index) =>
+  return steps.flatMap((step, index) =>
     [`## Step ${index + 1}: ${step.title}`, ...step.actions.map((action) => `- ${action}`), ...(step.url ? [`Open ${step.url}`] : [])]
       .filter((expected) => !lines.has(expected))
-      .map((expected) => `${GUIDE}: the CLI's setup step ${index + 1} has "${expected}", which the guide lacks`)
+      .map((expected) => `${file}: the CLI's setup step ${index + 1} has "${expected}", which the guide lacks`)
   );
 };
 
@@ -81,10 +86,15 @@ const skillFindings = (skill: string): ReadonlyArray<string> => {
   return findings;
 };
 
+const guideFindings = async (file: string, steps: ReadonlyArray<SetupStep>): Promise<ReadonlyArray<string>> => {
+  const guide = await Bun.file(file).text();
+  return [...commandFindings(file, guide), ...stepFindings(file, guide, steps)];
+};
+
 const skill = await Bun.file(SKILL).text();
-const guide = await Bun.file(GUIDE).text();
-const findings = [...commandFindings(SKILL, skill), ...commandFindings(GUIDE, guide), ...stepFindings(guide), ...skillFindings(skill)];
+const guides = await Promise.all(GUIDES.map(async (guide) => guideFindings(guide.file, guide.steps)));
+const findings = [...commandFindings(SKILL, skill), ...guides.flat(), ...skillFindings(skill)];
 
 for (const finding of findings) console.error(`docs-check: ${finding}`);
 if (findings.length > 0) process.exit(1);
-console.log(`docs-check: ${SKILL} and ${GUIDE} match the CLI`);
+console.log(`docs-check: ${[SKILL, ...GUIDES.map((guide) => guide.file)].join(', ')} match the CLI`);

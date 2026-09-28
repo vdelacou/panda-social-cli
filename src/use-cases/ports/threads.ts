@@ -1,6 +1,7 @@
 import type { ImageUrl } from '../../domain/image-url.ts';
 import type { Result } from '../../domain/result.ts';
 import type { ThreadsPostId } from '../../domain/threads-post-id.ts';
+import type { ThreadsUserId } from '../../domain/threads-user-id.ts';
 
 // `url` is null when the post went out but its permalink could not be read back:
 // the post exists, so reporting a failure would invite a duplicate on retry.
@@ -10,7 +11,7 @@ export type PublishedPost = {
 };
 
 export type ThreadsAccount = {
-  readonly userId: string;
+  readonly userId: ThreadsUserId;
   readonly username: string;
 };
 

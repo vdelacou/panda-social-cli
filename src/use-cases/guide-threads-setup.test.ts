@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import { EMPTY_CREDENTIALS } from '../domain/credentials.ts';
 import { DEFAULT_PROFILE } from '../domain/profile-name.ts';
 import { err } from '../domain/result.ts';
+import { threadsUserIdUnsafe } from '../domain/threads-user-id.ts';
 import { THREADS_SETUP_STEPS } from '../presenter/threads-setup-steps.ts';
 import { createCredentialStoreFake } from '../test-helpers/credential-store-fake.ts';
 import { createTerminalFake } from '../test-helpers/terminal-fake.ts';
@@ -24,7 +25,11 @@ const guideWith = (
 } => {
   const terminal = createTerminalFake(answers);
   const store = createCredentialStoreFake();
-  const connectThreads = createConnectThreads({ threadsFor: () => createThreadsFake({ account: { userId: '26000000000000001', username: 'panda' } }), store, now: () => NOW });
+  const connectThreads = createConnectThreads({
+    threadsFor: () => createThreadsFake({ account: { userId: threadsUserIdUnsafe('26000000000000001'), username: 'panda' } }),
+    store,
+    now: () => NOW,
+  });
   return { guide: createGuideThreadsSetup({ terminal, steps: THREADS_SETUP_STEPS, connectThreads }), terminal, store };
 };
 

@@ -2,13 +2,14 @@ import { describe, expect, it } from 'bun:test';
 import { EMPTY_CREDENTIALS } from '../domain/credentials.ts';
 import { DEFAULT_PROFILE, profileNameUnsafe } from '../domain/profile-name.ts';
 import { err, ok } from '../domain/result.ts';
+import { threadsUserIdUnsafe } from '../domain/threads-user-id.ts';
 import { createCredentialStoreFake } from '../test-helpers/credential-store-fake.ts';
 import { createThreadsFake } from '../test-helpers/threads-fake.ts';
 import { createConnectThreads } from './connect-threads.ts';
 
 const NOW = new Date('2026-09-28T09:30:00.000Z');
 const TOKEN = ['threads', 'token', 'one'].join('-');
-const ACCOUNT = { userId: '26000000000000001', username: 'panda' };
+const ACCOUNT = { userId: threadsUserIdUnsafe('26000000000000001'), username: 'panda' };
 
 describe('connecting a Threads account', () => {
   it('when a valid Threads token is connected to the default profile, it is saved with the account username and the agent gets the username back', async () => {
@@ -56,7 +57,7 @@ describe('connecting a Threads account', () => {
   it('connecting a second profile keeps the first profile credentials', async () => {
     const first = { token: TOKEN, userId: ACCOUNT.userId, username: 'panda', savedAt: '2026-09-01T08:00:00.000Z' };
     const store = createCredentialStoreFake({ initial: { version: 1, profiles: { default: { threads: first } } } });
-    const second = { userId: '26000000000000002', username: 'panda_brand' };
+    const second = { userId: threadsUserIdUnsafe('26000000000000002'), username: 'panda_brand' };
     const connect = createConnectThreads({ threadsFor: () => createThreadsFake({ account: second }), store, now: () => NOW });
 
     const result = await connect({ profile: profileNameUnsafe('brand-a'), token: 'second-token' });

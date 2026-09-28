@@ -1,5 +1,6 @@
 import { err, ok } from '../domain/result.ts';
 import { threadsPostIdUnsafe } from '../domain/threads-post-id.ts';
+import { threadsUserIdUnsafe } from '../domain/threads-user-id.ts';
 import type { PublishedPost, Threads, ThreadsAccount, ThreadsError } from '../use-cases/ports/threads.ts';
 
 export type ThreadsFake = Threads & {
@@ -70,7 +71,7 @@ export const createThreadsFake = (config?: ThreadsFakeConfig): ThreadsFake => {
     },
     whoAmI: async () => {
       if (errors?.whoAmI) return err(errors.whoAmI);
-      return ok(config?.account ?? { userId: '26000000000000000', username: 'fake' });
+      return ok(config?.account ?? { userId: threadsUserIdUnsafe('26000000000000000'), username: 'fake' });
     },
   };
 };

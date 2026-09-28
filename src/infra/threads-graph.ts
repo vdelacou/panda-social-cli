@@ -2,7 +2,8 @@ import type { ImageUrl } from '../domain/image-url.ts';
 import { err, ok } from '../domain/result.ts';
 import type { Result } from '../domain/result.ts';
 import type { ThreadsPostId } from '../domain/threads-post-id.ts';
-import type { PublishedPost, Threads, ThreadsAccount, ThreadsError } from '../use-cases/ports/threads.ts';
+import type { PublishedPost, Threads, ThreadsError } from '../use-cases/ports/threads.ts';
+import { whoAmI } from './threads-account.ts';
 import { createAndPublish } from './threads-container.ts';
 import { idFrom, request, stringField } from './threads-http.ts';
 import type { ThreadsGraphConfig } from './threads-http.ts';
@@ -37,15 +38,6 @@ const deletePost = async (config: ThreadsGraphConfig, id: ThreadsPostId): Promis
   if (!answer.ok) return answer;
   if (answer.value['success'] !== true) return err({ kind: 'rejected', status: 200, message: `Threads did not confirm the delete of ${id}` });
   return ok(undefined);
-};
-
-const whoAmI = async (config: ThreadsGraphConfig): Promise<Result<ThreadsAccount, ThreadsError>> => {
-  const answer = await request(config, '/me?fields=id,username', { method: 'GET' });
-  if (!answer.ok) return answer;
-  const userId = stringField(answer.value, 'id');
-  const username = stringField(answer.value, 'username');
-  if (userId === undefined || username === undefined) return err({ kind: 'rejected', status: 200, message: 'Threads answered /me without an id or a username' });
-  return ok({ userId, username });
 };
 
 export const createThreadsGraph = (config: ThreadsGraphConfig): Threads => ({

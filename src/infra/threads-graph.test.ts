@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'bun:test';
 import { imageUrlUnsafe } from '../domain/image-url.ts';
 import { threadsPostIdUnsafe } from '../domain/threads-post-id.ts';
+import { threadsUserIdUnsafe } from '../domain/threads-user-id.ts';
 import { installFetchMock } from '../test-helpers/fetch-mock.ts';
 import type { FetchMock, FetchMockCall } from '../test-helpers/fetch-mock.ts';
 import { createThreadsGraph } from './threads-graph.ts';
@@ -119,7 +120,7 @@ describe('the Threads Graph adapter', () => {
 
     const result = await createThreadsGraph({ token: TOKEN }).whoAmI();
 
-    expect(result).toEqual({ ok: true, value: { userId: '26000000000000001', username: 'panda' } });
+    expect(result).toEqual({ ok: true, value: { userId: threadsUserIdUnsafe('26000000000000001'), username: 'panda' } });
     expect(new Headers(mock.calls[0]?.init?.headers).get('authorization')).toBe(`Bearer ${TOKEN}`);
   });
 

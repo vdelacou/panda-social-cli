@@ -18,6 +18,9 @@ const HINTS: Readonly<Record<string, string>> = {
     'Pass the text of the post with --text (quoted when it contains spaces), an image with --image (a URL on Threads and Instagram, a local file on X, either on Facebook), or both.',
   'missing-image':
     'Instagram has no text-only posts. Pass --image with a public https URL to a JPEG of 8 MB at most, with an aspect ratio between 4:5 and 1.91:1; --text becomes its caption. Example: panda-social post --to instagram --image https://cdn.example.com/cat.jpg --text "A cat on the sofa"',
+  'partly-published':
+    'Some platforms got the post and some did not. error.details.published lists the posts that exist, with their ids and links; error.details.failed lists each platform that failed, with its code, message and next step. Fix what a failure names, then post again with --to naming only those platforms: posting to the others again would duplicate their post.',
+  'not-published': 'No platform got the post. error.details.failed lists each one with its code, message and next step: fix what they name, then post again.',
   'text-too-long':
     'Threads allows 500 characters per post, an emoji counting its UTF-8 bytes; X allows 280, most characters counting 1, CJK characters and emoji 2, a link 23. Shorten the text, or pass --split to post it as a thread of replies; an X edit is one post, so pass --repost there instead.',
   'invalid-image':

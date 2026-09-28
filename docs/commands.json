@@ -14,8 +14,8 @@
   "commands": [
     {
       "name": "post",
-      "summary": "Publish a text post, an image, or both, to Threads, X or a Facebook Page, or an image with its caption to Instagram.",
-      "description": "Publishes a new post on the account saved in the profile and answers with its id and link. A text over the platform limit (500 on Threads, 280 on X) is refused unless --split posts it as a thread of replies; Facebook takes a long text whole. Threads downloads the image from its URL; on X the CLI uploads a local file; Facebook takes either, and the text becomes the photo caption. Instagram has no text-only posts: it takes an https URL to a JPEG, which it downloads itself, and the text as its caption, sent whole. Threads allows 250 posts per 24 hours; X allows 100 per 15 minutes and bills each one against the app credits, $0.015, or $0.20 when the text contains a link; Facebook posts are free, and show to everyone once the Meta app is published; Instagram allows 50 or 100 API posts per 24 hours (Meta's pages differ; `status instagram` shows the account's own). Publishing is never retried: a post that timed out may still have gone out, so check the profile before posting again.",
+      "summary": "Publish a text post, an image, or both, to Threads, X or a Facebook Page, or an image with its caption to Instagram, on one platform or several at once.",
+      "description": "Publishes a new post on the account saved in the profile and answers with its id and link. A text over the platform limit (500 on Threads, 280 on X) is refused unless --split posts it as a thread of replies; Facebook takes a long text whole. Threads downloads the image from its URL; on X the CLI uploads a local file; Facebook takes either, and the text becomes the photo caption. Instagram has no text-only posts: it takes an https URL to a JPEG, which it downloads itself, and the text as its caption, sent whole. Threads allows 250 posts per 24 hours; X allows 100 per 15 minutes and bills each one against the app credits, $0.015, or $0.20 when the text contains a link; Facebook posts are free, and show to everyone once the Meta app is published; Instagram allows 50 or 100 API posts per 24 hours (Meta's pages differ; `status instagram` shows the account's own). --to takes several platforms separated by commas: each gets the same post, one after another, once every one of them has accepted the flags, and a failure on one never stops the next. Publishing is never retried: a post that timed out may still have gone out, so check the profile before posting again.",
       "usage": "panda-social post --to <platform> [--text <text>] [--profile <name>] [--image <image>] [--split]",
       "arguments": [],
       "options": [
@@ -23,7 +23,7 @@
           "flag": "--to",
           "value": "<platform>",
           "required": true,
-          "description": "The platform to post to.",
+          "description": "The platform to post to, or several separated by commas, such as threads,x,facebook: each gets the same post, one after another.",
           "values": [
             "threads",
             "x",
@@ -91,15 +91,21 @@
         {
           "command": "panda-social post --to instagram --image https://cdn.example.com/cat.jpg --text \"A cat on the sofa\"",
           "explanation": "Post an image to Instagram, which downloads it, with a caption."
+        },
+        {
+          "command": "panda-social post --to threads,x,facebook --text \"Launch day: the beta is open\"",
+          "explanation": "Post the same text to Threads, X and the Facebook Page."
         }
       ],
-      "output": "The new post: `{\"platform\":\"threads\",\"id\":\"<post id>\",\"url\":\"<link, or null when Threads did not return one>\"}` on Threads, `{\"platform\":\"x\",\"id\":\"<post id>\",\"url\":\"https://x.com/i/status/<post id>\"}` on X, `{\"platform\":\"facebook\",\"id\":\"<page id>_<post id>\",\"url\":\"https://www.facebook.com/<page id>/posts/<post id>\"}` on Facebook, `{\"platform\":\"instagram\",\"id\":\"<post id>\",\"url\":\"<link, or null when Instagram did not return one>\"}` on Instagram, plus `\"replies\":[\"<id>\",...]` for a --split thread.",
+      "output": "The new post: `{\"platform\":\"threads\",\"id\":\"<post id>\",\"url\":\"<link, or null when Threads did not return one>\"}` on Threads, `{\"platform\":\"x\",\"id\":\"<post id>\",\"url\":\"https://x.com/i/status/<post id>\"}` on X, `{\"platform\":\"facebook\",\"id\":\"<page id>_<post id>\",\"url\":\"https://www.facebook.com/<page id>/posts/<post id>\"}` on Facebook, `{\"platform\":\"instagram\",\"id\":\"<post id>\",\"url\":\"<link, or null when Instagram did not return one>\"}` on Instagram, plus `\"replies\":[\"<id>\",...]` for a --split thread. Several platforms: `{\"posts\":[<each post as above>]}`; when some fail, exit 1 with `partly-published` or `not-published`, `details.published` listing the posts that exist and `details.failed` each failed platform with its code, message and hint.",
       "mutates": true,
       "errors": [
         "unknown-option",
         "unexpected-argument",
         "unknown-platform",
         "invalid-profile",
+        "partly-published",
+        "not-published",
         "missing-text",
         "missing-image",
         "invalid-image",
@@ -609,6 +615,14 @@
     {
       "code": "no-pages",
       "hint": "The token grants no Page. Generate it again in the Graph API Explorer (step 4 of `panda-social setup facebook`) and choose your Page in the dialog; your Facebook account needs a role on that Page."
+    },
+    {
+      "code": "not-published",
+      "hint": "No platform got the post. error.details.failed lists each one with its code, message and next step: fix what they name, then post again."
+    },
+    {
+      "code": "partly-published",
+      "hint": "Some platforms got the post and some did not. error.details.published lists the posts that exist, with their ids and links; error.details.failed lists each platform that failed, with its code, message and next step. Fix what a failure names, then post again with --to naming only those platforms: posting to the others again would duplicate their post."
     },
     {
       "code": "rate-limited",

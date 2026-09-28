@@ -6,7 +6,7 @@ Every command prints one JSON line on stdout: `{"ok":true,"data":...}` on succes
 
 | Command | What it does |
 | --- | --- |
-| [`post`](#post) | Publish a text post, an image, or both, to Threads, X or a Facebook Page, or an image with its caption to Instagram. |
+| [`post`](#post) | Publish a text post, an image, or both, to Threads, X or a Facebook Page, or an image with its caption to Instagram, on one platform or several at once. |
 | [`update`](#update) | Replace a post: an edit in place on X and Facebook, or with --repost on Threads, X and Facebook, delete it and publish the new version. |
 | [`delete`](#delete) | Delete a Threads, X or Facebook post by its id. |
 | [`setup`](#setup) | Connect a Threads account, X keys, a Facebook Page or an Instagram account, and save the credentials under a profile. |
@@ -21,7 +21,7 @@ Every command prints one JSON line on stdout: `{"ok":true,"data":...}` on succes
 
 ## post
 
-Publishes a new post on the account saved in the profile and answers with its id and link. A text over the platform limit (500 on Threads, 280 on X) is refused unless --split posts it as a thread of replies; Facebook takes a long text whole. Threads downloads the image from its URL; on X the CLI uploads a local file; Facebook takes either, and the text becomes the photo caption. Instagram has no text-only posts: it takes an https URL to a JPEG, which it downloads itself, and the text as its caption, sent whole. Threads allows 250 posts per 24 hours; X allows 100 per 15 minutes and bills each one against the app credits, $0.015, or $0.20 when the text contains a link; Facebook posts are free, and show to everyone once the Meta app is published; Instagram allows 50 or 100 API posts per 24 hours (Meta's pages differ; `status instagram` shows the account's own). Publishing is never retried: a post that timed out may still have gone out, so check the profile before posting again.
+Publishes a new post on the account saved in the profile and answers with its id and link. A text over the platform limit (500 on Threads, 280 on X) is refused unless --split posts it as a thread of replies; Facebook takes a long text whole. Threads downloads the image from its URL; on X the CLI uploads a local file; Facebook takes either, and the text becomes the photo caption. Instagram has no text-only posts: it takes an https URL to a JPEG, which it downloads itself, and the text as its caption, sent whole. Threads allows 250 posts per 24 hours; X allows 100 per 15 minutes and bills each one against the app credits, $0.015, or $0.20 when the text contains a link; Facebook posts are free, and show to everyone once the Meta app is published; Instagram allows 50 or 100 API posts per 24 hours (Meta's pages differ; `status instagram` shows the account's own). --to takes several platforms separated by commas: each gets the same post, one after another, once every one of them has accepted the flags, and a failure on one never stops the next. Publishing is never retried: a post that timed out may still have gone out, so check the profile before posting again.
 
 ### Usage
 
@@ -33,7 +33,7 @@ panda-social post --to <platform> [--text <text>] [--profile <name>] [--image <i
 
 | Parameter | Required | Description |
 | --- | --- | --- |
-| `--to <platform>` | yes | The platform to post to. One of: threads, x, facebook, instagram. |
+| `--to <platform>` | yes | The platform to post to, or several separated by commas, such as threads,x,facebook: each gets the same post, one after another. One of: threads, x, facebook, instagram. |
 | `--text <text>` | no | The text of the post, quoted when it contains spaces. Required unless --image is given. Threads takes 500 characters, an emoji counting its UTF-8 bytes (a thumbs-up is 4); X takes 280 as X counts them: most characters 1, CJK characters and emoji 2, a link 23; Facebook takes a long text whole; on Instagram it is the caption of the image, which Instagram limits to 2,200 characters, 30 hashtags and 20 @ tags. |
 | `--profile <name>` | no | The profile whose saved account acts. Defaults to "default". A saved Threads or Instagram token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, PANDA_SOCIAL_INSTAGRAM_TOKEN, all four PANDA_SOCIAL_X_ variables, or both PANDA_SOCIAL_FACEBOOK_PAGE_ID and PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN, when set, override the saved credentials. |
 | `--image <image>` | no | Threads: a public https URL to a JPEG or PNG image, 8 MB at most, which Threads downloads itself. X: a local JPEG, PNG, GIF or WEBP file, 5 MB at most, which the CLI uploads. Facebook: either, an https URL Facebook downloads or a local JPEG, PNG, GIF, BMP or TIFF file of 10 MB at most, which the CLI uploads. Instagram: required, a public https URL to a JPEG of 8 MB at most with an aspect ratio between 4:5 and 1.91:1, which Instagram downloads itself. |
@@ -60,11 +60,13 @@ panda-social post --to facebook --text "Hello from panda"
 panda-social post --to facebook --image ./chart.png --text "This week in one chart"
 # Post an image to Instagram, which downloads it, with a caption.
 panda-social post --to instagram --image https://cdn.example.com/cat.jpg --text "A cat on the sofa"
+# Post the same text to Threads, X and the Facebook Page.
+panda-social post --to threads,x,facebook --text "Launch day: the beta is open"
 ```
 
 ### Output
 
-The new post: `{"platform":"threads","id":"<post id>","url":"<link, or null when Threads did not return one>"}` on Threads, `{"platform":"x","id":"<post id>","url":"https://x.com/i/status/<post id>"}` on X, `{"platform":"facebook","id":"<page id>_<post id>","url":"https://www.facebook.com/<page id>/posts/<post id>"}` on Facebook, `{"platform":"instagram","id":"<post id>","url":"<link, or null when Instagram did not return one>"}` on Instagram, plus `"replies":["<id>",...]` for a --split thread.
+The new post: `{"platform":"threads","id":"<post id>","url":"<link, or null when Threads did not return one>"}` on Threads, `{"platform":"x","id":"<post id>","url":"https://x.com/i/status/<post id>"}` on X, `{"platform":"facebook","id":"<page id>_<post id>","url":"https://www.facebook.com/<page id>/posts/<post id>"}` on Facebook, `{"platform":"instagram","id":"<post id>","url":"<link, or null when Instagram did not return one>"}` on Instagram, plus `"replies":["<id>",...]` for a --split thread. Several platforms: `{"posts":[<each post as above>]}`; when some fail, exit 1 with `partly-published` or `not-published`, `details.published` listing the posts that exist and `details.failed` each failed platform with its code, message and hint.
 
 ### Errors
 
@@ -74,6 +76,8 @@ The new post: `{"platform":"threads","id":"<post id>","url":"<link, or null when
 | `unexpected-argument` | Quote any value that contains spaces, for example --text "Hello from panda". |
 | `unknown-platform` | Name a platform the command takes, as `panda-social docs <command>` lists them. |
 | `invalid-profile` | Use lowercase letters, digits, - and _, starting with a letter or digit, 40 characters at most. Example: --profile brand-a |
+| `partly-published` | Some platforms got the post and some did not. error.details.published lists the posts that exist, with their ids and links; error.details.failed lists each platform that failed, with its code, message and next step. Fix what a failure names, then post again with --to naming only those platforms: posting to the others again would duplicate their post. |
+| `not-published` | No platform got the post. error.details.failed lists each one with its code, message and next step: fix what they name, then post again. |
 | `missing-text` | Pass the text of the post with --text (quoted when it contains spaces), an image with --image (a URL on Threads and Instagram, a local file on X, either on Facebook), or both. |
 | `missing-image` | Instagram has no text-only posts. Pass --image with a public https URL to a JPEG of 8 MB at most, with an aspect ratio between 4:5 and 1.91:1; --text becomes its caption. Example: panda-social post --to instagram --image https://cdn.example.com/cat.jpg --text "A cat on the sofa" |
 | `invalid-image` | Threads needs a public https URL to a JPEG or PNG image, 8 MB at most: host a local file first, then pass its URL. X needs a local JPEG, PNG, GIF or WEBP file, 5 MB at most: download a remote image first, then pass its path. Facebook takes an https URL, or a local JPEG, PNG, GIF, BMP or TIFF file of 10 MB at most. Instagram needs a public https URL to a JPEG of 8 MB at most: host a local file first, then pass its URL. |
@@ -446,6 +450,8 @@ Every failure carries one of these codes. Its `hint` says what to do next.
 | `network-failed` | The platform could not be reached (graph.threads.net, api.x.com, graph.facebook.com or graph.instagram.com). Check the network, then retry. |
 | `no-home` | Set HOME (USERPROFILE on Windows), or pass the credentials in the environment instead of saving them: PANDA_SOCIAL_THREADS_TOKEN, the four PANDA_SOCIAL_X_ variables, the two PANDA_SOCIAL_FACEBOOK_ variables, or PANDA_SOCIAL_INSTAGRAM_TOKEN. |
 | `no-pages` | The token grants no Page. Generate it again in the Graph API Explorer (step 4 of `panda-social setup facebook`) and choose your Page in the dialog; your Facebook account needs a role on that Page. |
+| `not-published` | No platform got the post. error.details.failed lists each one with its code, message and next step: fix what they name, then post again. |
+| `partly-published` | Some platforms got the post and some did not. error.details.published lists the posts that exist, with their ids and links; error.details.failed lists each platform that failed, with its code, message and next step. Fix what a failure names, then post again with --to naming only those platforms: posting to the others again would duplicate their post. |
 | `rate-limited` | Threads allows 250 posts and 100 deletes per 24 hours; X allows 100 posts and 50 deletes per 15 minutes, and 75 account checks; Facebook limits calls per app, per user and per Page, and its message says which; Instagram allows 50 or 100 API posts per 24 hours (Meta's pages differ, and `panda-social status instagram` shows the account's own). Wait, then retry. |
 | `read-only-keys` | These X keys can read but not post. In the developer console, set the app permissions to Read and write, then regenerate the Access Token and Secret (keys made earlier stay read-only) and run `panda-social setup x` again. |
 | `rejected` | The platform rejected the request; the message says why. Fix what it names (the text, the image or the post id), then retry. |

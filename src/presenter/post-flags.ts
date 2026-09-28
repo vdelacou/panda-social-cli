@@ -1,11 +1,12 @@
 import { parseFacebookPostId } from '../domain/facebook-post-id.ts';
+import { parseInstagramMediaId } from '../domain/instagram-media-id.ts';
 import { parseProfileName } from '../domain/profile-name.ts';
 import type { ProfileName } from '../domain/profile-name.ts';
 import { err, ok } from '../domain/result.ts';
 import type { Result } from '../domain/result.ts';
 import { parseThreadsPostId } from '../domain/threads-post-id.ts';
 import { parseXPostId } from '../domain/x-post-id.ts';
-import { PLATFORMS } from './commands/shared-options.ts';
+import { ACCOUNT_PLATFORMS } from './commands/shared-options.ts';
 import type { Failure } from './failure.ts';
 import { hintFor } from './hints.ts';
 import type { Platform, PostTarget } from './post-command.ts';
@@ -13,12 +14,12 @@ import type { Flags } from './read-flags.ts';
 
 type Values = Flags['values'];
 
-export const isPlatform = (value: unknown): value is Platform => typeof value === 'string' && PLATFORMS.includes(value);
+export const isPlatform = (value: unknown): value is Platform => typeof value === 'string' && ACCOUNT_PLATFORMS.includes(value);
 
 export const readPlatform = (values: Values, flag: 'to' | 'on', example: string): Result<Platform, Failure> => {
   const platform = values[flag];
   if (isPlatform(platform)) return ok(platform);
-  return err({ code: 'unknown-platform', message: `Unknown platform: ${String(platform)}.`, hint: `Supported platforms: ${PLATFORMS.join(', ')}. Example: ${example}` });
+  return err({ code: 'unknown-platform', message: `Unknown platform: ${String(platform)}.`, hint: `Supported platforms: ${ACCOUNT_PLATFORMS.join(', ')}. Example: ${example}` });
 };
 
 export const readProfile = (value: unknown): Result<ProfileName | undefined, Failure> => {
@@ -43,6 +44,10 @@ const POST_ID_READERS: Readonly<Record<Platform, (raw: string) => Result<PostTar
   facebook: (raw) => {
     const parsed = parseFacebookPostId(raw);
     return parsed.ok ? ok({ platform: 'facebook', id: parsed.value }) : refusedId(parsed.error.message);
+  },
+  instagram: (raw) => {
+    const parsed = parseInstagramMediaId(raw);
+    return parsed.ok ? ok({ platform: 'instagram', id: parsed.value }) : refusedId(parsed.error.message);
   },
 };
 

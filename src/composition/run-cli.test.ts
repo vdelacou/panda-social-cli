@@ -763,3 +763,66 @@ describe('connecting Instagram with `panda-social setup instagram`', () => {
     });
   });
 });
+
+const INSTAGRAM_MEDIA = 'https://graph.instagram.com/v26.0/17841400000000001/media';
+const INSTAGRAM_STATUS = 'https://graph.instagram.com/v26.0/18000000000000001?fields=status_code,status';
+const INSTAGRAM_PUBLISH = 'https://graph.instagram.com/v26.0/17841400000000001/media_publish';
+const INSTAGRAM_PERMALINK = 'https://graph.instagram.com/v26.0/17900000000000001?fields=permalink';
+
+// graph.instagram.com as a post meets it: whose token it is, then the container, its status, the publish and the link.
+const instagramPosting = (): FetchMock =>
+  installFetchMock([
+    { match: (url, init) => init?.method === 'GET' && url === INSTAGRAM_ME, respond: () => json({ user_id: '17841400000000001', username: 'panda', id: '26000000000000009' }) },
+    { match: (url, init) => init?.method === 'POST' && url === INSTAGRAM_MEDIA, respond: () => json({ id: '18000000000000001' }) },
+    { match: (url, init) => init?.method === 'GET' && url === INSTAGRAM_STATUS, respond: () => json({ status_code: 'FINISHED', id: '18000000000000001' }) },
+    { match: (url, init) => init?.method === 'POST' && url === INSTAGRAM_PUBLISH, respond: () => json({ id: '17900000000000001' }) },
+    {
+      match: (url, init) => init?.method === 'GET' && url === INSTAGRAM_PERMALINK,
+      respond: () => json({ id: '17900000000000001', permalink: 'https://www.instagram.com/p/C0ffee/' }),
+    },
+  ]);
+
+describe('posting to Instagram with `panda-social post --to instagram`', () => {
+  let home = '';
+  let mock: FetchMock | undefined;
+  beforeEach(() => {
+    home = mkdtempSync(path.join(tmpdir(), 'panda-social-'));
+  });
+  afterEach(() => {
+    mock?.restore();
+    rmSync(home, { recursive: true, force: true });
+  });
+
+  it('`post --to instagram` with a saved token asks whose it is, creates the container, checks it, publishes it and reads the link, all with the saved token, and prints the id and link', async () => {
+    const file = path.join(home, '.panda-social', 'credentials.json');
+    mkdirSync(path.dirname(file), { recursive: true });
+    writeFileSync(file, JSON.stringify({ version: 1, profiles: { default: { instagram: { token: INSTAGRAM_TOKEN, ...INSTAGRAM_ACCOUNT, savedAt: new Date().toISOString() } } } }));
+    mock = instagramPosting();
+
+    const posted = await run(['post', '--to', 'instagram', '--image', 'https://cdn.example.com/cat.jpg', '--text', 'A cat on the sofa'], { HOME: home });
+
+    expect(posted).toEqual({ exitCode: 0, answers: [{ ok: true, data: { platform: 'instagram', id: '17900000000000001', url: 'https://www.instagram.com/p/C0ffee/' } }] });
+    expect(mock.calls.map((call) => [call.init?.method, call.url, new Headers(call.init?.headers).get('authorization')])).toEqual([
+      ['GET', INSTAGRAM_ME, `Bearer ${INSTAGRAM_TOKEN}`],
+      ['POST', INSTAGRAM_MEDIA, `Bearer ${INSTAGRAM_TOKEN}`],
+      ['GET', INSTAGRAM_STATUS, `Bearer ${INSTAGRAM_TOKEN}`],
+      ['POST', INSTAGRAM_PUBLISH, `Bearer ${INSTAGRAM_TOKEN}`],
+      ['GET', INSTAGRAM_PERMALINK, `Bearer ${INSTAGRAM_TOKEN}`],
+    ]);
+  });
+
+  it('`delete --on instagram` and `update --on instagram` answer unsupported with a hint naming the Instagram app, with nothing saved, and nothing is sent to Instagram', async () => {
+    mock = instagramPosting();
+
+    const deleted = await run(['delete', '--on', 'instagram', '--id', '17900000000000001'], { HOME: home });
+    const updated = await run(['update', '--on', 'instagram', '--id', '17900000000000001', '--text', 'Fixed', '--repost'], { HOME: home });
+
+    for (const outcome of [deleted, updated]) {
+      expect(outcome).toEqual({
+        exitCode: 1,
+        answers: [{ ok: false, error: { code: 'unsupported', message: expect.any(String), hint: expect.stringContaining('Instagram app') } }],
+      });
+    }
+    expect(mock.calls).toEqual([]);
+  });
+});

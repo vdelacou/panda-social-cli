@@ -3,6 +3,7 @@ import { facebookPageIdUnsafe } from '../domain/facebook-page.ts';
 import { facebookPostIdUnsafe } from '../domain/facebook-post-id.ts';
 import { imagePathUnsafe } from '../domain/image-path.ts';
 import { imageUrlUnsafe } from '../domain/image-url.ts';
+import { instagramMediaIdUnsafe } from '../domain/instagram-media-id.ts';
 import { DEFAULT_PROFILE, profileNameUnsafe } from '../domain/profile-name.ts';
 import { ok } from '../domain/result.ts';
 import { threadsPostIdUnsafe } from '../domain/threads-post-id.ts';
@@ -280,5 +281,34 @@ describe('reading the Instagram commands', () => {
 
   it('`status instagram` reads as a status check of the Instagram account', () => {
     expect(parseCliArgs(['status', 'instagram'])).toEqual(ok({ command: 'status', platform: 'instagram' }));
+  });
+});
+
+describe('reading the Instagram post commands', () => {
+  it('`post --to instagram` reads an https image and its caption, and --split is accepted and left out of the post', () => {
+    expect(parseCliArgs(['post', '--to', 'instagram', '--image', 'https://cdn.example.com/cat.jpg', '--text', 'A cat on the sofa', '--split'])).toEqual(
+      ok({ command: 'post', platform: 'instagram', imageUrl: imageUrlUnsafe('https://cdn.example.com/cat.jpg'), text: 'A cat on the sofa' })
+    );
+  });
+
+  it('`post --to instagram` without an image is refused as missing-image, and a local image path as invalid-image', () => {
+    const textOnly = parseCliArgs(['post', '--to', 'instagram', '--text', 'Hello']);
+    const local = parseCliArgs(['post', '--to', 'instagram', '--image', './cat.jpg']);
+
+    expect(!textOnly.ok && textOnly.error.code).toBe('missing-image');
+    expect(!local.ok && local.error.code).toBe('invalid-image');
+  });
+
+  it('`delete --on instagram` and `update --on instagram` read an Instagram post id, and an id that is not digits is refused as invalid-post-id', () => {
+    expect(parseCliArgs(['delete', '--on', 'instagram', '--id', '17900000000000001'])).toEqual(
+      ok({ command: 'delete', platform: 'instagram', id: instagramMediaIdUnsafe('17900000000000001') })
+    );
+    expect(parseCliArgs(['update', '--on', 'instagram', '--id', '17900000000000001', '--text', 'Fixed'])).toEqual(
+      ok({ command: 'update', platform: 'instagram', id: instagramMediaIdUnsafe('17900000000000001'), repost: false })
+    );
+
+    const result = parseCliArgs(['delete', '--on', 'instagram', '--id', 'abc']);
+
+    expect(!result.ok && result.error.code).toBe('invalid-post-id');
   });
 });

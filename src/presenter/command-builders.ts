@@ -53,6 +53,8 @@ const buildUpdate = (flags: Flags): Result<CliCommand, Failure> => {
   const target = readTarget(flags, exampleOf('update'));
   if (!target.ok) return target;
   const repost = flags.values['repost'] === true;
+  // Instagram Login edits nothing (D37): the update names its post and the answer is unsupported.
+  if (target.value.platform === 'instagram') return ok({ command: 'update', ...target.value, repost });
   if (target.value.platform === 'x') {
     const content = readXContent(flags.values, exampleOf('update'));
     return content.ok ? ok({ command: 'update', ...target.value, ...content.value, repost }) : content;

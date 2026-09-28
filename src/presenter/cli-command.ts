@@ -40,11 +40,19 @@ export type SetupCommand = {
 };
 
 // `profile` is absent when --profile is not given: the default profile applies.
-export type StatusCommand = {
+export type ThreadsStatusCommand = {
   readonly command: 'status';
   readonly platform: 'threads';
   readonly profile?: ProfileName;
 };
+
+export type XStatusCommand = {
+  readonly command: 'status';
+  readonly platform: 'x';
+  readonly profile?: ProfileName;
+};
+
+export type StatusCommand = ThreadsStatusCommand | XStatusCommand;
 
 export type DocsCommand = { readonly command: 'docs'; readonly target: CommandName };
 

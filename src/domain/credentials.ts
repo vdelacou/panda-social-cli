@@ -60,3 +60,6 @@ export const withXCredentials = (file: CredentialsFile, profile: ProfileName, x:
   version: 1,
   profiles: { ...file.profiles, [profile]: { ...file.profiles[profile], x } },
 });
+
+export const xCredentialsFor = (file: CredentialsFile, profile: ProfileName): XCredentials | undefined =>
+  Object.hasOwn(file.profiles, profile) ? file.profiles[profile].x : undefined;

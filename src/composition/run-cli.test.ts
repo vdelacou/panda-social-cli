@@ -271,3 +271,62 @@ describe('the Threads features, end to end', () => {
     });
   });
 });
+
+const X_USER = { id: '1600000000000000001', name: 'Panda', username: 'panda' };
+const X_KEY_LINES = [['saved', 'api', 'key'].join('-'), ['saved', 'api', 'secret'].join('-'), ['saved', 'access', 'token'].join('-'), ['saved', 'access', 'secret'].join('-')];
+
+const xApi = (): FetchMock =>
+  installFetchMock([
+    {
+      match: (url, init) => init?.method === 'GET' && url === 'https://api.x.com/2/users/me',
+      respond: () => Response.json({ data: X_USER }, { headers: { 'content-type': 'application/json', 'x-access-level': 'read-write' } }),
+    },
+  ]);
+
+const lastAuthorization = (mock: FetchMock): string => new Headers(mock.calls.at(-1)?.init?.headers).get('authorization') ?? '';
+
+describe('connecting X with `panda-social setup x`', () => {
+  let home = '';
+  let mock: FetchMock | undefined;
+  beforeEach(() => {
+    home = mkdtempSync(path.join(tmpdir(), 'panda-social-'));
+  });
+  afterEach(() => {
+    mock?.restore();
+    rmSync(home, { recursive: true, force: true });
+  });
+
+  it('the four PANDA_SOCIAL_X_ variables override the saved keys, and setting only some of them fails naming the missing ones', async () => {
+    mock = xApi();
+    const env = {
+      HOME: home,
+      PANDA_SOCIAL_X_API_KEY: ['env', 'api', 'key'].join('-'),
+      PANDA_SOCIAL_X_API_SECRET: ['env', 'api', 'secret'].join('-'),
+      PANDA_SOCIAL_X_ACCESS_TOKEN: ['env', 'access', 'token'].join('-'),
+      PANDA_SOCIAL_X_ACCESS_SECRET: ['env', 'access', 'secret'].join('-'),
+    };
+
+    await run(['setup', 'x', '--keys-stdin'], { HOME: home }, X_KEY_LINES.join('\n'));
+    const overridden = await run(['status', 'x'], env);
+    const partial = await run(['status', 'x'], { HOME: home, PANDA_SOCIAL_X_API_KEY: env.PANDA_SOCIAL_X_API_KEY, PANDA_SOCIAL_X_API_SECRET: env.PANDA_SOCIAL_X_API_SECRET });
+
+    expect(overridden.answers).toEqual([{ ok: true, data: expect.objectContaining({ keys: { source: 'environment' } }) }]);
+    expect(lastAuthorization(mock)).toContain(`oauth_consumer_key="${env.PANDA_SOCIAL_X_API_KEY}"`);
+    expect(partial.exitCode).toBe(1);
+    expect(partial.answers).toEqual([
+      {
+        ok: false,
+        error: { code: 'incomplete-environment', message: expect.stringMatching(/PANDA_SOCIAL_X_ACCESS_TOKEN.*PANDA_SOCIAL_X_ACCESS_SECRET/), hint: expect.any(String) },
+      },
+    ]);
+  });
+
+  it('`status x` with no saved keys fails with missing-credentials and a hint to run setup x', async () => {
+    const status = await run(['status', 'x'], { HOME: home });
+
+    expect(status).toEqual({
+      exitCode: 1,
+      answers: [{ ok: false, error: { code: 'missing-credentials', message: expect.any(String), hint: expect.stringContaining('panda-social setup x') } }],
+    });
+  });
+});

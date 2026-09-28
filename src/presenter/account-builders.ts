@@ -3,24 +3,24 @@ import { err, ok } from '../domain/result.ts';
 import type { Result } from '../domain/result.ts';
 import { exampleOf, withProfile } from './builder-helpers.ts';
 import type { CliCommand } from './cli-command.ts';
-import { THREADS_ONLY } from './commands/shared-options.ts';
 import type { Failure } from './failure.ts';
 import { readProfile } from './post-flags.ts';
 import type { Flags } from './read-flags.ts';
 
-// setup and status name their platform as an argument: `setup threads`, `status threads`.
-const readAccountPlatform = (positionals: Flags['positionals'], command: 'setup' | 'status'): Result<'threads', Failure> => {
+// setup and status name their platform as an argument: `setup threads`, `status x`.
+const readAccountPlatform = <P extends string>(positionals: Flags['positionals'], command: 'setup' | 'status', platforms: ReadonlyArray<P>): Result<P, Failure> => {
   const [platform = ''] = positionals;
-  if (platform === 'threads') return ok(platform);
+  const known = platforms.find((candidate) => candidate === platform);
+  if (known !== undefined) return ok(known);
   return err({
     code: 'unknown-platform',
     message: `No ${command} exists for "${platform}".`,
-    hint: `Platforms with a ${command}: ${THREADS_ONLY.join(', ')}. Example: ${exampleOf(command)}`,
+    hint: `Platforms with a ${command}: ${platforms.join(', ')}. Example: ${exampleOf(command)}`,
   });
 };
 
 export const buildSetup = ({ values, positionals }: Flags): Result<CliCommand, Failure> => {
-  const platform = readAccountPlatform(positionals, 'setup');
+  const platform = readAccountPlatform(positionals, 'setup', ['threads'] as const);
   if (!platform.ok) return platform;
   const profile = readProfile(values['profile']);
   if (!profile.ok) return profile;
@@ -28,7 +28,7 @@ export const buildSetup = ({ values, positionals }: Flags): Result<CliCommand, F
 };
 
 export const buildStatus = ({ values, positionals }: Flags): Result<CliCommand, Failure> => {
-  const platform = readAccountPlatform(positionals, 'status');
+  const platform = readAccountPlatform(positionals, 'status', ['threads', 'x'] as const);
   if (!platform.ok) return platform;
   const profile = readProfile(values['profile']);
   if (!profile.ok) return profile;

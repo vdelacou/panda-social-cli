@@ -7,6 +7,7 @@ import type { CliIo } from './cli-io.ts';
 import { readConfig } from './env.ts';
 import { PACKAGE_NAME, PACKAGE_VERSION } from './package-info.ts';
 import { runThreads } from './run-threads.ts';
+import { runX } from './run-x.ts';
 import { runSetup } from './run-setup.ts';
 
 export type { CliIo } from './cli-io.ts';
@@ -28,10 +29,10 @@ export const runCli = async (io: CliIo): Promise<number> => {
     case 'version': {
       return succeed(io, { name: PACKAGE_NAME, version: PACKAGE_VERSION });
     }
-    // The Threads commands: the type narrows to them, so a new command that is not one
-    // of them fails to compile here until it gets its own case.
+    // The commands that act on an account, by platform: the type narrows to them, so a new
+    // command that is not one of them fails to compile here until it gets its own case.
     default: {
-      return runThreads(io, command, readConfig(io.env));
+      return command.platform === 'x' ? runX(io, command, readConfig(io.env)) : runThreads(io, command, readConfig(io.env));
     }
   }
 };

@@ -4,7 +4,7 @@ import { ok } from '../domain/result.ts';
 import type { Result } from '../domain/result.ts';
 import { createWinstonLogger } from '../infra/logger.ts';
 import { createThreadsGraph } from '../infra/threads-graph.ts';
-import type { DeleteCommand, PostCommand, PostContent, StatusCommand, UpdateCommand } from '../presenter/cli.ts';
+import type { DeleteCommand, PostCommand, PostContent, ThreadsStatusCommand, UpdateCommand } from '../presenter/cli.ts';
 import { createDeletePost } from '../use-cases/delete-post.ts';
 import type { StepError } from '../use-cases/ports/step-error.ts';
 import { createPublishPost } from '../use-cases/publish-post.ts';
@@ -18,7 +18,7 @@ import type { Config } from './env.ts';
 import { resolveThreadsToken } from './threads-token.ts';
 
 // Every command that acts on a Threads account.
-export type ThreadsCommand = PostCommand | UpdateCommand | DeleteCommand | StatusCommand;
+export type ThreadsCommand = PostCommand | UpdateCommand | DeleteCommand | ThreadsStatusCommand;
 
 type ThreadsDeps = PublishPostDeps & { readonly origin: TokenOrigin };
 

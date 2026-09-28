@@ -34,7 +34,9 @@ import '../src/composition/package-info.ts';
 import '../src/composition/run-cli.ts';
 import '../src/composition/run-setup.ts';
 import '../src/composition/run-threads.ts';
+import '../src/composition/run-x.ts';
 import '../src/composition/threads-token.ts';
+import '../src/composition/x-keys.ts';
 
 // --- src/presenter/ ---
 import '../src/presenter/account-builders.ts';

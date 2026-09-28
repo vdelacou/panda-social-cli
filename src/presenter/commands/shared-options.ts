@@ -2,6 +2,9 @@ import type { OptionSpec } from '../command-spec.ts';
 
 export const THREADS_ONLY: ReadonlyArray<string> = ['threads'];
 
+// The platforms with a `setup` and a `status`.
+export const ACCOUNT_PLATFORMS: ReadonlyArray<string> = ['threads', 'x'];
+
 export const PROFILE_OPTION: OptionSpec = {
   name: 'profile',
   type: 'string',

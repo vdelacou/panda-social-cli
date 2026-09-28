@@ -10,7 +10,7 @@ Every command prints one JSON line on stdout: `{"ok":true,"data":...}` on succes
 | [`update`](#update) | Replace a Threads post. Threads has no edit, so --repost deletes it and publishes the new version. |
 | [`delete`](#delete) | Delete a Threads post by its id. |
 | [`setup`](#setup) | Connect a Threads account and save its token under a profile. |
-| [`status`](#status) | Check a connected Threads account: whose token it is, how old it is, and how much of the 24-hour quotas is used. |
+| [`status`](#status) | Check a connected Threads or X account: whose credentials they are and whether they still work, with the Threads quotas. |
 | [`help-json`](#help-json) | Describe every command, option, example and error code as JSON. Start here. |
 | [`docs`](#docs) | Show one command's full documentation as markdown. |
 
@@ -239,7 +239,7 @@ The connected account, `{"platform":"threads","profile":"<name>","userId":"<id>"
 
 ## status
 
-Asks Threads whose token the profile holds and reads its rolling 24-hour quotas for posts, replies and deletes. A saved token 30 days old or more is refreshed first, as every Threads command does, so running status now and then keeps an idle token alive: Threads lets a token lapse 60 days after its last refresh, and an expired one needs `panda-social setup threads` again. It never posts.
+Asks the platform whose credentials the profile holds. For Threads it also reads the rolling 24-hour quotas for posts, replies and deletes, and a saved token 30 days old or more is refreshed first, as every Threads command does: running status now and then keeps an idle token alive, since Threads lets a token lapse 60 days after its last refresh. For X it reports the access level X states for the keys (null when X states none); X shows neither the credit balance nor the rate windows to these keys, and the check spends about $0.01 of X credits. It never posts.
 
 ### Usage
 
@@ -251,7 +251,7 @@ panda-social status <platform> [--profile <name>]
 
 | Parameter | Required | Description |
 | --- | --- | --- |
-| `<platform>` | yes | The platform to check. One of: threads. |
+| `<platform>` | yes | The platform to check. One of: threads, x. |
 | `--profile <name>` | no | The profile whose saved account acts. Defaults to "default". A saved Threads token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, or all four PANDA_SOCIAL_X_ variables, when set, override the saved credentials. |
 
 ### Examples
@@ -261,11 +261,13 @@ panda-social status <platform> [--profile <name>]
 panda-social status threads
 # Check the account saved in the brand-a profile.
 panda-social status threads --profile brand-a
+# Check the X keys saved in the default profile.
+panda-social status x
 ```
 
 ### Output
 
-The account, its token and its quotas: `{"platform":"threads","profile":"<name>","account":{"userId":"<id>","username":"<username>"},"token":{"source":"saved","savedAt":"<time>","ageDays":<n>,"expiresAt":"<time, or null until the first refresh>","refreshed":<true when this run refreshed it>},"limits":{"posts":{"used":<n>,"total":250,"windowSeconds":86400},"replies":{...},"deletes":{...}}}`. With PANDA_SOCIAL_THREADS_TOKEN set, `token` is `{"source":"environment"}`.
+Threads: `{"platform":"threads","profile":"<name>","account":{"userId":"<id>","username":"<username>"},"token":{"source":"saved","savedAt":"<time>","ageDays":<n>,"expiresAt":"<time, or null until the first refresh>","refreshed":<true when this run refreshed it>},"limits":{"posts":{"used":<n>,"total":250,"windowSeconds":86400},"replies":{...},"deletes":{...}}}`, with `token` `{"source":"environment"}` when PANDA_SOCIAL_THREADS_TOKEN is set. X: `{"platform":"x","profile":"<name>","account":{"userId":"<id>","username":"<username>"},"accessLevel":"read-write","keys":{"source":"saved","savedAt":"<time>"}}`, with `keys` `{"source":"environment"}` when the four PANDA_SOCIAL_X_ variables are set.
 
 ### Errors
 
@@ -275,6 +277,8 @@ The account, its token and its quotas: `{"platform":"threads","profile":"<name>"
 | `unexpected-argument` | Quote any value that contains spaces, for example --text "Hello from panda". |
 | `unknown-platform` | Name a platform the command takes, as its examples show: threads for post, update and delete; threads or x for setup and status. |
 | `invalid-profile` | Use lowercase letters, digits, - and _, starting with a letter or digit, 40 characters at most. Example: --profile brand-a |
+| `incomplete-environment` | Set all four of PANDA_SOCIAL_X_API_KEY, PANDA_SOCIAL_X_API_SECRET, PANDA_SOCIAL_X_ACCESS_TOKEN and PANDA_SOCIAL_X_ACCESS_SECRET, or none of them to use the saved keys. |
+| `credits-depleted` | X has no credits left for this app. Buy more in the developer console (and check its spending limit), then retry. |
 | `missing-credentials` | Connect the account with `panda-social setup threads` or `panda-social setup x` (add `--profile <name>` for another profile), or set PANDA_SOCIAL_THREADS_TOKEN, or all four PANDA_SOCIAL_X_ variables. |
 | `corrupt` | The credentials file is not valid. Fix or delete ~/.panda-social/credentials.json, then run the setup again for each platform. |
 | `unreadable` | The credentials file could not be read. Check that ~/.panda-social/credentials.json belongs to you. |
@@ -360,8 +364,10 @@ Every failure carries one of these codes. Its `hint` says what to do next.
 | --- | --- |
 | `cancelled` | The setup stopped before the credentials were pasted. Run the same setup command again when you have them. |
 | `corrupt` | The credentials file is not valid. Fix or delete ~/.panda-social/credentials.json, then run the setup again for each platform. |
+| `credits-depleted` | X has no credits left for this app. Buy more in the developer console (and check its spending limit), then retry. |
 | `forbidden` | The credentials lack a permission this action needs. Threads: add threads_delete (to delete) or threads_manage_replies (for --split) under Use cases, Access the Threads API, Customize, generate a new token, and run `panda-social setup threads` again. X: the message gives X's reason; an app outside the pay-per-use package is refused, so check it in the developer console. |
 | `image-rejected` | Threads could not download or read the image. Check that the URL opens in a private browser window and serves a JPEG or PNG of 8 MB at most, then retry. |
+| `incomplete-environment` | Set all four of PANDA_SOCIAL_X_API_KEY, PANDA_SOCIAL_X_API_SECRET, PANDA_SOCIAL_X_ACCESS_TOKEN and PANDA_SOCIAL_X_ACCESS_SECRET, or none of them to use the saved keys. |
 | `invalid-image` | Threads needs a public https URL to a JPEG or PNG image, 8 MB at most. Host a local file first, then pass its URL with --image. |
 | `invalid-post-id` | Pass the numeric id that post returned, for example --id 17890000000000001. |
 | `invalid-profile` | Use lowercase letters, digits, - and _, starting with a letter or digit, 40 characters at most. Example: --profile brand-a |

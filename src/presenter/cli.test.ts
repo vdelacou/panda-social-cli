@@ -151,3 +151,9 @@ describe('reading the Threads features', () => {
     expect(!result.ok && result.error.hint).toContain('threads');
   });
 });
+
+describe('reading the X commands', () => {
+  it('`status x` reads as a status check of X', () => {
+    expect(parseCliArgs(['status', 'x'])).toEqual(ok({ command: 'status', platform: 'x' }));
+  });
+});

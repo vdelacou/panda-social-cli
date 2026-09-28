@@ -41,7 +41,7 @@ A Bun/TypeScript CLI and library, published to npm as `panda-social-cli` (bin `p
 
 ## Phase 2: Threads, complete
 
-- [ ] 2.1 `setup threads`: step-by-step wizard (TTY) and `--print-steps` markdown (agents), paste the token, verify with `GET /me`, store per profile. Done when an invalid token is refused with a hint and a valid one is stored 0600.
+- [x] 2.1 `setup threads`: step-by-step guide on a terminal, the same steps as JSON without one (agents), `--token-stdin`, verify with `GET /me`, store per `--profile` in `~/.panda-social/credentials.json` (0600 in a 0700 folder); `post` reads it, `PANDA_SOCIAL_THREADS_TOKEN` overrides. Done when an invalid token is refused with a hint and a valid one is stored 0600. (47 tests, mutation 100 on 91 mutants; a pseudo-terminal run showed the 6 steps, kept the token off screen and refused a bad token live. A successful save with a real token is still to be seen.)
 - [ ] 2.2 Command registry, `help-json`, `docs <command>`, generated `docs/COMMANDS.md` and `commands.json`, the error-hint table.
 - [ ] 2.3 `post` with an image URL, `delete`, `update --repost`, `--split` reply chains with rollback, publishing-limit readout.
 - [ ] 2.4 Token refresh (`th_refresh_token`), `status` command (who am I, token age, quota).

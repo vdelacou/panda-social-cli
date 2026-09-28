@@ -2,7 +2,7 @@
 
 Post text, an image, or both to Threads, X, Facebook Pages and Instagram from one command line or one TypeScript library. It is built for AI agents first: every command answers in JSON, and every error names its cause and the next step to fix it.
 
-> Status: under construction. Text posts to Threads work from source; the other platforms, guided setup, update and delete are next. Nothing is published to npm yet.
+> Status: under construction. Threads works from source: guided setup and text posts. Images, delete, update and the other three platforms are next. Nothing is published to npm yet.
 
 ## What each platform allows
 
@@ -17,14 +17,19 @@ The CLI can only do what each platform's API permits. As of September 2026:
 
 ## Try it from source
 
-Get a Threads access token from your Meta app (Use cases, Access the Threads API, Settings, User Token Generator), then:
-
 ```bash
 bun install
-PANDA_SOCIAL_THREADS_TOKEN=<token> bun run src/main.ts post --to threads --text "Hello from panda"
+bun run src/main.ts setup threads
+bun run src/main.ts post --to threads --text "Hello from panda"
 ```
 
-Every command prints one JSON line on stdout and exits 0 or 1; logs go to stderr.
+`setup threads` walks you through the six one-time steps (a Meta developer account, an app with the Threads API, its permissions, a tester invitation, and the token), one at a time. You paste the token without it showing on screen; the CLI checks it with Threads and saves it in `~/.panda-social/credentials.json`, readable by you only.
+
+An agent runs the same command without a terminal and gets the six steps as JSON, to relay to its human. It then finishes with `panda-social setup threads --token-stdin`, piping the token in.
+
+For several accounts, add `--profile brand-a` to `setup` and to `post`. `PANDA_SOCIAL_THREADS_TOKEN` overrides the saved token, which suits CI.
+
+Every command prints one JSON line on stdout and exits 0 or 1; the guide and the logs go to stderr.
 
 ```json
 {"ok":true,"data":{"platform":"threads","id":"17890000000000001","url":"https://www.threads.com/@you/post/..."}}

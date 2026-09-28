@@ -26,7 +26,7 @@ Publishes a new post on the account saved in the profile and answers with its id
 ### Usage
 
 ```bash
-panda-social post --to <platform> [--text <text>] [--profile <name>] [--image <url>] [--split]
+panda-social post --to <platform> [--text <text>] [--profile <name>] [--image <image>] [--split]
 ```
 
 ### Parameters
@@ -36,7 +36,7 @@ panda-social post --to <platform> [--text <text>] [--profile <name>] [--image <u
 | `--to <platform>` | yes | The platform to post to. One of: threads, x. |
 | `--text <text>` | no | The text of the post, quoted when it contains spaces. Required unless --image is given. Threads takes 500 characters, an emoji counting its UTF-8 bytes (a thumbs-up is 4); X takes 280 as X counts them: most characters 1, CJK characters and emoji 2, a link 23. |
 | `--profile <name>` | no | The profile whose saved account acts. Defaults to "default". A saved Threads token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, or all four PANDA_SOCIAL_X_ variables, when set, override the saved credentials. |
-| `--image <url>` | no | Threads: a public https URL to a JPEG or PNG image, 8 MB at most, which Threads downloads itself. X: a local JPEG, PNG, GIF or WEBP file, 5 MB at most, which the CLI uploads. |
+| `--image <image>` | no | Threads: a public https URL to a JPEG or PNG image, 8 MB at most, which Threads downloads itself. X: a local JPEG, PNG, GIF or WEBP file, 5 MB at most, which the CLI uploads. |
 | `--split` | no | Post a text over the limit as a thread: the first post, then replies, each answering the one before. If a part fails, the parts already published are deleted. |
 
 ### Examples
@@ -94,7 +94,7 @@ On X, update edits the post in place and answers the new version with the id it 
 ### Usage
 
 ```bash
-panda-social update --on <platform> --id <post-id> [--text <text>] [--profile <name>] [--image <url>] [--split] [--repost]
+panda-social update --on <platform> --id <post-id> [--text <text>] [--profile <name>] [--image <image>] [--split] [--repost]
 ```
 
 ### Parameters
@@ -105,7 +105,7 @@ panda-social update --on <platform> --id <post-id> [--text <text>] [--profile <n
 | `--id <post-id>` | yes | The numeric id of the post, as post returned it. |
 | `--text <text>` | no | The text of the post, quoted when it contains spaces. Required unless --image is given. Threads takes 500 characters, an emoji counting its UTF-8 bytes (a thumbs-up is 4); X takes 280 as X counts them: most characters 1, CJK characters and emoji 2, a link 23. |
 | `--profile <name>` | no | The profile whose saved account acts. Defaults to "default". A saved Threads token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, or all four PANDA_SOCIAL_X_ variables, when set, override the saved credentials. |
-| `--image <url>` | no | Threads: a public https URL to a JPEG or PNG image, 8 MB at most, which Threads downloads itself. X: a local JPEG, PNG, GIF or WEBP file, 5 MB at most, which the CLI uploads. |
+| `--image <image>` | no | Threads: a public https URL to a JPEG or PNG image, 8 MB at most, which Threads downloads itself. X: a local JPEG, PNG, GIF or WEBP file, 5 MB at most, which the CLI uploads. |
 | `--split` | no | Post a text over the limit as a thread: the first post, then replies, each answering the one before. If a part fails, the parts already published are deleted. |
 | `--repost` | no | Delete the post and publish the new version instead of editing it. Required on Threads, which cannot edit; on X it replaces the edit. |
 

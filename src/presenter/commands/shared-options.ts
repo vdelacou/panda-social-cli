@@ -24,7 +24,7 @@ export const TEXT_OPTION: OptionSpec = {
 export const IMAGE_OPTION: OptionSpec = {
   name: 'image',
   type: 'string',
-  placeholder: 'url',
+  placeholder: 'image',
   required: false,
   description:
     'Threads: a public https URL to a JPEG or PNG image, 8 MB at most, which Threads downloads itself. X: a local JPEG, PNG, GIF or WEBP file, 5 MB at most, which the CLI uploads.',

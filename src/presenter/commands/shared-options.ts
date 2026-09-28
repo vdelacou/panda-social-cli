@@ -3,9 +3,6 @@ import type { OptionSpec } from '../command-spec.ts';
 // The platforms every command takes.
 export const PLATFORMS: ReadonlyArray<string> = ['threads', 'x', 'facebook'];
 
-// setup and status take Facebook before posting does (4.1 lands before 4.2).
-export const ACCOUNT_PLATFORMS: ReadonlyArray<string> = ['threads', 'x', 'facebook'];
-
 export const PROFILE_OPTION: OptionSpec = {
   name: 'profile',
   type: 'string',

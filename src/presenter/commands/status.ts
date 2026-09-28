@@ -1,12 +1,12 @@
 import type { CommandSpec } from '../command-spec.ts';
-import { ACCOUNT_PLATFORMS, CALL_ERRORS, PROFILE_OPTION } from './shared-options.ts';
+import { PLATFORMS, CALL_ERRORS, PROFILE_OPTION } from './shared-options.ts';
 
 export const STATUS: CommandSpec = {
   name: 'status',
   summary: 'Check a connected Threads, X or Facebook account: whose credentials they are and whether they still work, with the Threads quotas.',
   description:
     'Asks the platform whose credentials the profile holds. For Threads it also reads the rolling 24-hour quotas for posts, replies and deletes, and a saved token 30 days old or more is refreshed first, as every Threads command does: running status now and then keeps an idle token alive, since Threads lets a token lapse 60 days after its last refresh. For X it reports the access level X states for the keys (null when X states none); X shows neither the credit balance nor the rate windows to these keys, and the check spends about $0.01 of X credits. For Facebook it asks Meta which Page the token belongs to. It never posts.',
-  arguments: [{ name: 'platform', required: true, description: 'The platform to check.', values: ACCOUNT_PLATFORMS }],
+  arguments: [{ name: 'platform', required: true, description: 'The platform to check.', values: PLATFORMS }],
   options: [PROFILE_OPTION],
   examples: [
     { argv: ['status', 'threads'], explanation: 'Check the account saved in the default profile.' },

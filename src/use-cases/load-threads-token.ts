@@ -1,8 +1,9 @@
-import { isRefreshDue, refreshedCredentials, threadsCredentialsFor, withThreadsCredentials } from '../domain/credentials.ts';
+import { threadsCredentialsFor, withThreadsCredentials } from '../domain/credentials.ts';
 import type { ThreadsCredentials } from '../domain/credentials.ts';
 import type { ProfileName } from '../domain/profile-name.ts';
 import { err, ok } from '../domain/result.ts';
 import type { Result } from '../domain/result.ts';
+import { isRefreshDue, refreshedCredentials } from '../domain/token-renewal.ts';
 import type { CredentialStore } from './ports/credential-store.ts';
 import type { Logger } from './ports/logger.ts';
 import type { StepError } from './ports/step-error.ts';

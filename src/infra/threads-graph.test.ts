@@ -74,6 +74,30 @@ describe('the Threads Graph adapter', () => {
     expect(!result.ok && result.error).toEqual({ kind: 'rejected', status: 503, message: expect.stringContaining('Service temporarily unavailable') });
   });
 
+  it('asking who the token belongs to reads id and username from /me, with the token in the header', async () => {
+    mock = installFetchMock([
+      { match: (url, init) => init?.method === 'GET' && url.endsWith('/v1.0/me?fields=id,username'), respond: () => json({ id: '26000000000000001', username: 'panda' }) },
+    ]);
+
+    const result = await createThreadsGraph({ token: TOKEN }).whoAmI();
+
+    expect(result).toEqual({ ok: true, value: { userId: '26000000000000001', username: 'panda' } });
+    expect(new Headers(mock.calls[0]?.init?.headers).get('authorization')).toBe(`Bearer ${TOKEN}`);
+  });
+
+  it('a refused token on /me comes back as unauthorized', async () => {
+    mock = installFetchMock([
+      {
+        match: (url) => url.includes('/v1.0/me?'),
+        respond: () => json({ error: { message: 'Invalid OAuth access token - Cannot parse access token', type: 'OAuthException', code: 190 } }, 400),
+      },
+    ]);
+
+    const result = await createThreadsGraph({ token: TOKEN }).whoAmI();
+
+    expect(!result.ok && result.error.kind).toBe('unauthorized');
+  });
+
   it('a call that runs past its deadline comes back as a timeout', async () => {
     mock = installFetchMock([{ match: isPublish, respond: async (_url, init) => hangUntilAborted(init) }]);
 

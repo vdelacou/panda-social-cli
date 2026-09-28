@@ -1,7 +1,7 @@
 import { err, ok } from '../domain/result.ts';
 import type { Result } from '../domain/result.ts';
 import { formatError } from '../domain/utilities/format-error.ts';
-import type { PublishedPost, Threads, ThreadsError } from '../use-cases/ports/threads.ts';
+import type { PublishedPost, Threads, ThreadsAccount, ThreadsError } from '../use-cases/ports/threads.ts';
 
 export const THREADS_GRAPH_BASE = 'https://graph.threads.net/v1.0';
 
@@ -72,6 +72,16 @@ const publishText = async (config: ThreadsGraphConfig, text: string): Promise<Re
   return ok({ id, url: await readPermalink(config, id) });
 };
 
+const whoAmI = async (config: ThreadsGraphConfig): Promise<Result<ThreadsAccount, ThreadsError>> => {
+  const answer = await request(config, '/me?fields=id,username', { method: 'GET' });
+  if (!answer.ok) return answer;
+  const userId = stringField(answer.value, 'id');
+  const username = stringField(answer.value, 'username');
+  if (userId === undefined || username === undefined) return err({ kind: 'rejected', status: 200, message: 'Threads answered /me without an id or a username' });
+  return ok({ userId, username });
+};
+
 export const createThreadsGraph = (config: ThreadsGraphConfig): Threads => ({
   publishText: async (text) => publishText(config, text),
+  whoAmI: async () => whoAmI(config),
 });

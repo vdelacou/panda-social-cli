@@ -7,7 +7,19 @@ import type { Failure } from './failure.ts';
 import { readFlags } from './read-flags.ts';
 
 export type { CliCommand, DocsCommand, SetupCommand, StatusCommand, ThreadsSetupCommand, ThreadsStatusCommand, XSetupCommand, XStatusCommand } from './cli-command.ts';
-export type { DeleteCommand, PostCommand, PostContent, UpdateCommand } from './post-command.ts';
+export type {
+  DeleteCommand,
+  PostCommand,
+  ThreadsDeleteCommand,
+  ThreadsPostCommand,
+  ThreadsPostContent,
+  ThreadsUpdateCommand,
+  UpdateCommand,
+  XDeleteCommand,
+  XPostCommand,
+  XPostContent,
+  XUpdateCommand,
+} from './post-command.ts';
 export type { Failure } from './failure.ts';
 
 export const parseCliArgs = (argv: ReadonlyArray<string>): Result<CliCommand, Failure> => {

@@ -4,7 +4,7 @@ import { ok } from '../domain/result.ts';
 import type { Result } from '../domain/result.ts';
 import { createWinstonLogger } from '../infra/logger.ts';
 import { createThreadsGraph } from '../infra/threads-graph.ts';
-import type { DeleteCommand, PostCommand, PostContent, ThreadsStatusCommand, UpdateCommand } from '../presenter/cli.ts';
+import type { ThreadsDeleteCommand, ThreadsPostCommand, ThreadsPostContent, ThreadsStatusCommand, ThreadsUpdateCommand } from '../presenter/cli.ts';
 import { createDeletePost } from '../use-cases/delete-post.ts';
 import type { StepError } from '../use-cases/ports/step-error.ts';
 import { createPublishPost } from '../use-cases/publish-post.ts';
@@ -18,7 +18,7 @@ import type { Config } from './env.ts';
 import { resolveThreadsToken } from './threads-token.ts';
 
 // Every command that acts on a Threads account.
-export type ThreadsCommand = PostCommand | UpdateCommand | DeleteCommand | ThreadsStatusCommand;
+export type ThreadsCommand = ThreadsPostCommand | ThreadsUpdateCommand | ThreadsDeleteCommand | ThreadsStatusCommand;
 
 type ThreadsDeps = PublishPostDeps & { readonly origin: TokenOrigin };
 
@@ -30,7 +30,7 @@ const threadsDeps = async (io: CliIo, config: Config, profile: ProfileName): Pro
   return ok({ threads: createThreadsGraph({ token: token.value.token }), logger, origin: token.value.origin });
 };
 
-const contentOf = (command: PostContent): PublishPostInput => ({ text: command.text, imageUrl: command.imageUrl, split: command.split });
+const contentOf = (command: ThreadsPostContent): PublishPostInput => ({ text: command.text, imageUrl: command.imageUrl, split: command.split });
 
 const act = async (deps: ThreadsDeps, command: ThreadsCommand, profile: ProfileName): Promise<Result<unknown, StepError>> => {
   if (command.command === 'delete') return createDeletePost(deps)({ id: command.id });

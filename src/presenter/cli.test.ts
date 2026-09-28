@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'bun:test';
+import { imagePathUnsafe } from '../domain/image-path.ts';
 import { imageUrlUnsafe } from '../domain/image-url.ts';
 import { DEFAULT_PROFILE, profileNameUnsafe } from '../domain/profile-name.ts';
 import { ok } from '../domain/result.ts';
 import { threadsPostIdUnsafe } from '../domain/threads-post-id.ts';
+import { xPostIdUnsafe } from '../domain/x-post-id.ts';
 import { parseCliArgs, renderFailure, renderSuccess } from './cli.ts';
 
 describe('reading the command line', () => {
@@ -172,5 +174,33 @@ describe('reading the X commands', () => {
 
   it('`status x` reads as a status check of X', () => {
     expect(parseCliArgs(['status', 'x'])).toEqual(ok({ command: 'status', platform: 'x' }));
+  });
+});
+
+describe('reading the X post commands', () => {
+  it('`post --to x` reads the text, a local image path and --split as an X post', () => {
+    expect(parseCliArgs(['post', '--to', 'x', '--text', 'Hello', '--image', './chart.png', '--split'])).toEqual(
+      ok({ command: 'post', platform: 'x', text: 'Hello', imagePath: imagePathUnsafe('./chart.png'), split: true })
+    );
+  });
+
+  it('`post --to x` with an https image is refused as invalid-image, with the advice to download the file first', () => {
+    const result = parseCliArgs(['post', '--to', 'x', '--image', 'https://cdn.example.com/cat.jpg']);
+
+    expect(!result.ok && result.error.code).toBe('invalid-image');
+    expect(!result.ok && result.error.message).toBe('"https://cdn.example.com/cat.jpg" is a URL, not a local file: download it first, then pass its path.');
+    expect(!result.ok && result.error.hint).toContain('X needs a local JPEG, PNG, GIF or WEBP file');
+  });
+
+  it('`update --on x` and `delete --on x` read an X post id, and a 20-digit or non-numeric id is refused as invalid-post-id', () => {
+    expect(parseCliArgs(['update', '--on', 'x', '--id', '1880000000000000001', '--text', 'Fixed'])).toEqual(
+      ok({ command: 'update', platform: 'x', id: xPostIdUnsafe('1880000000000000001'), text: 'Fixed', repost: false })
+    );
+    expect(parseCliArgs(['delete', '--on', 'x', '--id', '1880000000000000001'])).toEqual(ok({ command: 'delete', platform: 'x', id: xPostIdUnsafe('1880000000000000001') }));
+    for (const id of ['12345678901234567890', 'abc']) {
+      const result = parseCliArgs(['delete', '--on', 'x', '--id', id]);
+
+      expect(!result.ok && result.error.code).toBe('invalid-post-id');
+    }
   });
 });

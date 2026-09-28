@@ -374,3 +374,71 @@ describe('connecting X with `panda-social setup x`', () => {
     });
   });
 });
+
+const X_POSTED = '1880000000000000001';
+const X_EDITED = '1880000000000000009';
+const X_MEDIA = '1890000000000000001';
+const X_TWEETS = 'https://api.x.com/2/tweets';
+const X_UPLOAD = 'https://api.x.com/2/media/upload';
+const PNG_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x01]);
+
+// api.x.com as the posting commands meet it: the account check of the setup, a post, an upload and a delete.
+const xPostingApi = (): FetchMock =>
+  installFetchMock([
+    {
+      match: (url, init) => init?.method === 'GET' && url === 'https://api.x.com/2/users/me',
+      respond: () => Response.json({ data: X_USER }, { headers: { 'content-type': 'application/json', 'x-access-level': 'read-write' } }),
+    },
+    { match: (url, init) => init?.method === 'POST' && url === X_TWEETS, respond: () => Response.json({ data: { id: X_POSTED, text: 'posted' } }, { status: 201 }) },
+    { match: (url, init) => init?.method === 'POST' && url === X_UPLOAD, respond: () => Response.json({ data: { id: X_MEDIA } }) },
+    { match: (url, init) => init?.method === 'DELETE' && url === `${X_TWEETS}/${X_EDITED}`, respond: () => Response.json({ data: { deleted: true } }) },
+  ]);
+
+const requestBody = (mock: FetchMock, url: string): unknown => JSON.parse(String(mock.calls.find((call) => call.url === url)?.init?.body));
+
+describe('posting to X with `panda-social post --to x`', () => {
+  let home = '';
+  let mock: FetchMock | undefined;
+  beforeEach(() => {
+    home = mkdtempSync(path.join(tmpdir(), 'panda-social-'));
+  });
+  afterEach(() => {
+    mock?.restore();
+    rmSync(home, { recursive: true, force: true });
+  });
+
+  it('`post --to x` with saved keys posts through api.x.com and prints the new id and its x.com link', async () => {
+    mock = xPostingApi();
+    await run(['setup', 'x', '--keys-stdin'], { HOME: home }, X_KEY_LINES.join('\n'));
+
+    const posted = await run(['post', '--to', 'x', '--text', 'Hello from panda'], { HOME: home });
+
+    expect(posted).toEqual({ exitCode: 0, answers: [{ ok: true, data: { platform: 'x', id: X_POSTED, url: `https://x.com/i/status/${X_POSTED}` } }] });
+    expect(requestBody(mock, X_TWEETS)).toEqual({ text: 'Hello from panda' });
+  });
+
+  it('`post --to x --image <file>` uploads the file, then posts it with its media id', async () => {
+    mock = xPostingApi();
+    const chart = path.join(home, 'chart.png');
+    writeFileSync(chart, PNG_BYTES);
+    await run(['setup', 'x', '--keys-stdin'], { HOME: home }, X_KEY_LINES.join('\n'));
+
+    const posted = await run(['post', '--to', 'x', '--image', chart, '--text', 'The chart'], { HOME: home });
+
+    expect(posted.exitCode).toBe(0);
+    expect(requestBody(mock, X_UPLOAD)).toEqual({ media: 'iVBORw0KGgoAAQ==', media_category: 'tweet_image' });
+    expect(requestBody(mock, X_TWEETS)).toEqual({ text: 'The chart', media: { media_ids: [X_MEDIA] } });
+  });
+
+  it('`update --on x` edits the post in place and `delete --on x` deletes it, both through api.x.com', async () => {
+    mock = xPostingApi();
+    await run(['setup', 'x', '--keys-stdin'], { HOME: home }, X_KEY_LINES.join('\n'));
+
+    const edited = await run(['update', '--on', 'x', '--id', X_EDITED, '--text', 'Fixed'], { HOME: home });
+    const deleted = await run(['delete', '--on', 'x', '--id', X_EDITED], { HOME: home });
+
+    expect(edited.answers).toEqual([{ ok: true, data: { platform: 'x', id: X_POSTED, url: `https://x.com/i/status/${X_POSTED}`, edited: X_EDITED } }]);
+    expect(requestBody(mock, X_TWEETS)).toEqual({ text: 'Fixed', edit_options: { previous_post_id: X_EDITED } });
+    expect(deleted.answers).toEqual([{ ok: true, data: { platform: 'x', id: X_EDITED, deleted: true } }]);
+  });
+});

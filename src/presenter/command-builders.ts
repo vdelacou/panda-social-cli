@@ -1,14 +1,14 @@
 import type { ProfileName } from '../domain/profile-name.ts';
 import { err, ok } from '../domain/result.ts';
 import type { Result } from '../domain/result.ts';
-import type { ThreadsPostId } from '../domain/threads-post-id.ts';
 import type { CliCommand } from './cli-command.ts';
 import { buildSetup, buildStatus } from './account-builders.ts';
 import { exampleOf, withProfile } from './builder-helpers.ts';
 import { COMMANDS, findCommand } from './command-registry.ts';
 import type { CommandName } from './command-spec.ts';
 import type { Failure } from './failure.ts';
-import { readContent } from './post-content.ts';
+import type { PostTarget } from './post-command.ts';
+import { readContent, readThreadsContent, readXContent } from './post-content.ts';
 import { readPlatform, readPostId, readProfile } from './post-flags.ts';
 import type { Flags } from './read-flags.ts';
 import { BIN } from './usage.ts';
@@ -23,24 +23,24 @@ export const unknownCommand = (message: string): Failure => ({
 const buildPost = ({ values }: Flags): Result<CliCommand, Failure> => {
   const platform = readPlatform(values, 'to', exampleOf('post'));
   if (!platform.ok) return platform;
-  const content = readContent(values, exampleOf('post'));
+  const content = readContent(values, platform.value, exampleOf('post'));
   if (!content.ok) return content;
   const profile = readProfile(values['profile']);
   if (!profile.ok) return profile;
-  return ok({ command: 'post', platform: platform.value, ...content.value, ...withProfile(profile.value) });
+  return ok({ command: 'post', ...content.value, ...withProfile(profile.value) });
 };
 
-type Target = { readonly platform: 'threads'; readonly id: ThreadsPostId; readonly profile?: ProfileName };
+type Target = PostTarget & { readonly profile?: ProfileName };
 
 // The post a delete or an update acts on: its platform, its id and the profile it belongs to.
 const readTarget = ({ values }: Flags, example: string): Result<Target, Failure> => {
   const platform = readPlatform(values, 'on', example);
   if (!platform.ok) return platform;
-  const id = readPostId(values['id']);
+  const id = readPostId(values['id'], platform.value);
   if (!id.ok) return id;
   const profile = readProfile(values['profile']);
   if (!profile.ok) return profile;
-  return ok({ platform: platform.value, id: id.value, ...withProfile(profile.value) });
+  return ok({ ...id.value, ...withProfile(profile.value) });
 };
 
 const buildDelete = (flags: Flags): Result<CliCommand, Failure> => {
@@ -48,12 +48,17 @@ const buildDelete = (flags: Flags): Result<CliCommand, Failure> => {
   return target.ok ? ok({ command: 'delete', ...target.value }) : target;
 };
 
+// The new content is read the way the target's platform takes it.
 const buildUpdate = (flags: Flags): Result<CliCommand, Failure> => {
   const target = readTarget(flags, exampleOf('update'));
   if (!target.ok) return target;
-  const content = readContent(flags.values, exampleOf('update'));
-  if (!content.ok) return content;
-  return ok({ command: 'update', ...target.value, ...content.value, repost: flags.values['repost'] === true });
+  const repost = flags.values['repost'] === true;
+  if (target.value.platform === 'x') {
+    const content = readXContent(flags.values, exampleOf('update'));
+    return content.ok ? ok({ command: 'update', ...target.value, ...content.value, repost }) : content;
+  }
+  const content = readThreadsContent(flags.values, exampleOf('update'));
+  return content.ok ? ok({ command: 'update', ...target.value, ...content.value, repost }) : content;
 };
 
 const buildDocs = ({ positionals }: Flags): Result<CliCommand, Failure> => {

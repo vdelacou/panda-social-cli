@@ -1,10 +1,12 @@
+import { parseImagePath } from '../domain/image-path.ts';
+import type { ImagePath } from '../domain/image-path.ts';
 import { parseImageUrl } from '../domain/image-url.ts';
 import type { ImageUrl } from '../domain/image-url.ts';
 import { err, ok } from '../domain/result.ts';
 import type { Result } from '../domain/result.ts';
 import type { Failure } from './failure.ts';
 import { hintFor } from './hints.ts';
-import type { PostContent } from './post-command.ts';
+import type { Platform, PlatformContent, ThreadsPostContent, XPostContent } from './post-command.ts';
 import type { Flags } from './read-flags.ts';
 
 type Values = Flags['values'];
@@ -17,8 +19,14 @@ const readImageUrl = (value: unknown): Result<ImageUrl | undefined, Failure> => 
   return parsed.ok ? ok(parsed.value) : invalidImage(parsed.error.message);
 };
 
+const readImagePath = (value: unknown): Result<ImagePath | undefined, Failure> => {
+  if (value === undefined) return ok(undefined);
+  const parsed = parseImagePath(typeof value === 'string' ? value : '');
+  return parsed.ok ? ok(parsed.value) : invalidImage(parsed.error.message);
+};
+
 const missingContent = (example: string): Result<never, Failure> =>
-  err({ code: 'missing-text', message: 'The post has no text and no image.', hint: `Pass the text with --text, an image URL with --image, or both. Example: ${example}` });
+  err({ code: 'missing-text', message: 'The post has no text and no image.', hint: `Pass the text with --text, an image with --image, or both. Example: ${example}` });
 
 // What every post carries: its text and --split, each absent when not given.
 const textAndSplit = (values: Values): { readonly text?: string; readonly split?: true } => {
@@ -27,10 +35,27 @@ const textAndSplit = (values: Values): { readonly text?: string; readonly split?
 };
 
 // A post needs text, an image, or both; --split only matters for a long text.
-export const readContent = (values: Values, example: string): Result<PostContent, Failure> => {
+export const readThreadsContent = (values: Values, example: string): Result<ThreadsPostContent, Failure> => {
   const image = readImageUrl(values['image']);
   if (!image.ok) return image;
   const content = textAndSplit(values);
   if (content.text === undefined && image.value === undefined) return missingContent(example);
   return ok({ ...content, ...(image.value !== undefined && { imageUrl: image.value }) });
+};
+
+export const readXContent = (values: Values, example: string): Result<XPostContent, Failure> => {
+  const image = readImagePath(values['image']);
+  if (!image.ok) return image;
+  const content = textAndSplit(values);
+  if (content.text === undefined && image.value === undefined) return missingContent(example);
+  return ok({ ...content, ...(image.value !== undefined && { imagePath: image.value }) });
+};
+
+export const readContent = (values: Values, platform: Platform, example: string): Result<PlatformContent, Failure> => {
+  if (platform === 'x') {
+    const content = readXContent(values, example);
+    return content.ok ? ok({ platform, ...content.value }) : content;
+  }
+  const content = readThreadsContent(values, example);
+  return content.ok ? ok({ platform, ...content.value }) : content;
 };

@@ -3,7 +3,7 @@ import { err, ok } from '../domain/result.ts';
 import type { Result } from '../domain/result.ts';
 import { exampleOf, withProfile } from './builder-helpers.ts';
 import type { CliCommand } from './cli-command.ts';
-import { ACCOUNT_PLATFORMS } from './commands/shared-options.ts';
+import { PLATFORMS } from './commands/shared-options.ts';
 import type { Failure } from './failure.ts';
 import { hintFor } from './hints.ts';
 import { readProfile } from './post-flags.ts';
@@ -16,7 +16,7 @@ const readAccountPlatform = (positionals: Flags['positionals'], command: 'setup'
   return err({
     code: 'unknown-platform',
     message: `No ${command} exists for "${platform}".`,
-    hint: `Platforms with a ${command}: ${ACCOUNT_PLATFORMS.join(', ')}. Example: ${exampleOf(command)}`,
+    hint: `Platforms with a ${command}: ${PLATFORMS.join(', ')}. Example: ${exampleOf(command)}`,
   });
 };
 

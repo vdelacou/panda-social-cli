@@ -1,5 +1,5 @@
 import type { CommandSpec } from '../command-spec.ts';
-import { ID_OPTION, ON_OPTION, PROFILE_OPTION, THREADS_CALL_ERRORS } from './shared-options.ts';
+import { ID_OPTION, ON_OPTION, PROFILE_OPTION, CALL_ERRORS } from './shared-options.ts';
 
 export const DELETE: CommandSpec = {
   name: 'delete',
@@ -11,5 +11,5 @@ export const DELETE: CommandSpec = {
   examples: [{ argv: ['delete', '--on', 'threads', '--id', '17890000000000001'], explanation: 'Delete one post from the default profile.' }],
   output: 'The deleted post: `{"platform":"threads","id":"<post id>","deleted":true}`.',
   mutates: true,
-  errors: ['unknown-option', 'unexpected-argument', 'unknown-platform', 'invalid-post-id', 'invalid-profile', ...THREADS_CALL_ERRORS],
+  errors: ['unknown-option', 'unexpected-argument', 'unknown-platform', 'invalid-post-id', 'invalid-profile', ...CALL_ERRORS],
 };

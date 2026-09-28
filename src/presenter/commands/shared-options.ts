@@ -2,8 +2,8 @@ import type { OptionSpec } from '../command-spec.ts';
 
 export const THREADS_ONLY: ReadonlyArray<string> = ['threads'];
 
-// The platforms with a `setup` and a `status`.
-export const ACCOUNT_PLATFORMS: ReadonlyArray<string> = ['threads', 'x'];
+// The platforms every command takes.
+export const PLATFORMS: ReadonlyArray<string> = ['threads', 'x'];
 
 export const PROFILE_OPTION: OptionSpec = {
   name: 'profile',
@@ -42,8 +42,8 @@ export const ON_OPTION: OptionSpec = { name: 'on', type: 'string', placeholder: 
 
 export const ID_OPTION: OptionSpec = { name: 'id', type: 'string', placeholder: 'post-id', required: true, description: 'The numeric id of the post, as post returned it.' };
 
-// The failures any command that reaches Threads with a saved token can return.
-export const THREADS_CALL_ERRORS: ReadonlyArray<string> = [
+// The failures any command that reaches a platform with saved credentials can return.
+export const CALL_ERRORS: ReadonlyArray<string> = [
   'missing-credentials',
   'corrupt',
   'unreadable',

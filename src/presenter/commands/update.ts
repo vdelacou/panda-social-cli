@@ -1,5 +1,5 @@
 import type { CommandSpec } from '../command-spec.ts';
-import { ID_OPTION, IMAGE_OPTION, ON_OPTION, PROFILE_OPTION, PUBLISH_ERRORS, SPLIT_OPTION, TEXT_OPTION, THREADS_CALL_ERRORS } from './shared-options.ts';
+import { ID_OPTION, IMAGE_OPTION, ON_OPTION, PROFILE_OPTION, PUBLISH_ERRORS, SPLIT_OPTION, TEXT_OPTION, CALL_ERRORS } from './shared-options.ts';
 
 export const UPDATE: CommandSpec = {
   name: 'update',
@@ -21,5 +21,5 @@ export const UPDATE: CommandSpec = {
   ],
   output: 'The new post and the id it replaced: `{"platform":"threads","id":"<new id>","url":"<link or null>","replaced":"<old id>"}`, plus `"replies"` for a --split thread.',
   mutates: true,
-  errors: ['unknown-option', 'unexpected-argument', 'unknown-platform', 'invalid-post-id', 'invalid-profile', 'unsupported', ...PUBLISH_ERRORS, ...THREADS_CALL_ERRORS],
+  errors: ['unknown-option', 'unexpected-argument', 'unknown-platform', 'invalid-post-id', 'invalid-profile', 'unsupported', ...PUBLISH_ERRORS, ...CALL_ERRORS],
 };

@@ -1,12 +1,12 @@
 import type { CommandSpec } from '../command-spec.ts';
-import { ACCOUNT_PLATFORMS } from './shared-options.ts';
+import { PLATFORMS } from './shared-options.ts';
 
 export const SETUP: CommandSpec = {
   name: 'setup',
   summary: 'Connect a Threads or X account and save its credentials under a profile.',
   description:
     'On a terminal, walks a first-time user through the one-time steps of the platform (six for Threads, five for X) one at a time, then reads the Threads token or the four X keys without showing them. Without a terminal it answers with the same steps as JSON, for an agent to relay to its human, and the command that finishes the setup. With --token-stdin (Threads) or --keys-stdin (X, four lines: API Key, API Key Secret, Access Token, Access Token Secret) it reads them from standard input. The credentials are checked with the platform before they are saved in ~/.panda-social/credentials.json, readable by its owner only; X keys that X reports as read-only are refused. Checking X keys spends about $0.01 of X credits.',
-  arguments: [{ name: 'platform', required: true, description: 'The platform to connect.', values: ACCOUNT_PLATFORMS }],
+  arguments: [{ name: 'platform', required: true, description: 'The platform to connect.', values: PLATFORMS }],
   options: [
     { name: 'token-stdin', type: 'boolean', required: false, description: 'Threads: read the token from standard input instead of asking for it.' },
     {

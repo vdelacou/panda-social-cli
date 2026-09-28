@@ -1,5 +1,5 @@
 import type { CommandSpec } from '../command-spec.ts';
-import { IMAGE_OPTION, PROFILE_OPTION, PUBLISH_ERRORS, SPLIT_OPTION, TEXT_OPTION, THREADS_CALL_ERRORS, THREADS_ONLY } from './shared-options.ts';
+import { IMAGE_OPTION, PROFILE_OPTION, PUBLISH_ERRORS, SPLIT_OPTION, TEXT_OPTION, CALL_ERRORS, THREADS_ONLY } from './shared-options.ts';
 
 export const POST: CommandSpec = {
   name: 'post',
@@ -22,5 +22,5 @@ export const POST: CommandSpec = {
   ],
   output: 'The new post: `{"platform":"threads","id":"<post id>","url":"<link, or null when Threads did not return one>"}`, plus `"replies":["<id>",...]` for a --split thread.',
   mutates: true,
-  errors: ['unknown-option', 'unexpected-argument', 'unknown-platform', 'invalid-profile', ...PUBLISH_ERRORS, ...THREADS_CALL_ERRORS],
+  errors: ['unknown-option', 'unexpected-argument', 'unknown-platform', 'invalid-profile', ...PUBLISH_ERRORS, ...CALL_ERRORS],
 };

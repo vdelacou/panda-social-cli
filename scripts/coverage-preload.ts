@@ -15,13 +15,23 @@
  */
 
 // --- src/infra/ ---
+import '../src/infra/credential-store-file.ts';
 import '../src/infra/logger.ts';
 import '../src/infra/threads-graph.ts';
+import '../src/infra/tty-terminal.ts';
 
 // --- src/composition/ ---
+import '../src/composition/answer.ts';
+import '../src/composition/cli-io.ts';
 import '../src/composition/env.ts';
 import '../src/composition/run-cli.ts';
+import '../src/composition/run-post.ts';
+import '../src/composition/run-setup.ts';
+import '../src/composition/threads-token.ts';
 
 // --- src/presenter/ ---
 import '../src/presenter/cli.ts';
 import '../src/presenter/hints.ts';
+import '../src/presenter/setup-guide.ts';
+import '../src/presenter/setup-steps-text.ts';
+import '../src/presenter/threads-setup-steps.ts';

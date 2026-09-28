@@ -1,4 +1,7 @@
-import { afterEach, describe, expect, it } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { PassThrough } from 'node:stream';
 import { installFetchMock } from '../test-helpers/fetch-mock.ts';
 import type { FetchMock } from '../test-helpers/fetch-mock.ts';
@@ -43,5 +46,98 @@ describe('running `panda-social post`', () => {
 
     expect(exitCode).toBe(0);
     expect(answers).toEqual([{ ok: true, data: { platform: 'threads', id: POST_ID, url: PERMALINK } }]);
+  });
+});
+
+const STORED = ['stored', 'threads', 'token'].join('-');
+const OVERRIDE = ['override', 'threads', 'token'].join('-');
+
+const run = async (
+  argv: ReadonlyArray<string>,
+  env: Readonly<Record<string, string>>,
+  stdin = ''
+): Promise<{ readonly exitCode: number; readonly answers: ReadonlyArray<unknown> }> => {
+  const lines: string[] = [];
+  const exitCode = await runCli({
+    argv,
+    env,
+    writeOut: (line) => {
+      lines.push(line);
+    },
+    logStream: new PassThrough(),
+    readStdin: async () => stdin,
+  });
+  return { exitCode, answers: lines.map((line) => JSON.parse(line) as unknown) };
+};
+
+const threadsApi = (): FetchMock =>
+  installFetchMock([
+    { match: (url) => url.endsWith('/me?fields=id,username'), respond: () => json({ id: '26000000000000001', username: 'panda' }) },
+    { match: (url, init) => init?.method === 'POST' && url.endsWith('/me/threads'), respond: () => json({ id: POST_ID }) },
+    { match: (url) => url.includes(`/${POST_ID}?fields=permalink`), respond: () => json({ id: POST_ID, permalink: PERMALINK }) },
+  ]);
+
+const publishToken = (mock: FetchMock): string | null => new Headers(mock.calls.find((call) => call.url.endsWith('/me/threads'))?.init?.headers).get('authorization');
+
+describe('connecting Threads with `panda-social setup threads`', () => {
+  let home = '';
+  let mock: FetchMock | undefined;
+  beforeEach(() => {
+    home = mkdtempSync(path.join(tmpdir(), 'panda-social-'));
+  });
+  afterEach(() => {
+    mock?.restore();
+    rmSync(home, { recursive: true, force: true });
+  });
+
+  it('without a terminal, `setup threads` prints the step-by-step guide as JSON with the command that finishes it', async () => {
+    const { exitCode, answers } = await run(['setup', 'threads'], { HOME: home });
+
+    expect(exitCode).toBe(0);
+    expect(answers).toEqual([
+      {
+        ok: true,
+        data: {
+          platform: 'threads',
+          profile: 'default',
+          steps: expect.arrayContaining([
+            expect.objectContaining({ step: 1, title: 'Create your Meta developer account' }),
+            expect.objectContaining({ step: 6, title: 'Generate your access token' }),
+          ]),
+          finish: expect.stringContaining('panda-social setup threads --token-stdin'),
+        },
+      },
+    ]);
+  });
+
+  it('a piped token is checked against Threads and saved, and then `post` works with no environment variable', async () => {
+    mock = threadsApi();
+
+    const setup = await run(['setup', 'threads', '--token-stdin'], { HOME: home }, `${STORED}\n`);
+    const posted = await run(['post', '--to', 'threads', '--text', 'Hello from panda'], { HOME: home });
+
+    expect(setup).toEqual({ exitCode: 0, answers: [{ ok: true, data: { platform: 'threads', profile: 'default', userId: '26000000000000001', username: 'panda' } }] });
+    expect(posted.exitCode).toBe(0);
+    expect(publishToken(mock)).toBe(`Bearer ${STORED}`);
+  });
+
+  it('PANDA_SOCIAL_THREADS_TOKEN overrides the saved token', async () => {
+    mock = threadsApi();
+
+    const setup = await run(['setup', 'threads', '--token-stdin'], { HOME: home }, STORED);
+    const posted = await run(['post', '--to', 'threads', '--text', 'Hello from panda'], { HOME: home, PANDA_SOCIAL_THREADS_TOKEN: OVERRIDE });
+
+    expect(setup.exitCode).toBe(0);
+    expect(posted.exitCode).toBe(0);
+    expect(publishToken(mock)).toBe(`Bearer ${OVERRIDE}`);
+  });
+
+  it('a profile with no saved token fails with a hint to run setup threads', async () => {
+    const posted = await run(['post', '--to', 'threads', '--text', 'Hello from panda', '--profile', 'brand-a'], { HOME: home });
+
+    expect(posted).toEqual({
+      exitCode: 1,
+      answers: [{ ok: false, error: { code: 'missing-credentials', message: expect.any(String), hint: expect.stringContaining('panda-social setup threads') } }],
+    });
   });
 });

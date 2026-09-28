@@ -81,3 +81,6 @@ export const withInstagramCredentials = (file: CredentialsFile, profile: Profile
   version: 1,
   profiles: { ...file.profiles, [profile]: { ...file.profiles[profile], instagram } },
 });
+
+export const instagramCredentialsFor = (file: CredentialsFile, profile: ProfileName): InstagramCredentials | undefined =>
+  Object.hasOwn(file.profiles, profile) ? file.profiles[profile].instagram : undefined;

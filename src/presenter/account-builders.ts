@@ -5,23 +5,32 @@ import type { ProfileName } from '../domain/profile-name.ts';
 import { err, ok } from '../domain/result.ts';
 import type { Result } from '../domain/result.ts';
 import { exampleOf, withProfile } from './builder-helpers.ts';
-import type { CliCommand } from './cli-command.ts';
-import { PLATFORMS } from './commands/shared-options.ts';
+import type { AccountPlatform, CliCommand } from './cli-command.ts';
+import { ACCOUNT_PLATFORMS, PLATFORMS } from './commands/shared-options.ts';
 import type { Failure } from './failure.ts';
 import { hintFor } from './hints.ts';
 import type { Platform } from './post-command.ts';
 import { isPlatform, readProfile } from './post-flags.ts';
 import type { Flags } from './read-flags.ts';
 
-// setup and status name their platform as an argument: `setup x`, `status threads`.
-const readPlatform = (positionals: Flags['positionals'], command: 'setup' | 'status'): Result<Platform, Failure> => {
+const isAccountPlatform = (value: string): value is AccountPlatform => ACCOUNT_PLATFORMS.includes(value);
+
+const unknownPlatform = (platform: string, command: 'setup' | 'status', known: ReadonlyArray<string>): Failure => ({
+  code: 'unknown-platform',
+  message: `No ${command} exists for "${platform}".`,
+  hint: `Platforms with a ${command}: ${known.join(', ')}. Example: ${exampleOf(command)}`,
+});
+
+// setup and status name their platform as an argument: `setup x`, `status threads`. status
+// takes Instagram before setup does.
+const readSetupPlatform = (positionals: Flags['positionals']): Result<Platform, Failure> => {
   const [platform = ''] = positionals;
-  if (isPlatform(platform)) return ok(platform);
-  return err({
-    code: 'unknown-platform',
-    message: `No ${command} exists for "${platform}".`,
-    hint: `Platforms with a ${command}: ${PLATFORMS.join(', ')}. Example: ${exampleOf(command)}`,
-  });
+  return isPlatform(platform) ? ok(platform) : err(unknownPlatform(platform, 'setup', PLATFORMS));
+};
+
+const readStatusPlatform = (positionals: Flags['positionals']): Result<AccountPlatform, Failure> => {
+  const [platform = ''] = positionals;
+  return isAccountPlatform(platform) ? ok(platform) : err(unknownPlatform(platform, 'status', ACCOUNT_PLATFORMS));
 };
 
 // Each platform reads its secret from standard input under its own flag.
@@ -59,7 +68,7 @@ const setupOf = (platform: Platform, profile: ProfileName, values: Flags['values
 };
 
 export const buildSetup = ({ values, positionals }: Flags): Result<CliCommand, Failure> => {
-  const platform = readPlatform(positionals, 'setup');
+  const platform = readSetupPlatform(positionals);
   if (!platform.ok) return platform;
   const wrong = wrongFlag(platform.value, values);
   if (wrong !== undefined) return err(wrong);
@@ -69,7 +78,7 @@ export const buildSetup = ({ values, positionals }: Flags): Result<CliCommand, F
 };
 
 export const buildStatus = ({ values, positionals }: Flags): Result<CliCommand, Failure> => {
-  const platform = readPlatform(positionals, 'status');
+  const platform = readStatusPlatform(positionals);
   if (!platform.ok) return platform;
   const profile = readProfile(values['profile']);
   if (!profile.ok) return profile;

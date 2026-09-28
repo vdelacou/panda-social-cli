@@ -646,3 +646,64 @@ describe('posting to a Facebook Page with `panda-social post --to facebook`', ()
     ]);
   });
 });
+
+const INSTAGRAM_ME = 'https://graph.instagram.com/v26.0/me?fields=user_id,username';
+const INSTAGRAM_REFRESH = 'https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token';
+const INSTAGRAM_LIMIT = 'https://graph.instagram.com/v26.0/17841400000000001/content_publishing_limit?fields=quota_usage,config';
+const INSTAGRAM_TOKEN = ['stored', 'instagram', 'token'].join('-');
+const INSTAGRAM_ACCOUNT = { userId: '17841400000000001', username: 'panda' };
+
+// graph.instagram.com as the setup and the status meet it: whose token it is, its renewal, and the posts quota.
+const instagramGraph = (fresh = ['fresh', 'instagram', 'token'].join('-')): FetchMock =>
+  installFetchMock([
+    { match: (url, init) => init?.method === 'GET' && url === INSTAGRAM_ME, respond: () => json({ user_id: '17841400000000001', username: 'panda', id: '26000000000000009' }) },
+    { match: (url, init) => init?.method === 'GET' && url === INSTAGRAM_REFRESH, respond: () => json({ access_token: fresh, token_type: 'bearer', expires_in: 5_184_000 }) },
+    {
+      match: (url, init) => init?.method === 'GET' && url === INSTAGRAM_LIMIT,
+      respond: () => json({ data: [{ quota_usage: 2, config: { quota_total: 50, quota_duration: 86_400 } }] }),
+    },
+  ]);
+
+describe('connecting Instagram with `panda-social setup instagram`', () => {
+  let home = '';
+  let mock: FetchMock | undefined;
+  beforeEach(() => {
+    home = mkdtempSync(path.join(tmpdir(), 'panda-social-'));
+  });
+  afterEach(() => {
+    mock?.restore();
+    rmSync(home, { recursive: true, force: true });
+  });
+
+  it('`status instagram` with no saved token fails with missing-credentials and a hint to run setup instagram', async () => {
+    const status = await run(['status', 'instagram'], { HOME: home });
+
+    expect(status).toEqual({
+      exitCode: 1,
+      answers: [{ ok: false, error: { code: 'missing-credentials', message: expect.any(String), hint: expect.stringContaining('panda-social setup instagram') } }],
+    });
+  });
+
+  it('a saved Instagram token 31 days old is refreshed before `status instagram`: the calls use the new token, which is saved with its expiry', async () => {
+    const fresh = ['fresh', 'instagram', 'token'].join('-');
+    const file = path.join(home, '.panda-social', 'credentials.json');
+    const savedAt = new Date(Date.now() - 31 * 86_400_000).toISOString();
+    mkdirSync(path.dirname(file), { recursive: true });
+    writeFileSync(file, JSON.stringify({ version: 1, profiles: { default: { instagram: { token: INSTAGRAM_TOKEN, ...INSTAGRAM_ACCOUNT, savedAt } } } }));
+    mock = instagramGraph(fresh);
+
+    const status = await run(['status', 'instagram'], { HOME: home });
+
+    expect(status.exitCode).toBe(0);
+    expect(status.answers).toEqual([{ ok: true, data: expect.objectContaining({ token: expect.objectContaining({ source: 'saved', ageDays: 0, refreshed: true }) }) }]);
+    expect(mock.calls.map((call) => [call.url, new Headers(call.init?.headers).get('authorization')])).toEqual([
+      [INSTAGRAM_REFRESH, `Bearer ${INSTAGRAM_TOKEN}`],
+      [INSTAGRAM_ME, `Bearer ${fresh}`],
+      [INSTAGRAM_LIMIT, `Bearer ${fresh}`],
+    ]);
+    expect(JSON.parse(readFileSync(file, 'utf8')) as unknown).toEqual({
+      version: 1,
+      profiles: { default: { instagram: { token: fresh, ...INSTAGRAM_ACCOUNT, savedAt: expect.any(String), expiresAt: expect.any(String) } } },
+    });
+  });
+});

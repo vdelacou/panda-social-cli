@@ -3,6 +3,9 @@ import type { OptionSpec } from '../command-spec.ts';
 // The platforms every command takes.
 export const PLATFORMS: ReadonlyArray<string> = ['threads', 'x', 'facebook'];
 
+// The platforms status takes: Instagram, before setup and posting do.
+export const ACCOUNT_PLATFORMS: ReadonlyArray<string> = [...PLATFORMS, 'instagram'];
+
 export const PROFILE_OPTION: OptionSpec = {
   name: 'profile',
   type: 'string',

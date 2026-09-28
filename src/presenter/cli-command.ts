@@ -1,7 +1,10 @@
 import type { FacebookPageId } from '../domain/facebook-page.ts';
 import type { ProfileName } from '../domain/profile-name.ts';
 import type { CommandName } from './command-spec.ts';
-import type { DeleteCommand, PostCommand, UpdateCommand } from './post-command.ts';
+import type { DeleteCommand, Platform, PostCommand, UpdateCommand } from './post-command.ts';
+
+// The platforms status takes: Instagram, before setup and posting do.
+export type AccountPlatform = Platform | 'instagram';
 
 export type ThreadsSetupCommand = {
   readonly command: 'setup';
@@ -47,7 +50,13 @@ export type FacebookStatusCommand = {
   readonly profile?: ProfileName;
 };
 
-export type StatusCommand = ThreadsStatusCommand | XStatusCommand | FacebookStatusCommand;
+export type InstagramStatusCommand = {
+  readonly command: 'status';
+  readonly platform: 'instagram';
+  readonly profile?: ProfileName;
+};
+
+export type StatusCommand = ThreadsStatusCommand | XStatusCommand | FacebookStatusCommand | InstagramStatusCommand;
 
 export type DocsCommand = { readonly command: 'docs'; readonly target: CommandName };
 

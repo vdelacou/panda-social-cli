@@ -15,6 +15,8 @@ export type Config = {
     readonly id: string | undefined;
     readonly token: string | undefined;
   };
+  // PANDA_SOCIAL_INSTAGRAM_TOKEN: when set, it wins over the saved credentials.
+  readonly instagramToken: string | undefined;
   readonly logLevel: string;
   // <home>/.panda-social/credentials.json, or undefined when no home folder is known.
   readonly credentialsFile: string | undefined;
@@ -37,6 +39,7 @@ export const readConfig = (env: Readonly<Record<string, string | undefined>>): C
       accessSecret: nonEmpty(env['PANDA_SOCIAL_X_ACCESS_SECRET']),
     },
     facebookPage: { id: nonEmpty(env['PANDA_SOCIAL_FACEBOOK_PAGE_ID']), token: nonEmpty(env['PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN']) },
+    instagramToken: nonEmpty(env['PANDA_SOCIAL_INSTAGRAM_TOKEN']),
     logLevel: env['PANDA_SOCIAL_LOG_LEVEL'] ?? 'warn',
     credentialsFile: home === undefined ? undefined : path.join(home, '.panda-social', 'credentials.json'),
   };

@@ -9,7 +9,6 @@ import { createInstagramStatus } from '../use-cases/instagram-status.ts';
 import type { StepError } from '../use-cases/ports/step-error.ts';
 import { createPublishInstagramPost } from '../use-cases/publish-instagram-post.ts';
 import type { InstagramPostDeps } from '../use-cases/publish-instagram-post.ts';
-import { answer } from './answer.ts';
 import type { CliIo } from './cli-io.ts';
 import type { Config } from './env.ts';
 import { resolveInstagramToken } from './instagram-token.ts';
@@ -30,11 +29,11 @@ const act = async (
 
 // D37: delete and update stop before the token is read. Otherwise the profile's token (the
 // environment first, a saved one renewed when due), then Instagram with it.
-export const runInstagram = async (io: CliIo, command: InstagramCommand, config: Config): Promise<number> => {
-  if (command.command === 'delete' || command.command === 'update') return answer(io, refuseInstagramChange(command.command));
+export const instagramOutcome = async (io: CliIo, command: InstagramCommand, config: Config): Promise<Result<unknown, StepError>> => {
+  if (command.command === 'delete' || command.command === 'update') return refuseInstagramChange(command.command);
   const profile = command.profile ?? DEFAULT_PROFILE;
   const logger = createWinstonLogger(config.logLevel, io.logStream);
   const token = await resolveInstagramToken(config, profile, logger);
-  if (!token.ok) return answer(io, token);
-  return answer(io, await act({ instagram: createInstagramGraph({ token: token.value.token }), logger }, token.value, command, profile));
+  if (!token.ok) return token;
+  return act({ instagram: createInstagramGraph({ token: token.value.token }), logger }, token.value, command, profile);
 };

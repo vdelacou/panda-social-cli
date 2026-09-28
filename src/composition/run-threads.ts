@@ -12,7 +12,6 @@ import type { PublishPostDeps, PublishPostInput } from '../use-cases/publish-pos
 import { createThreadsStatus } from '../use-cases/threads-status.ts';
 import type { TokenOrigin } from '../use-cases/threads-status.ts';
 import { createUpdatePost } from '../use-cases/update-post.ts';
-import { answer } from './answer.ts';
 import type { CliIo } from './cli-io.ts';
 import type { Config } from './env.ts';
 import { resolveThreadsToken } from './threads-token.ts';
@@ -39,9 +38,8 @@ const act = async (deps: ThreadsDeps, command: ThreadsCommand, profile: ProfileN
   return createPublishPost(deps)(contentOf(command));
 };
 
-export const runThreads = async (io: CliIo, command: ThreadsCommand, config: Config): Promise<number> => {
+export const threadsOutcome = async (io: CliIo, command: ThreadsCommand, config: Config): Promise<Result<unknown, StepError>> => {
   const profile = command.profile ?? DEFAULT_PROFILE;
   const deps = await threadsDeps(io, config, profile);
-  if (!deps.ok) return answer(io, deps);
-  return answer(io, await act(deps.value, command, profile));
+  return deps.ok ? act(deps.value, command, profile) : deps;
 };

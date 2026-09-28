@@ -11,7 +11,6 @@ import { createFacebookStatus } from '../use-cases/facebook-status.ts';
 import type { StepError } from '../use-cases/ports/step-error.ts';
 import { createPublishFacebookPost } from '../use-cases/publish-facebook-post.ts';
 import { createUpdateFacebookPost } from '../use-cases/update-facebook-post.ts';
-import { answer } from './answer.ts';
 import type { CliIo } from './cli-io.ts';
 import type { Config } from './env.ts';
 import { resolveFacebookPage } from './facebook-page.ts';
@@ -29,10 +28,10 @@ const act = async (deps: FacebookPublishDeps, page: ActiveFacebookPage, command:
 
 // The profile's Page (the environment first), then Meta with that Page's own token, the local
 // image files and the logger.
-export const runFacebook = async (io: CliIo, command: FacebookCommand, config: Config): Promise<number> => {
+export const facebookOutcome = async (io: CliIo, command: FacebookCommand, config: Config): Promise<Result<unknown, StepError>> => {
   const profile = command.profile ?? DEFAULT_PROFILE;
   const page = await resolveFacebookPage(config, profile);
-  if (!page.ok) return answer(io, page);
+  if (!page.ok) return page;
   const deps = { facebook: createFacebookGraph({ token: page.value.token }), files: createImageFiles(), logger: createWinstonLogger(config.logLevel, io.logStream) };
-  return answer(io, await act(deps, page.value, command, profile));
+  return act(deps, page.value, command, profile);
 };

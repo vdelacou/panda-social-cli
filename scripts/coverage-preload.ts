@@ -38,6 +38,7 @@ import '../src/infra/x-http.ts';
 import '../src/infra/x-signer.ts';
 
 // --- src/composition/ ---
+import '../src/composition/account-outcome.ts';
 import '../src/composition/answer.ts';
 import '../src/composition/cli-io.ts';
 import '../src/composition/env.ts';

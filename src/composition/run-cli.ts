@@ -2,14 +2,11 @@ import { parseCliArgs } from '../presenter/cli.ts';
 import { renderCommandPage } from '../presenter/command-docs.ts';
 import { specFor } from '../presenter/command-registry.ts';
 import { buildManifest } from '../presenter/manifest.ts';
-import { fail, succeed } from './answer.ts';
+import { accountOutcome } from './account-outcome.ts';
+import { answer, fail, succeed } from './answer.ts';
 import type { CliIo } from './cli-io.ts';
 import { readConfig } from './env.ts';
 import { PACKAGE_NAME, PACKAGE_VERSION } from './package-info.ts';
-import { runFacebook } from './run-facebook.ts';
-import { runInstagram } from './run-instagram.ts';
-import { runThreads } from './run-threads.ts';
-import { runX } from './run-x.ts';
 import { runSetup } from './run-setup.ts';
 
 export type { CliIo } from './cli-io.ts';
@@ -34,11 +31,7 @@ export const runCli = async (io: CliIo): Promise<number> => {
     // The commands that act on an account, by platform: the type narrows to them, so a new
     // command that is not one of them fails to compile here until it gets its own case.
     default: {
-      const config = readConfig(io.env);
-      if (command.platform === 'x') return runX(io, command, config);
-      if (command.platform === 'facebook') return runFacebook(io, command, config);
-      if (command.platform === 'instagram') return runInstagram(io, command, config);
-      return runThreads(io, command, config);
+      return answer(io, await accountOutcome(io, command, readConfig(io.env)));
     }
   }
 };

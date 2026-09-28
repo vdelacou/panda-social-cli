@@ -12,7 +12,6 @@ import { createUpdateXPost } from '../use-cases/update-x-post.ts';
 import type { XPublishDeps } from '../use-cases/x-posting.ts';
 import { createXStatus } from '../use-cases/x-status.ts';
 import type { XKeysOrigin } from '../use-cases/x-status.ts';
-import { answer } from './answer.ts';
 import type { CliIo } from './cli-io.ts';
 import type { Config } from './env.ts';
 import { resolveXKeys } from './x-keys.ts';
@@ -31,10 +30,10 @@ const act = async (deps: XDeps, command: XCommand, profile: ProfileName): Promis
 };
 
 // The profile's keys (the environment first), then X, the local image files and the logger.
-export const runX = async (io: CliIo, command: XCommand, config: Config): Promise<number> => {
+export const xOutcome = async (io: CliIo, command: XCommand, config: Config): Promise<Result<unknown, StepError>> => {
   const profile = command.profile ?? DEFAULT_PROFILE;
   const keys = await resolveXKeys(config, profile);
-  if (!keys.ok) return answer(io, keys);
+  if (!keys.ok) return keys;
   const logger = createWinstonLogger(config.logLevel, io.logStream);
-  return answer(io, await act({ x: createXApi({ keys: keys.value.keys }), files: createImageFiles(), logger, origin: keys.value.origin }, command, profile));
+  return act({ x: createXApi({ keys: keys.value.keys }), files: createImageFiles(), logger, origin: keys.value.origin }, command, profile);
 };

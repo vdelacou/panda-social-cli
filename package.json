@@ -64,7 +64,7 @@
     "build:types": "tsc -p tsconfig.build.json && bun run scripts/fix-dts-extensions.ts",
     "smoke:dist": "bun run scripts/smoke-dist.ts",
     "docs:gen": "bun run scripts/gen-docs.ts",
-    "docs:check": "bun run scripts/gen-docs.ts --check"
+    "docs:check": "bun run scripts/gen-docs.ts --check && bun run scripts/check-guides.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -39,6 +39,14 @@ export type SetupCommand = {
   readonly tokenFromStdin: boolean;
 };
 
+// `profile` is absent when --profile is not given: the default profile applies.
+export type StatusCommand = {
+  readonly command: 'status';
+  readonly platform: 'threads';
+  readonly profile?: ProfileName;
+};
+
 export type DocsCommand = { readonly command: 'docs'; readonly target: CommandName };
 
-export type CliCommand = PostCommand | UpdateCommand | DeleteCommand | SetupCommand | DocsCommand | { readonly command: 'help-json' } | { readonly command: 'version' };
+export type CliCommand =
+  PostCommand | UpdateCommand | DeleteCommand | SetupCommand | StatusCommand | DocsCommand | { readonly command: 'help-json' } | { readonly command: 'version' };

@@ -6,7 +6,7 @@ import { findCommand } from './command-registry.ts';
 import type { Failure } from './failure.ts';
 import { readFlags } from './read-flags.ts';
 
-export type { CliCommand, DeleteCommand, DocsCommand, PostCommand, PostContent, SetupCommand, UpdateCommand } from './cli-command.ts';
+export type { CliCommand, DeleteCommand, DocsCommand, PostCommand, PostContent, SetupCommand, StatusCommand, UpdateCommand } from './cli-command.ts';
 export type { Failure } from './failure.ts';
 
 export const parseCliArgs = (argv: ReadonlyArray<string>): Result<CliCommand, Failure> => {

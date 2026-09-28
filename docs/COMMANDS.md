@@ -6,7 +6,7 @@ Every command prints one JSON line on stdout: `{"ok":true,"data":...}` on succes
 
 | Command | What it does |
 | --- | --- |
-| [`post`](#post) | Publish a text post to Threads. |
+| [`post`](#post) | Publish a text post, an image, or both, to Threads. |
 | [`setup`](#setup) | Connect a Threads account and save its token under a profile. |
 | [`help-json`](#help-json) | Describe every command, option, example and error code as JSON. Start here. |
 | [`docs`](#docs) | Show one command's full documentation as markdown. |
@@ -18,12 +18,12 @@ Every command prints one JSON line on stdout: `{"ok":true,"data":...}` on succes
 
 ## post
 
-Publishes the text as a new post on the account saved in the profile, and answers with the post id and its link. Threads allows 500 characters and 250 posts per 24 hours. Publishing is never retried: a post that timed out may still have gone out, so check the profile before posting again.
+Publishes a new post on the account saved in the profile and answers with its id and link. A text over the limit is refused unless --split posts it as a thread of replies. Threads allows 250 posts per 24 hours. Publishing is never retried: a post that timed out may still have gone out, so check the profile before posting again.
 
 ### Usage
 
 ```bash
-panda-social post --to <platform> --text <text> [--profile <name>]
+panda-social post --to <platform> [--text <text>] [--profile <name>] [--image <url>] [--split]
 ```
 
 ### Parameters
@@ -31,8 +31,10 @@ panda-social post --to <platform> --text <text> [--profile <name>]
 | Parameter | Required | Description |
 | --- | --- | --- |
 | `--to <platform>` | yes | The platform to post to. One of: threads. |
-| `--text <text>` | yes | The text of the post, quoted when it contains spaces. 500 characters at most on Threads. |
-| `--profile <name>` | no | The profile whose saved account posts. Defaults to "default". PANDA_SOCIAL_THREADS_TOKEN, when set, overrides the saved token. |
+| `--text <text>` | no | The text of the post, quoted when it contains spaces. Required unless --image is given. 500 characters at most on Threads, an emoji counting its UTF-8 bytes (a thumbs-up is 4). |
+| `--profile <name>` | no | The profile whose saved account acts. Defaults to "default". PANDA_SOCIAL_THREADS_TOKEN, when set, overrides the saved token. |
+| `--image <url>` | no | A public https URL to a JPEG or PNG image, 8 MB at most. Threads downloads it itself, so a local file must be hosted first. |
+| `--split` | no | Post a text over the limit as a thread: the first post, then replies, each answering the one before. If a part fails, the parts already published are deleted. |
 
 ### Examples
 
@@ -41,11 +43,15 @@ panda-social post --to <platform> --text <text> [--profile <name>]
 panda-social post --to threads --text "Hello from panda"
 # Post from the account saved in the brand-a profile.
 panda-social post --to threads --text "Launch day" --profile brand-a
+# Post an image with a caption.
+panda-social post --to threads --image https://cdn.example.com/cat.jpg --text "A cat on the sofa"
+# Post a long text as a thread of replies.
+panda-social post --to threads --text "Release notes that run past 500 characters" --split
 ```
 
 ### Output
 
-The new post: `{"platform":"threads","id":"<post id>","url":"<link, or null when Threads did not return one>"}`.
+The new post: `{"platform":"threads","id":"<post id>","url":"<link, or null when Threads did not return one>"}`, plus `"replies":["<id>",...]` for a --split thread.
 
 ### Errors
 
@@ -54,14 +60,19 @@ The new post: `{"platform":"threads","id":"<post id>","url":"<link, or null when
 | `unknown-option` | Run `panda-social docs <command>` for the options that command takes. |
 | `unexpected-argument` | Quote any value that contains spaces, for example --text "Hello from panda". |
 | `unknown-platform` | Threads is the only platform so far: pass --to threads, or run `panda-social setup threads`. |
-| `missing-text` | Pass the text of the post with --text, quoted when it contains spaces. |
 | `invalid-profile` | Use lowercase letters, digits, - and _, starting with a letter or digit, 40 characters at most. Example: --profile brand-a |
+| `missing-text` | Pass the text of the post with --text (quoted when it contains spaces), an image URL with --image, or both. |
+| `invalid-image` | Threads needs a public https URL to a JPEG or PNG image, 8 MB at most. Host a local file first, then pass its URL with --image. |
+| `text-too-long` | Threads allows 500 characters per post, an emoji counting its UTF-8 bytes. Shorten the text, or pass --split to post it as a thread of replies. |
+| `image-rejected` | Threads could not download or read the image. Check that the URL opens in a private browser window and serves a JPEG or PNG of 8 MB at most, then retry. |
+| `still-processing` | Threads was still processing the image after 60 seconds, so nothing was published. Retry the post. |
 | `missing-credentials` | Connect an account with `panda-social setup threads` (add `--profile <name>` for another profile), or set PANDA_SOCIAL_THREADS_TOKEN. |
 | `corrupt` | The credentials file is not valid. Fix or delete ~/.panda-social/credentials.json, then run `panda-social setup threads`. |
 | `unreadable` | The credentials file could not be read. Check that ~/.panda-social/credentials.json belongs to you. |
 | `unauthorized` | Threads refused the token. Generate a new one (Meta app dashboard, Use cases, Access the Threads API, Settings, User Token Generator) and run `panda-social setup threads` again. |
+| `forbidden` | The token lacks a permission this action needs: threads_delete to delete, threads_manage_replies for --split. Add it under Use cases, Access the Threads API, Customize, generate a new token, and run `panda-social setup threads` again. |
 | `rate-limited` | Threads allows 250 posts per 24 hours. Wait, then retry. |
-| `rejected` | Threads rejected the request. Check the text (500 characters at most), then retry. |
+| `rejected` | Threads rejected the request; the message says why. Fix what it names (the text or the image URL), then retry. |
 | `network-failed` | graph.threads.net could not be reached. Check the network, then retry. |
 | `timeout` | Threads did not answer in time. The post may still have gone out: check the profile before retrying. |
 
@@ -110,7 +121,7 @@ The connected account, `{"platform":"threads","profile":"<name>","userId":"<id>"
 | `cancelled` | The setup stopped before a token was pasted. Run `panda-social setup threads` again when you have it. |
 | `unauthorized` | Threads refused the token. Generate a new one (Meta app dashboard, Use cases, Access the Threads API, Settings, User Token Generator) and run `panda-social setup threads` again. |
 | `rate-limited` | Threads allows 250 posts per 24 hours. Wait, then retry. |
-| `rejected` | Threads rejected the request. Check the text (500 characters at most), then retry. |
+| `rejected` | Threads rejected the request; the message says why. Fix what it names (the text or the image URL), then retry. |
 | `network-failed` | graph.threads.net could not be reached. Check the network, then retry. |
 | `timeout` | Threads did not answer in time. The post may still have gone out: check the profile before retrying. |
 | `corrupt` | The credentials file is not valid. Fix or delete ~/.panda-social/credentials.json, then run `panda-social setup threads`. |
@@ -192,13 +203,18 @@ Every failure carries one of these codes. Its `hint` says what to do next.
 | --- | --- |
 | `cancelled` | The setup stopped before a token was pasted. Run `panda-social setup threads` again when you have it. |
 | `corrupt` | The credentials file is not valid. Fix or delete ~/.panda-social/credentials.json, then run `panda-social setup threads`. |
+| `forbidden` | The token lacks a permission this action needs: threads_delete to delete, threads_manage_replies for --split. Add it under Use cases, Access the Threads API, Customize, generate a new token, and run `panda-social setup threads` again. |
+| `image-rejected` | Threads could not download or read the image. Check that the URL opens in a private browser window and serves a JPEG or PNG of 8 MB at most, then retry. |
+| `invalid-image` | Threads needs a public https URL to a JPEG or PNG image, 8 MB at most. Host a local file first, then pass its URL with --image. |
 | `invalid-profile` | Use lowercase letters, digits, - and _, starting with a letter or digit, 40 characters at most. Example: --profile brand-a |
 | `missing-credentials` | Connect an account with `panda-social setup threads` (add `--profile <name>` for another profile), or set PANDA_SOCIAL_THREADS_TOKEN. |
-| `missing-text` | Pass the text of the post with --text, quoted when it contains spaces. |
+| `missing-text` | Pass the text of the post with --text (quoted when it contains spaces), an image URL with --image, or both. |
 | `network-failed` | graph.threads.net could not be reached. Check the network, then retry. |
 | `no-home` | Set HOME (USERPROFILE on Windows), or pass the token in PANDA_SOCIAL_THREADS_TOKEN instead of saving it. |
 | `rate-limited` | Threads allows 250 posts per 24 hours. Wait, then retry. |
-| `rejected` | Threads rejected the request. Check the text (500 characters at most), then retry. |
+| `rejected` | Threads rejected the request; the message says why. Fix what it names (the text or the image URL), then retry. |
+| `still-processing` | Threads was still processing the image after 60 seconds, so nothing was published. Retry the post. |
+| `text-too-long` | Threads allows 500 characters per post, an emoji counting its UTF-8 bytes. Shorten the text, or pass --split to post it as a thread of replies. |
 | `timeout` | Threads did not answer in time. The post may still have gone out: check the profile before retrying. |
 | `unauthorized` | Threads refused the token. Generate a new one (Meta app dashboard, Use cases, Access the Threads API, Settings, User Token Generator) and run `panda-social setup threads` again. |
 | `unexpected-argument` | Quote any value that contains spaces, for example --text "Hello from panda". |

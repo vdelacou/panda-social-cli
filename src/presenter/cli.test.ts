@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { imageUrlUnsafe } from '../domain/image-url.ts';
 import { DEFAULT_PROFILE, profileNameUnsafe } from '../domain/profile-name.ts';
 import { ok } from '../domain/result.ts';
 import { parseCliArgs, renderFailure, renderSuccess } from './cli.ts';
@@ -96,5 +97,27 @@ describe('reading the agent entry points', () => {
 
     expect(!result.ok && result.error.code).toBe('unexpected-argument');
     expect(!result.ok && result.error.hint).toContain('--text "Hello from panda"');
+  });
+});
+
+const IMAGE = 'https://cdn.example.com/cat.jpg';
+
+describe('reading the Threads features', () => {
+  it('`post --to threads --image https://…` reads as an image post, with or without text', () => {
+    expect(parseCliArgs(['post', '--to', 'threads', '--image', IMAGE])).toEqual(ok({ command: 'post', platform: 'threads', imageUrl: imageUrlUnsafe(IMAGE) }));
+    expect(parseCliArgs(['post', '--to', 'threads', '--image', IMAGE, '--text', 'A cat'])).toEqual(
+      ok({ command: 'post', platform: 'threads', text: 'A cat', imageUrl: imageUrlUnsafe(IMAGE) })
+    );
+  });
+
+  it('a local image path is refused, and the hint says Threads needs a public https URL', () => {
+    const result = parseCliArgs(['post', '--to', 'threads', '--image', './cat.jpg']);
+
+    expect(!result.ok && result.error.code).toBe('invalid-image');
+    expect(!result.ok && result.error.hint).toContain('public https URL');
+  });
+
+  it('`post ... --split` carries the split request', () => {
+    expect(parseCliArgs(['post', '--to', 'threads', '--text', 'Long text', '--split'])).toEqual(ok({ command: 'post', platform: 'threads', text: 'Long text', split: true }));
   });
 });

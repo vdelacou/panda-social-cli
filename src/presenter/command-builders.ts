@@ -7,7 +7,7 @@ import { COMMANDS, findCommand, specFor } from './command-registry.ts';
 import type { CommandName } from './command-spec.ts';
 import { SETUP_PLATFORMS } from './commands/setup.ts';
 import type { Failure } from './failure.ts';
-import { readPlatform, readProfile } from './post-flags.ts';
+import { readContent, readPlatform, readProfile } from './post-flags.ts';
 import type { Flags } from './read-flags.ts';
 import { BIN, commandLine } from './usage.ts';
 
@@ -25,12 +25,11 @@ const withProfile = (profile: ProfileName | undefined): { readonly profile?: Pro
 const buildPost = ({ values }: Flags): Result<CliCommand, Failure> => {
   const platform = readPlatform(values, 'to', exampleOf('post'));
   if (!platform.ok) return platform;
-  const text = values['text'];
-  if (typeof text !== 'string' || text.length === 0)
-    return err({ code: 'missing-text', message: 'The post has no text.', hint: `Pass the text with --text. Example: ${exampleOf('post')}` });
+  const content = readContent(values, exampleOf('post'));
+  if (!content.ok) return content;
   const profile = readProfile(values['profile']);
   if (!profile.ok) return profile;
-  return ok({ command: 'post', platform: platform.value, text, ...withProfile(profile.value) });
+  return ok({ command: 'post', platform: platform.value, ...content.value, ...withProfile(profile.value) });
 };
 
 const buildSetup = ({ values, positionals }: Flags): Result<CliCommand, Failure> => {

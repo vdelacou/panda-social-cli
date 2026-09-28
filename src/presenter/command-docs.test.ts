@@ -8,7 +8,7 @@ describe('the command documentation', () => {
     const page = post ? renderCommandPage(post) : '';
 
     expect(page).toContain('## post');
-    expect(page).toContain('panda-social post --to <platform> --text <text> [--profile <name>]');
+    expect(page).toContain('panda-social post --to <platform> [--text <text>] [--profile <name>] [--image <url>] [--split]');
     expect(page).toContain('| `--to <platform>` | yes |');
     expect(page).toContain('| `--profile <name>` | no |');
     expect(page).toContain('panda-social post --to threads --text "Hello from panda"');

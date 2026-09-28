@@ -312,3 +312,38 @@ describe('reading the Instagram post commands', () => {
     expect(!result.ok && result.error.code).toBe('invalid-post-id');
   });
 });
+
+describe('reading a post to several platforms', () => {
+  it('`post --to threads,x --text Hello --profile brand-a` reads as one post per platform, in that order, each with the text and the profile', () => {
+    expect(parseCliArgs(['post', '--to', 'threads,x', '--text', 'Hello', '--profile', 'brand-a'])).toEqual(
+      ok({
+        command: 'cross-post',
+        posts: [
+          { command: 'post', platform: 'threads', text: 'Hello', profile: profileNameUnsafe('brand-a') },
+          { command: 'post', platform: 'x', text: 'Hello', profile: profileNameUnsafe('brand-a') },
+        ],
+      })
+    );
+  });
+
+  it('`--to "threads, x"` is read trimmed, and `--to threads,threads` is a single Threads post, as before', () => {
+    expect(parseCliArgs(['post', '--to', 'threads, x', '--text', 'Hello'])).toEqual(parseCliArgs(['post', '--to', 'threads,x', '--text', 'Hello']));
+    expect(parseCliArgs(['post', '--to', 'threads,threads', '--text', 'Hello'])).toEqual(ok({ command: 'post', platform: 'threads', text: 'Hello' }));
+  });
+
+  it('a flag one of the platforms refuses stops the whole post, and the failure names that platform', () => {
+    const image = parseCliArgs(['post', '--to', 'threads,x', '--image', 'https://cdn.example.com/cat.jpg']);
+    const textOnly = parseCliArgs(['post', '--to', 'threads,instagram', '--text', 'Hello']);
+
+    expect(!image.ok && [image.error.code, image.error.message.startsWith('On x: ')]).toEqual(['invalid-image', true]);
+    expect(!textOnly.ok && [textOnly.error.code, textOnly.error.message.startsWith('On instagram: ')]).toEqual(['missing-image', true]);
+  });
+
+  it('an unknown or empty name in the list is refused as unknown-platform', () => {
+    for (const to of ['threads,myspace', 'threads,']) {
+      const result = parseCliArgs(['post', '--to', to, '--text', 'Hello']);
+
+      expect(!result.ok && result.error.code).toBe('unknown-platform');
+    }
+  });
+});

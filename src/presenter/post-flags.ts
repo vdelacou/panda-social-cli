@@ -16,10 +16,22 @@ type Values = Flags['values'];
 
 export const isPlatform = (value: unknown): value is Platform => typeof value === 'string' && PLATFORMS.includes(value);
 
-export const readPlatform = (values: Values, flag: 'to' | 'on', example: string): Result<Platform, Failure> => {
-  const platform = values[flag];
-  if (isPlatform(platform)) return ok(platform);
-  return err({ code: 'unknown-platform', message: `Unknown platform: ${String(platform)}.`, hint: `Supported platforms: ${PLATFORMS.join(', ')}. Example: ${example}` });
+const unknownPlatform = (name: string, example: string): Result<never, Failure> =>
+  err({ code: 'unknown-platform', message: `Unknown platform: "${name}".`, hint: `Supported platforms: ${PLATFORMS.join(', ')}. Example: ${example}` });
+
+// The --on of update and delete: one platform.
+export const readPlatform = (values: Values, example: string): Result<Platform, Failure> => {
+  const platform = values['on'];
+  return isPlatform(platform) ? ok(platform) : unknownPlatform(String(platform), example);
+};
+
+// D38: --to names one platform or several, separated by commas; each is trimmed, and a
+// platform named twice is posted to once.
+export const readPlatforms = (values: Values, example: string): Result<ReadonlyArray<Platform>, Failure> => {
+  const to = values['to'];
+  const names = typeof to === 'string' ? to.split(',').map((name) => name.trim()) : [String(to)];
+  const unknown = names.find((name) => !isPlatform(name));
+  return unknown === undefined ? ok([...new Set(names.filter(isPlatform))]) : unknownPlatform(unknown, example);
 };
 
 export const readProfile = (value: unknown): Result<ProfileName | undefined, Failure> => {

@@ -64,5 +64,8 @@ export type StatusCommand = ThreadsStatusCommand | XStatusCommand | FacebookStat
 
 export type DocsCommand = { readonly command: 'docs'; readonly target: CommandName };
 
+// One post to several platforms (D38): each item is the post that platform gets alone.
+export type CrossPostCommand = { readonly command: 'cross-post'; readonly posts: ReadonlyArray<PostCommand> };
+
 export type CliCommand =
-  PostCommand | UpdateCommand | DeleteCommand | SetupCommand | StatusCommand | DocsCommand | { readonly command: 'help-json' } | { readonly command: 'version' };
+  PostCommand | CrossPostCommand | UpdateCommand | DeleteCommand | SetupCommand | StatusCommand | DocsCommand | { readonly command: 'help-json' } | { readonly command: 'version' };

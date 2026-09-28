@@ -8,6 +8,7 @@ import { readFlags } from './read-flags.ts';
 
 export type {
   CliCommand,
+  CrossPostCommand,
   DocsCommand,
   FacebookSetupCommand,
   FacebookStatusCommand,

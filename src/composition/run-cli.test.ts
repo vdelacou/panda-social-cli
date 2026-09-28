@@ -826,3 +826,84 @@ describe('posting to Instagram with `panda-social post --to instagram`', () => {
     expect(mock.calls).toEqual([]);
   });
 });
+
+const THREADS_PUBLISH = 'https://graph.threads.net/v1.0/me/threads';
+const THREADS_PERMALINK = `https://graph.threads.net/v1.0/${POST_ID}?fields=permalink`;
+
+// A profile holding the platforms a test names, each saved now so nothing is refreshed first.
+const saveProfile = (home: string, platforms: Readonly<Record<string, unknown>>): void => {
+  const file = path.join(home, '.panda-social', 'credentials.json');
+  mkdirSync(path.dirname(file), { recursive: true });
+  writeFileSync(file, JSON.stringify({ version: 1, profiles: { default: platforms } }));
+};
+
+const SAVED_THREADS = { token: STORED, userId: '26000000000000001', username: 'panda', savedAt: new Date().toISOString() };
+const SAVED_PAGE = { pageId: '104000000000001', pageName: 'Panda Bakery', token: BAKERY_TOKEN, savedAt: new Date().toISOString() };
+
+// Threads and the Facebook Page as a text post meets them.
+const threadsAndPage = (): FetchMock =>
+  installFetchMock([
+    { match: (url, init) => init?.method === 'POST' && url === THREADS_PUBLISH, respond: () => json({ id: POST_ID }) },
+    { match: (url, init) => init?.method === 'GET' && url === THREADS_PERMALINK, respond: () => json({ id: POST_ID, permalink: PERMALINK }) },
+    { match: (url, init) => init?.method === 'POST' && url === FACEBOOK_FEED, respond: () => json({ id: FACEBOOK_POSTED }) },
+  ]);
+
+describe('cross-posting with `panda-social post --to` several platforms', () => {
+  let home = '';
+  let mock: FetchMock | undefined;
+  beforeEach(() => {
+    home = mkdtempSync(path.join(tmpdir(), 'panda-social-'));
+  });
+  afterEach(() => {
+    mock?.restore();
+    rmSync(home, { recursive: true, force: true });
+  });
+
+  it('`post --to threads,facebook` with both saved posts to Threads, then to the Facebook Page, and prints both posts', async () => {
+    saveProfile(home, { threads: SAVED_THREADS, facebook: SAVED_PAGE });
+    mock = threadsAndPage();
+
+    const posted = await run(['post', '--to', 'threads,facebook', '--text', 'Hello from panda'], { HOME: home });
+
+    expect(posted).toEqual({
+      exitCode: 0,
+      answers: [
+        {
+          ok: true,
+          data: {
+            posts: [
+              { platform: 'threads', id: POST_ID, url: PERMALINK },
+              { platform: 'facebook', id: FACEBOOK_POSTED, url: FACEBOOK_LINK },
+            ],
+          },
+        },
+      ],
+    });
+    expect(mock.calls.map((call) => call.url)).toEqual([THREADS_PUBLISH, THREADS_PERMALINK, FACEBOOK_FEED]);
+  });
+
+  it('with Threads saved and X not, Threads still posts, and the run exits 1 as partly-published with the Threads post and the X failure with its hint', async () => {
+    saveProfile(home, { threads: SAVED_THREADS });
+    mock = threadsAndPage();
+
+    const posted = await run(['post', '--to', 'threads,x', '--text', 'Hello from panda'], { HOME: home });
+
+    expect(posted).toEqual({
+      exitCode: 1,
+      answers: [
+        {
+          ok: false,
+          error: {
+            code: 'partly-published',
+            message: expect.any(String),
+            hint: expect.any(String),
+            details: {
+              published: [{ platform: 'threads', id: POST_ID, url: PERMALINK }],
+              failed: [{ platform: 'x', code: 'missing-credentials', message: expect.any(String), hint: expect.stringContaining('panda-social setup x') }],
+            },
+          },
+        },
+      ],
+    });
+  });
+});

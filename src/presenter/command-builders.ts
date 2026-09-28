@@ -7,9 +7,9 @@ import { exampleOf, withProfile } from './builder-helpers.ts';
 import { COMMANDS, findCommand } from './command-registry.ts';
 import type { CommandName } from './command-spec.ts';
 import type { Failure } from './failure.ts';
-import type { PostTarget } from './post-command.ts';
+import type { Platform, PlatformContent, PostCommand, PostTarget } from './post-command.ts';
 import { readContent, readFacebookContent, readThreadsContent, readXContent } from './post-content.ts';
-import { readPlatform, readPostId, readProfile } from './post-flags.ts';
+import { readPlatform, readPlatforms, readPostId, readProfile } from './post-flags.ts';
 import type { Flags } from './read-flags.ts';
 import { BIN } from './usage.ts';
 
@@ -20,21 +20,35 @@ export const unknownCommand = (message: string): Failure => ({
   hint: `Commands: ${COMMANDS.map((command) => command.name).join(', ')}. Run \`${BIN} help-json\` for all of them.`,
 });
 
+// Every platform's content is read before anything is posted (D38); in a list, a refusal
+// names the platform that refused.
+const readContents = (values: Flags['values'], platforms: ReadonlyArray<Platform>): Result<ReadonlyArray<PlatformContent>, Failure> => {
+  const contents: PlatformContent[] = [];
+  for (const platform of platforms) {
+    const content = readContent(values, platform, exampleOf('post'));
+    if (!content.ok) return platforms.length === 1 ? content : err({ ...content.error, message: `On ${platform}: ${content.error.message}` });
+    contents.push(content.value);
+  }
+  return ok(contents);
+};
+
+// One platform posts as before; several make a cross-post, each with the same flags.
 const buildPost = ({ values }: Flags): Result<CliCommand, Failure> => {
-  const platform = readPlatform(values, 'to', exampleOf('post'));
-  if (!platform.ok) return platform;
-  const content = readContent(values, platform.value, exampleOf('post'));
-  if (!content.ok) return content;
+  const platforms = readPlatforms(values, exampleOf('post'));
+  if (!platforms.ok) return platforms;
+  const contents = readContents(values, platforms.value);
+  if (!contents.ok) return contents;
   const profile = readProfile(values['profile']);
   if (!profile.ok) return profile;
-  return ok({ command: 'post', ...content.value, ...withProfile(profile.value) });
+  const posts = contents.value.map((content): PostCommand => ({ command: 'post', ...content, ...withProfile(profile.value) }));
+  return ok(posts.length === 1 ? posts[0] : { command: 'cross-post', posts });
 };
 
 type Target = PostTarget & { readonly profile?: ProfileName };
 
 // The post a delete or an update acts on: its platform, its id and the profile it belongs to.
 const readTarget = ({ values }: Flags, example: string): Result<Target, Failure> => {
-  const platform = readPlatform(values, 'on', example);
+  const platform = readPlatform(values, example);
   if (!platform.ok) return platform;
   const id = readPostId(values['id'], platform.value);
   if (!id.ok) return id;

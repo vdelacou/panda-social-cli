@@ -46,6 +46,7 @@ import '../src/composition/facebook-page.ts';
 import '../src/composition/instagram-token.ts';
 import '../src/composition/package-info.ts';
 import '../src/composition/run-cli.ts';
+import '../src/composition/run-cross-post.ts';
 import '../src/composition/run-facebook.ts';
 import '../src/composition/run-instagram.ts';
 import '../src/composition/run-setup-facebook.ts';

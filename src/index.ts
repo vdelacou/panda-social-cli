@@ -11,6 +11,9 @@
  *
  *   import { createFacebookGraph } from 'panda-social-cli';
  *   const posted = await createFacebookGraph({ token: pageToken }).publishText(pageId, 'Hello from panda');
+ *
+ *   import { createInstagramGraph } from 'panda-social-cli';
+ *   const posted = await createInstagramGraph({ token }).publishImage(userId, imageUrl, 'A cat on the sofa');
  */
 
 export { FACEBOOK_IMAGE_MAX_BYTES, parseFacebookImage } from './domain/facebook-image.ts';
@@ -21,6 +24,10 @@ export { parseFacebookPostId } from './domain/facebook-post-id.ts';
 export type { FacebookPostId, FacebookPostIdError } from './domain/facebook-post-id.ts';
 export { parseImageUrl } from './domain/image-url.ts';
 export type { ImageUrl, ImageUrlError } from './domain/image-url.ts';
+export { parseInstagramMediaId } from './domain/instagram-media-id.ts';
+export type { InstagramMediaId, InstagramMediaIdError } from './domain/instagram-media-id.ts';
+export { parseInstagramUserId } from './domain/instagram-user-id.ts';
+export type { InstagramUserId, InstagramUserIdError } from './domain/instagram-user-id.ts';
 export { err, ok } from './domain/result.ts';
 export type { Result } from './domain/result.ts';
 export type { ThreadsUserId } from './domain/threads-user-id.ts';
@@ -33,6 +40,8 @@ export { splitForX, X_TEXT_LIMIT, xTextLength } from './domain/x-text.ts';
 
 export { createFacebookGraph, FACEBOOK_GRAPH_BASE } from './infra/facebook-graph.ts';
 export type { FacebookGraphConfig } from './infra/facebook-graph.ts';
+export { createInstagramGraph, INSTAGRAM_GRAPH_BASE } from './infra/instagram-graph.ts';
+export type { InstagramGraphConfig } from './infra/instagram-graph.ts';
 export { createWinstonLogger } from './infra/logger.ts';
 export { createThreadsGraph, THREADS_GRAPH_BASE } from './infra/threads-graph.ts';
 export type { ThreadsGraphConfig } from './infra/threads-graph.ts';
@@ -40,6 +49,7 @@ export { createXApi, X_API_BASE } from './infra/x-api.ts';
 export type { XApiConfig } from './infra/x-api.ts';
 
 export type { Facebook, FacebookError, FacebookPage, FacebookPhoto, FacebookPublishedPost } from './use-cases/ports/facebook.ts';
+export type { Instagram, InstagramAccount, InstagramError, InstagramPublishedPost } from './use-cases/ports/instagram.ts';
 export type { Logger, LogMeta } from './use-cases/ports/logger.ts';
 export type { StepError } from './use-cases/ports/step-error.ts';
 export type { PublishedPost, PublishingLimits, Quota, RefreshedToken, Threads, ThreadsAccount, ThreadsError } from './use-cases/ports/threads.ts';

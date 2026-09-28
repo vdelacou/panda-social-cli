@@ -14,7 +14,17 @@
 
 type Probe = { readonly ok: boolean; readonly detail: string };
 
-const EXPECTED_EXPORTS = ['createFacebookGraph', 'createPublishPost', 'createThreadsGraph', 'createWinstonLogger', 'createXApi', 'err', 'ok', 'xTextLength'];
+const EXPECTED_EXPORTS = [
+  'createFacebookGraph',
+  'createInstagramGraph',
+  'createPublishPost',
+  'createThreadsGraph',
+  'createWinstonLogger',
+  'createXApi',
+  'err',
+  'ok',
+  'xTextLength',
+];
 const LIBRARY_PROBE = "const m = await import('./dist/index.js'); process.stdout.write(JSON.stringify(Object.keys(m).sort()));";
 
 const run = (command: ReadonlyArray<string>, env: Record<string, string>): { readonly code: number; readonly stdout: string } => {

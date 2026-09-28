@@ -3,7 +3,7 @@ import type { ProfileName } from '../domain/profile-name.ts';
 import type { SetupStep } from '../domain/setup-step.ts';
 
 export type SetupGuide = {
-  readonly platform: 'threads' | 'x';
+  readonly platform: 'threads' | 'x' | 'facebook';
   readonly profile: ProfileName;
   readonly steps: ReadonlyArray<SetupStep & { readonly step: number }>;
   readonly finish: string;
@@ -13,6 +13,8 @@ export type SetupGuide = {
 const FINISH: Readonly<Record<SetupGuide['platform'], string>> = {
   threads: 'When the token is copied, run: panda-social setup threads --token-stdin{profile}, then paste it and press Enter (or pipe it in).',
   x: 'When the four keys are copied, run panda-social setup x{profile} in your own terminal and paste them when asked, or pipe them one per line (API Key, API Key Secret, Access Token, Access Token Secret) into panda-social setup x --keys-stdin{profile}.',
+  facebook:
+    'When the extended token is copied, run panda-social setup facebook{profile} in your own terminal and paste it when asked, or pipe it into panda-social setup facebook --token-stdin{profile}, adding --page <id> when the token grants several Pages.',
 };
 
 // What an agent relays to its human: every step numbered, then the one command that finishes the setup.

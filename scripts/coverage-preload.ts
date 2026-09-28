@@ -63,6 +63,7 @@ import '../src/presenter/commands/shared-options.ts';
 import '../src/presenter/commands/status.ts';
 import '../src/presenter/commands/update.ts';
 import '../src/presenter/contract.ts';
+import '../src/presenter/facebook-setup-steps.ts';
 import '../src/presenter/failure.ts';
 import '../src/presenter/hints.ts';
 import '../src/presenter/manifest.ts';

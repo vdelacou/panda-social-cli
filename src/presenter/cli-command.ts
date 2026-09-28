@@ -31,7 +31,13 @@ export type XStatusCommand = {
   readonly profile?: ProfileName;
 };
 
-export type StatusCommand = ThreadsStatusCommand | XStatusCommand;
+export type FacebookStatusCommand = {
+  readonly command: 'status';
+  readonly platform: 'facebook';
+  readonly profile?: ProfileName;
+};
+
+export type StatusCommand = ThreadsStatusCommand | XStatusCommand | FacebookStatusCommand;
 
 export type DocsCommand = { readonly command: 'docs'; readonly target: CommandName };
 

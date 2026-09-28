@@ -79,3 +79,6 @@ export const withFacebookCredentials = (file: CredentialsFile, profile: ProfileN
   version: 1,
   profiles: { ...file.profiles, [profile]: { ...file.profiles[profile], facebook } },
 });
+
+export const facebookCredentialsFor = (file: CredentialsFile, profile: ProfileName): FacebookCredentials | undefined =>
+  Object.hasOwn(file.profiles, profile) ? file.profiles[profile].facebook : undefined;

@@ -10,6 +10,11 @@ export type Config = {
     readonly accessToken: string | undefined;
     readonly accessSecret: string | undefined;
   };
+  // PANDA_SOCIAL_FACEBOOK_PAGE_ID and _PAGE_TOKEN: both win over the saved Page.
+  readonly facebookPage: {
+    readonly id: string | undefined;
+    readonly token: string | undefined;
+  };
   readonly logLevel: string;
   // <home>/.panda-social/credentials.json, or undefined when no home folder is known.
   readonly credentialsFile: string | undefined;
@@ -31,6 +36,7 @@ export const readConfig = (env: Readonly<Record<string, string | undefined>>): C
       accessToken: nonEmpty(env['PANDA_SOCIAL_X_ACCESS_TOKEN']),
       accessSecret: nonEmpty(env['PANDA_SOCIAL_X_ACCESS_SECRET']),
     },
+    facebookPage: { id: nonEmpty(env['PANDA_SOCIAL_FACEBOOK_PAGE_ID']), token: nonEmpty(env['PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN']) },
     logLevel: env['PANDA_SOCIAL_LOG_LEVEL'] ?? 'warn',
     credentialsFile: home === undefined ? undefined : path.join(home, '.panda-social', 'credentials.json'),
   };

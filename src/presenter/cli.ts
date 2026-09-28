@@ -6,7 +6,17 @@ import { findCommand } from './command-registry.ts';
 import type { Failure } from './failure.ts';
 import { readFlags } from './read-flags.ts';
 
-export type { CliCommand, DocsCommand, SetupCommand, StatusCommand, ThreadsSetupCommand, ThreadsStatusCommand, XSetupCommand, XStatusCommand } from './cli-command.ts';
+export type {
+  CliCommand,
+  DocsCommand,
+  FacebookStatusCommand,
+  SetupCommand,
+  StatusCommand,
+  ThreadsSetupCommand,
+  ThreadsStatusCommand,
+  XSetupCommand,
+  XStatusCommand,
+} from './cli-command.ts';
 export type {
   DeleteCommand,
   PostCommand,

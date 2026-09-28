@@ -41,8 +41,9 @@ export const buildSetup = ({ values, positionals }: Flags): Result<CliCommand, F
   return ok({ command: 'setup', platform: 'threads', profile: chosen, tokenFromStdin: values['token-stdin'] === true });
 };
 
+// status reads a Facebook Page from the environment or the file before setup can save one.
 export const buildStatus = ({ values, positionals }: Flags): Result<CliCommand, Failure> => {
-  const platform = readAccountPlatform(positionals, 'status');
+  const platform = positionals[0] === 'facebook' ? ok('facebook' as const) : readAccountPlatform(positionals, 'status');
   if (!platform.ok) return platform;
   const profile = readProfile(values['profile']);
   if (!profile.ok) return profile;

@@ -442,3 +442,87 @@ describe('posting to X with `panda-social post --to x`', () => {
     expect(deleted.answers).toEqual([{ ok: true, data: { platform: 'x', id: X_EDITED, deleted: true } }]);
   });
 });
+
+const FACEBOOK_ACCOUNTS = 'https://graph.facebook.com/v26.0/me/accounts?fields=id,name,access_token,tasks&limit=100';
+const FACEBOOK_ME = 'https://graph.facebook.com/v26.0/me?fields=id,name';
+const FACEBOOK_USER_TOKEN = ['user', 'token'].join('-');
+const BAKERY_TOKEN = ['bakery', 'page', 'token'].join('-');
+const BOOKS_TOKEN = ['books', 'page', 'token'].join('-');
+
+// /me answers the Page whose token asks: Panda Books for its own token, Panda Bakery for any other.
+const pageOf = (init: RequestInit | undefined): { readonly id: string; readonly name: string } =>
+  new Headers(init?.headers).get('authorization') === `Bearer ${BOOKS_TOKEN}` ? { id: '104000000000002', name: 'Panda Books' } : { id: '104000000000001', name: 'Panda Bakery' };
+
+// graph.facebook.com as the setup and the status meet it: the Pages a user token grants, and whose Page token it is.
+const facebookGraph = (): FetchMock =>
+  installFetchMock([
+    {
+      match: (url, init) => init?.method === 'GET' && url === FACEBOOK_ACCOUNTS,
+      respond: () =>
+        Response.json({
+          data: [
+            { access_token: BAKERY_TOKEN, name: 'Panda Bakery', id: '104000000000001', tasks: ['CREATE_CONTENT', 'MANAGE'] },
+            { access_token: BOOKS_TOKEN, name: 'Panda Books', id: '104000000000002', tasks: ['CREATE_CONTENT'] },
+          ],
+        }),
+    },
+    { match: (url, init) => init?.method === 'GET' && url === FACEBOOK_ME, respond: (_url, init) => Response.json(pageOf(init)) },
+  ]);
+
+describe('connecting a Facebook Page with `panda-social setup facebook`', () => {
+  let home = '';
+  let mock: FetchMock | undefined;
+  beforeEach(() => {
+    home = mkdtempSync(path.join(tmpdir(), 'panda-social-'));
+  });
+  afterEach(() => {
+    mock?.restore();
+    rmSync(home, { recursive: true, force: true });
+  });
+
+  it('PANDA_SOCIAL_FACEBOOK_PAGE_ID and _PAGE_TOKEN override the saved Page, and setting only the id fails as incomplete-environment naming the token variable', async () => {
+    mock = facebookGraph();
+    const envToken = ['env', 'page', 'token'].join('-');
+
+    await run(['setup', 'facebook', '--token-stdin', '--page', '104000000000002'], { HOME: home }, FACEBOOK_USER_TOKEN);
+    const overridden = await run(['status', 'facebook'], { HOME: home, PANDA_SOCIAL_FACEBOOK_PAGE_ID: '104000000000001', PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN: envToken });
+    const partial = await run(['status', 'facebook'], { HOME: home, PANDA_SOCIAL_FACEBOOK_PAGE_ID: '104000000000001' });
+
+    expect(overridden.answers).toEqual([{ ok: true, data: expect.objectContaining({ page: { id: '104000000000001', name: 'Panda Bakery' }, token: { source: 'environment' } }) }]);
+    expect(lastAuthorization(mock)).toBe(`Bearer ${envToken}`);
+    expect(partial.exitCode).toBe(1);
+    expect(partial.answers).toEqual([
+      { ok: false, error: { code: 'incomplete-environment', message: expect.stringContaining('PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN'), hint: expect.any(String) } },
+    ]);
+  });
+
+  it('`status facebook` with no saved Page fails with missing-credentials and a hint to run setup facebook', async () => {
+    const status = await run(['status', 'facebook'], { HOME: home });
+
+    expect(status).toEqual({
+      exitCode: 1,
+      answers: [{ ok: false, error: { code: 'missing-credentials', message: expect.any(String), hint: expect.stringContaining('panda-social setup facebook') } }],
+    });
+  });
+
+  it('a Page id that is not digits, in the environment or hand-edited into the credentials file, fails as invalid-page-id before Meta is called', async () => {
+    mock = facebookGraph();
+
+    const fromEnvironment = await run(['status', 'facebook'], {
+      HOME: home,
+      PANDA_SOCIAL_FACEBOOK_PAGE_ID: 'abc',
+      PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN: ['env', 'page', 'token'].join('-'),
+    });
+    mkdirSync(path.join(home, '.panda-social'), { recursive: true });
+    writeFileSync(
+      path.join(home, '.panda-social', 'credentials.json'),
+      JSON.stringify({ version: 1, profiles: { default: { facebook: { pageId: '../feed', pageName: 'Panda Bakery', token: BAKERY_TOKEN, savedAt: '2026-09-28T09:30:00.000Z' } } } })
+    );
+    const fromFile = await run(['status', 'facebook'], { HOME: home });
+
+    for (const answer of [fromEnvironment, fromFile]) {
+      expect(answer).toEqual({ exitCode: 1, answers: [{ ok: false, error: { code: 'invalid-page-id', message: expect.any(String), hint: expect.any(String) } }] });
+    }
+    expect(mock.calls).toEqual([]);
+  });
+});

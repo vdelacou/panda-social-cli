@@ -6,6 +6,7 @@ import { fail, succeed } from './answer.ts';
 import type { CliIo } from './cli-io.ts';
 import { readConfig } from './env.ts';
 import { PACKAGE_NAME, PACKAGE_VERSION } from './package-info.ts';
+import { runFacebook } from './run-facebook.ts';
 import { runThreads } from './run-threads.ts';
 import { runX } from './run-x.ts';
 import { runSetup } from './run-setup.ts';
@@ -32,7 +33,10 @@ export const runCli = async (io: CliIo): Promise<number> => {
     // The commands that act on an account, by platform: the type narrows to them, so a new
     // command that is not one of them fails to compile here until it gets its own case.
     default: {
-      return command.platform === 'x' ? runX(io, command, readConfig(io.env)) : runThreads(io, command, readConfig(io.env));
+      const config = readConfig(io.env);
+      if (command.platform === 'x') return runX(io, command, config);
+      if (command.platform === 'facebook') return runFacebook(io, command, config);
+      return runThreads(io, command, config);
     }
   }
 };

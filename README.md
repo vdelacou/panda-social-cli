@@ -2,7 +2,7 @@
 
 Post text, an image, or both to Threads, X, Facebook Pages and Instagram from one command line or one TypeScript library. It is built for AI agents first: every command answers in JSON, and every error names its cause and the next step to fix it.
 
-> Status: under construction. Threads works from source: guided setup, text and image posts, long texts as reply threads, delete, update by reposting, and commands that document themselves for agents. Token refresh, a `status` command and the other three platforms are next. Nothing is published to npm yet.
+> Status: under construction. Threads works from source: guided setup, text and image posts, long texts as reply threads, delete, update by reposting, a `status` check, a saved token that refreshes itself, and commands that document themselves for agents. The other three platforms are next. Nothing is published to npm yet.
 
 ## What each platform allows
 
@@ -23,6 +23,7 @@ bun run src/main.ts setup threads
 bun run src/main.ts post --to threads --text "Hello from panda"
 bun run src/main.ts post --to threads --image https://cdn.example.com/cat.jpg --text "A cat on the sofa"
 bun run src/main.ts delete --on threads --id 17890000000000001
+bun run src/main.ts status threads
 ```
 
 `setup threads` walks you through the six one-time steps (a Meta developer account, an app with the Threads API, its permissions, a tester invitation, and the token), one at a time. You paste the token without it showing on screen; the CLI checks it with Threads and saves it in `~/.panda-social/credentials.json`, readable by you only.
@@ -31,7 +32,9 @@ An agent runs the same command without a terminal and gets the six steps as JSON
 
 Threads downloads images itself, so `--image` takes a public https URL, not a local file. A text over 500 characters is refused unless `--split` posts it as a thread of replies; if one reply fails, the parts already out are deleted and the error lists any that could not be. Threads has no edit: `update --on threads --id <id> --text "..." --repost` deletes the post and publishes the new version, which gets a new id and link.
 
-For several accounts, add `--profile brand-a` to `setup`, `post`, `update` and `delete`. `PANDA_SOCIAL_THREADS_TOKEN` overrides the saved token, which suits CI.
+A Threads token lives 60 days from its last refresh. Every Threads command refreshes a saved token once it is 30 days old, so a CLI that runs at least once a month never needs the setup again; a refresh that fails leaves a warning on stderr and the command carries on with the token it has. `status threads` shows whose token it is, how old it is and how much of the rolling 24-hour quotas is used (250 posts, 1,000 replies, 100 deletes).
+
+For several accounts, add `--profile brand-a` to `setup`, `post`, `update`, `delete` and `status`. `PANDA_SOCIAL_THREADS_TOKEN` overrides the saved token, which suits CI.
 
 Every command prints one JSON line on stdout and exits 0 or 1; the guide and the logs go to stderr.
 
@@ -56,6 +59,8 @@ import { createThreadsGraph } from 'panda-social-cli';
 const posted = await createThreadsGraph({ token }).publishText('Hello from panda');
 if (posted.ok) console.log(posted.value.url);
 ```
+
+The same adapter answers `whoAmI()`, `refreshToken()` and `publishingLimits(userId)`, the id being the one `whoAmI()` returns.
 
 ## Develop
 

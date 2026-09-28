@@ -15,6 +15,25 @@ export type ThreadsAccount = {
   readonly username: string;
 };
 
+// A refreshed token and how long Threads says it lives.
+export type RefreshedToken = {
+  readonly token: string;
+  readonly expiresInSeconds: number;
+};
+
+// One rolling quota: `used` of `total` over the last `windowSeconds` (86,400 on Threads).
+export type Quota = {
+  readonly used: number;
+  readonly total: number;
+  readonly windowSeconds: number;
+};
+
+export type PublishingLimits = {
+  readonly posts: Quota;
+  readonly replies: Quota;
+  readonly deletes: Quota;
+};
+
 export type ThreadsError =
   | { readonly kind: 'unauthorized'; readonly message: string }
   | { readonly kind: 'forbidden'; readonly message: string }
@@ -33,4 +52,6 @@ export type Threads = {
   readonly publishReply: (replyTo: ThreadsPostId, text: string) => Promise<Result<ThreadsPostId, ThreadsError>>;
   readonly deletePost: (id: ThreadsPostId) => Promise<Result<void, ThreadsError>>;
   readonly whoAmI: () => Promise<Result<ThreadsAccount, ThreadsError>>;
+  readonly refreshToken: () => Promise<Result<RefreshedToken, ThreadsError>>;
+  readonly publishingLimits: (userId: ThreadsUserId) => Promise<Result<PublishingLimits, ThreadsError>>;
 };

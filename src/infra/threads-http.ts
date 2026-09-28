@@ -5,7 +5,8 @@ import type { ThreadsPostId } from '../domain/threads-post-id.ts';
 import { formatError } from '../domain/utilities/format-error.ts';
 import type { ThreadsError } from '../use-cases/ports/threads.ts';
 
-export const THREADS_GRAPH_BASE = 'https://graph.threads.net/v1.0';
+export const THREADS_GRAPH_HOST = 'https://graph.threads.net';
+export const THREADS_GRAPH_BASE = `${THREADS_GRAPH_HOST}/v1.0`;
 
 // Rule 29: every call carries a deadline. Publishing is not idempotent, so a
 // timed-out publish is reported, never retried: it may have gone out anyway.
@@ -41,9 +42,15 @@ const classifyThrown = (error: unknown): ThreadsError => {
   return { kind: 'network-failed', message: formatError(error) };
 };
 
-export const request = async (config: ThreadsGraphConfig, path: string, init: RequestInit): Promise<Result<Readonly<Record<string, unknown>>, ThreadsError>> => {
+// `path` sits under the versioned base; the token refresh alone lives at the host root.
+export const request = async (
+  config: ThreadsGraphConfig,
+  path: string,
+  init: RequestInit,
+  base: string = THREADS_GRAPH_BASE
+): Promise<Result<Readonly<Record<string, unknown>>, ThreadsError>> => {
   try {
-    const response = await fetch(`${THREADS_GRAPH_BASE}${path}`, {
+    const response = await fetch(`${base}${path}`, {
       ...init,
       headers: { authorization: `Bearer ${config.token}` },
       signal: AbortSignal.timeout(config.timeoutMs ?? DEFAULT_TIMEOUT_MS),

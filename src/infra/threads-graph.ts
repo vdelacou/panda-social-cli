@@ -3,7 +3,7 @@ import { err, ok } from '../domain/result.ts';
 import type { Result } from '../domain/result.ts';
 import type { ThreadsPostId } from '../domain/threads-post-id.ts';
 import type { PublishedPost, Threads, ThreadsError } from '../use-cases/ports/threads.ts';
-import { whoAmI } from './threads-account.ts';
+import { publishingLimits, refreshToken, whoAmI } from './threads-account.ts';
 import { createAndPublish } from './threads-container.ts';
 import { idFrom, request, stringField } from './threads-http.ts';
 import type { ThreadsGraphConfig } from './threads-http.ts';
@@ -46,4 +46,6 @@ export const createThreadsGraph = (config: ThreadsGraphConfig): Threads => ({
   publishReply: async (replyTo, text) => createAndPublish(config, { media_type: 'TEXT', text, reply_to_id: replyTo }),
   deletePost: async (id) => deletePost(config, id),
   whoAmI: async () => whoAmI(config),
+  refreshToken: async () => refreshToken(config),
+  publishingLimits: async (userId) => publishingLimits(config, userId),
 });

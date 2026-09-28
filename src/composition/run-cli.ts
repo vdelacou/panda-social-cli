@@ -6,7 +6,7 @@ import { fail, succeed } from './answer.ts';
 import type { CliIo } from './cli-io.ts';
 import { readConfig } from './env.ts';
 import { PACKAGE_NAME, PACKAGE_VERSION } from './package-info.ts';
-import { runPost } from './run-post.ts';
+import { runThreads } from './run-threads.ts';
 import { runSetup } from './run-setup.ts';
 
 export type { CliIo } from './cli-io.ts';
@@ -16,9 +16,6 @@ export const runCli = async (io: CliIo): Promise<number> => {
   if (!parsed.ok) return fail(io, parsed.error);
   const command = parsed.value;
   switch (command.command) {
-    case 'post': {
-      return runPost(io, command, readConfig(io.env));
-    }
     case 'setup': {
       return runSetup(io, command, readConfig(io.env));
     }
@@ -30,6 +27,11 @@ export const runCli = async (io: CliIo): Promise<number> => {
     }
     case 'version': {
       return succeed(io, { name: PACKAGE_NAME, version: PACKAGE_VERSION });
+    }
+    // The Threads commands: the type narrows to them, so a new command that is not one
+    // of them fails to compile here until it gets its own case.
+    default: {
+      return runThreads(io, command, readConfig(io.env));
     }
   }
 };

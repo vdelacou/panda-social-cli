@@ -28,8 +28,8 @@ import '../src/composition/cli-io.ts';
 import '../src/composition/env.ts';
 import '../src/composition/package-info.ts';
 import '../src/composition/run-cli.ts';
-import '../src/composition/run-post.ts';
 import '../src/composition/run-setup.ts';
+import '../src/composition/run-threads.ts';
 import '../src/composition/threads-token.ts';
 
 // --- src/presenter/ ---

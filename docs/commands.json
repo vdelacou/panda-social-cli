@@ -14,8 +14,8 @@
   "commands": [
     {
       "name": "post",
-      "summary": "Publish a text post, an image, or both, to Threads or X.",
-      "description": "Publishes a new post on the account saved in the profile and answers with its id and link. A text over the platform limit (500 on Threads, 280 on X) is refused unless --split posts it as a thread of replies. Threads downloads the image from its URL; on X the CLI uploads a local file. Threads allows 250 posts per 24 hours; X allows 100 per 15 minutes and bills each one against the app credits, $0.015, or $0.20 when the text contains a link. Publishing is never retried: a post that timed out may still have gone out, so check the profile before posting again.",
+      "summary": "Publish a text post, an image, or both, to Threads, X or a Facebook Page.",
+      "description": "Publishes a new post on the account saved in the profile and answers with its id and link. A text over the platform limit (500 on Threads, 280 on X) is refused unless --split posts it as a thread of replies; Facebook takes a long text whole. Threads downloads the image from its URL; on X the CLI uploads a local file; Facebook takes either, and the text becomes the photo caption. Threads allows 250 posts per 24 hours; X allows 100 per 15 minutes and bills each one against the app credits, $0.015, or $0.20 when the text contains a link; Facebook posts are free, and show to everyone once the Meta app is published. Publishing is never retried: a post that timed out may still have gone out, so check the profile before posting again.",
       "usage": "panda-social post --to <platform> [--text <text>] [--profile <name>] [--image <image>] [--split]",
       "arguments": [],
       "options": [
@@ -26,14 +26,15 @@
           "description": "The platform to post to.",
           "values": [
             "threads",
-            "x"
+            "x",
+            "facebook"
           ]
         },
         {
           "flag": "--text",
           "value": "<text>",
           "required": false,
-          "description": "The text of the post, quoted when it contains spaces. Required unless --image is given. Threads takes 500 characters, an emoji counting its UTF-8 bytes (a thumbs-up is 4); X takes 280 as X counts them: most characters 1, CJK characters and emoji 2, a link 23."
+          "description": "The text of the post, quoted when it contains spaces. Required unless --image is given. Threads takes 500 characters, an emoji counting its UTF-8 bytes (a thumbs-up is 4); X takes 280 as X counts them: most characters 1, CJK characters and emoji 2, a link 23; Facebook takes a long text whole."
         },
         {
           "flag": "--profile",
@@ -45,12 +46,12 @@
           "flag": "--image",
           "value": "<image>",
           "required": false,
-          "description": "Threads: a public https URL to a JPEG or PNG image, 8 MB at most, which Threads downloads itself. X: a local JPEG, PNG, GIF or WEBP file, 5 MB at most, which the CLI uploads."
+          "description": "Threads: a public https URL to a JPEG or PNG image, 8 MB at most, which Threads downloads itself. X: a local JPEG, PNG, GIF or WEBP file, 5 MB at most, which the CLI uploads. Facebook: either, an https URL Facebook downloads or a local JPEG, PNG, GIF, BMP or TIFF file of 10 MB at most, which the CLI uploads."
         },
         {
           "flag": "--split",
           "required": false,
-          "description": "Post a text over the limit as a thread: the first post, then replies, each answering the one before. If a part fails, the parts already published are deleted."
+          "description": "Post a text over the limit as a thread: the first post, then replies, each answering the one before. If a part fails, the parts already published are deleted. Facebook takes a long text whole, so there it changes nothing."
         }
       ],
       "examples": [
@@ -77,9 +78,17 @@
         {
           "command": "panda-social post --to x --image ./chart.png --text \"This week in one chart\"",
           "explanation": "Upload a local image to X with a caption."
+        },
+        {
+          "command": "panda-social post --to facebook --text \"Hello from panda\"",
+          "explanation": "Post to the Facebook Page saved in the default profile."
+        },
+        {
+          "command": "panda-social post --to facebook --image ./chart.png --text \"This week in one chart\"",
+          "explanation": "Upload a local photo to the Page with a caption."
         }
       ],
-      "output": "The new post: `{\"platform\":\"threads\",\"id\":\"<post id>\",\"url\":\"<link, or null when Threads did not return one>\"}` on Threads, `{\"platform\":\"x\",\"id\":\"<post id>\",\"url\":\"https://x.com/i/status/<post id>\"}` on X, plus `\"replies\":[\"<id>\",...]` for a --split thread.",
+      "output": "The new post: `{\"platform\":\"threads\",\"id\":\"<post id>\",\"url\":\"<link, or null when Threads did not return one>\"}` on Threads, `{\"platform\":\"x\",\"id\":\"<post id>\",\"url\":\"https://x.com/i/status/<post id>\"}` on X, `{\"platform\":\"facebook\",\"id\":\"<page id>_<post id>\",\"url\":\"https://www.facebook.com/<page id>/posts/<post id>\"}` on Facebook, plus `\"replies\":[\"<id>\",...]` for a --split thread.",
       "mutates": true,
       "errors": [
         "unknown-option",
@@ -103,13 +112,14 @@
         "timeout",
         "incomplete-environment",
         "credits-depleted",
-        "read-only-keys"
+        "read-only-keys",
+        "invalid-page-id"
       ]
     },
     {
       "name": "update",
-      "summary": "Replace a post: an edit in place on X, or with --repost on either platform, delete it and publish the new version.",
-      "description": "On X, update edits the post in place and answers the new version with the id it edited; X allows it with X Premium only, for a short window after posting (30 minutes or 1 hour, X pages differ) and 5 times at most, and one edited post stays one post, so the text must fit 280. Threads cannot edit a published post, so there update refuses unless --repost is given. With --repost, on either platform, it deletes the old post first, then publishes the new text or image as post does: the new post gets a new id and link, and the old one takes its likes and replies with it. If the delete fails, nothing is published; if the publish fails after the delete, the error says the old post is gone.",
+      "summary": "Replace a post: an edit in place on X and Facebook, or with --repost on any platform, delete it and publish the new version.",
+      "description": "On X, update edits the post in place and answers the new version with the id it edited; X allows it with X Premium only, for a short window after posting (30 minutes or 1 hour, X pages differ) and 5 times at most, and one edited post stays one post, so the text must fit 280. On Facebook, update edits the text in place, for posts this app made, and answers the same id and link; an image cannot be edited there, so a new --image needs --repost. Threads cannot edit a published post, so there update refuses unless --repost is given. With --repost, on any platform, it deletes the old post first, then publishes the new text or image as post does: the new post gets a new id and link, and the old one takes its likes and replies with it. If the delete fails, nothing is published; if the publish fails after the delete, the error says the old post is gone.",
       "usage": "panda-social update --on <platform> --id <post-id> [--text <text>] [--profile <name>] [--image <image>] [--split] [--repost]",
       "arguments": [],
       "options": [
@@ -120,20 +130,21 @@
           "description": "The platform the post is on.",
           "values": [
             "threads",
-            "x"
+            "x",
+            "facebook"
           ]
         },
         {
           "flag": "--id",
           "value": "<post-id>",
           "required": true,
-          "description": "The numeric id of the post, as post returned it."
+          "description": "The id of the post, as post returned it: digits on Threads and X, the Page id and the post number joined by an underscore on Facebook."
         },
         {
           "flag": "--text",
           "value": "<text>",
           "required": false,
-          "description": "The text of the post, quoted when it contains spaces. Required unless --image is given. Threads takes 500 characters, an emoji counting its UTF-8 bytes (a thumbs-up is 4); X takes 280 as X counts them: most characters 1, CJK characters and emoji 2, a link 23."
+          "description": "The text of the post, quoted when it contains spaces. Required unless --image is given. Threads takes 500 characters, an emoji counting its UTF-8 bytes (a thumbs-up is 4); X takes 280 as X counts them: most characters 1, CJK characters and emoji 2, a link 23; Facebook takes a long text whole."
         },
         {
           "flag": "--profile",
@@ -145,17 +156,17 @@
           "flag": "--image",
           "value": "<image>",
           "required": false,
-          "description": "Threads: a public https URL to a JPEG or PNG image, 8 MB at most, which Threads downloads itself. X: a local JPEG, PNG, GIF or WEBP file, 5 MB at most, which the CLI uploads."
+          "description": "Threads: a public https URL to a JPEG or PNG image, 8 MB at most, which Threads downloads itself. X: a local JPEG, PNG, GIF or WEBP file, 5 MB at most, which the CLI uploads. Facebook: either, an https URL Facebook downloads or a local JPEG, PNG, GIF, BMP or TIFF file of 10 MB at most, which the CLI uploads."
         },
         {
           "flag": "--split",
           "required": false,
-          "description": "Post a text over the limit as a thread: the first post, then replies, each answering the one before. If a part fails, the parts already published are deleted."
+          "description": "Post a text over the limit as a thread: the first post, then replies, each answering the one before. If a part fails, the parts already published are deleted. Facebook takes a long text whole, so there it changes nothing."
         },
         {
           "flag": "--repost",
           "required": false,
-          "description": "Delete the post and publish the new version instead of editing it. Required on Threads, which cannot edit; on X it replaces the edit."
+          "description": "Delete the post and publish the new version instead of editing it. Required on Threads, which cannot edit, and for a new image on Facebook; on X and Facebook it replaces the edit."
         }
       ],
       "examples": [
@@ -166,9 +177,13 @@
         {
           "command": "panda-social update --on x --id 1880000000000000001 --text \"Hello from panda, typo fixed\"",
           "explanation": "Edit an X post in place (X Premium)."
+        },
+        {
+          "command": "panda-social update --on facebook --id 104000000000001_122000000000001 --text \"Hello from panda, typo fixed\"",
+          "explanation": "Edit the text of a Page post in place."
         }
       ],
-      "output": "The new post: `{\"platform\":\"<platform>\",\"id\":\"<new id>\",\"url\":\"<link>\",\"edited\":\"<old id>\"}` after an edit on X, or `\"replaced\":\"<old id>\"` in place of `edited` after a repost, plus `\"replies\"` for a --split thread.",
+      "output": "The new post: `{\"platform\":\"<platform>\",\"id\":\"<new id>\",\"url\":\"<link>\",\"edited\":\"<old id>\"}` after an edit on X, the same id in both after an edit on Facebook, or `\"replaced\":\"<old id>\"` in place of `edited` after a repost, plus `\"replies\"` for a --split thread.",
       "mutates": true,
       "errors": [
         "unknown-option",
@@ -195,13 +210,14 @@
         "timeout",
         "incomplete-environment",
         "credits-depleted",
-        "read-only-keys"
+        "read-only-keys",
+        "invalid-page-id"
       ]
     },
     {
       "name": "delete",
-      "summary": "Delete a Threads or X post by its id.",
-      "description": "Deletes one post from the account saved in the profile. Replies, the other parts of a --split thread included, are posts of their own: delete each id. On X, deleting an edited post deletes every version of it. Threads allows 100 deletes per 24 hours and needs the threads_delete permission; X allows 50 per 15 minutes and bills $0.01 each.",
+      "summary": "Delete a Threads, X or Facebook post by its id.",
+      "description": "Deletes one post from the account saved in the profile. Replies, the other parts of a --split thread included, are posts of their own: delete each id. On X, deleting an edited post deletes every version of it. Threads allows 100 deletes per 24 hours and needs the threads_delete permission; X allows 50 per 15 minutes and bills $0.01 each. A Facebook post id is the Page id and the post number joined by an underscore, as post returned it.",
       "usage": "panda-social delete --on <platform> --id <post-id> [--profile <name>]",
       "arguments": [],
       "options": [
@@ -212,14 +228,15 @@
           "description": "The platform the post is on.",
           "values": [
             "threads",
-            "x"
+            "x",
+            "facebook"
           ]
         },
         {
           "flag": "--id",
           "value": "<post-id>",
           "required": true,
-          "description": "The numeric id of the post, as post returned it."
+          "description": "The id of the post, as post returned it: digits on Threads and X, the Page id and the post number joined by an underscore on Facebook."
         },
         {
           "flag": "--profile",
@@ -236,6 +253,10 @@
         {
           "command": "panda-social delete --on x --id 1880000000000000001",
           "explanation": "Delete one X post."
+        },
+        {
+          "command": "panda-social delete --on facebook --id 104000000000001_122000000000001",
+          "explanation": "Delete one post from the Facebook Page."
         }
       ],
       "output": "The deleted post: `{\"platform\":\"<platform>\",\"id\":\"<post id>\",\"deleted\":true}`.",
@@ -257,7 +278,8 @@
         "timeout",
         "incomplete-environment",
         "credits-depleted",
-        "read-only-keys"
+        "read-only-keys",
+        "invalid-page-id"
       ]
     },
     {
@@ -498,11 +520,11 @@
     },
     {
       "code": "duplicate-text",
-      "hint": "X refuses a post whose text repeats one of the account's recent posts. Change the text, or delete the earlier post first."
+      "hint": "X and Facebook refuse a post whose text repeats one of the account's recent posts. Change the text, or delete the earlier post first."
     },
     {
       "code": "edit-refused",
-      "hint": "X edits a post only for an X Premium account, within a short window after posting (30 minutes or 1 hour, X pages differ) and 5 times at most. Pass --repost to delete the post and publish the new version instead: it gets a new id and link, and loses its likes and replies."
+      "hint": "X edits a post only for an X Premium account, within a short window after posting (30 minutes or 1 hour, X pages differ) and 5 times at most; Facebook edits only posts this Meta app made. Pass --repost to delete the post and publish the new version instead: it gets a new id and link, and loses its likes, replies and comments."
     },
     {
       "code": "forbidden",
@@ -510,7 +532,7 @@
     },
     {
       "code": "image-rejected",
-      "hint": "The platform could not use the image. Threads: check that the URL opens in a private browser window and serves a JPEG or PNG of 8 MB at most. X: check that the file opens as a JPEG, PNG, GIF or WEBP image. Then retry."
+      "hint": "The platform could not use the image. Threads: check that the URL opens in a private browser window and serves a JPEG or PNG of 8 MB at most. X: check that the file opens as a JPEG, PNG, GIF or WEBP image. Facebook: check that the URL opens in a private browser window, or that the file opens as an image. Then retry."
     },
     {
       "code": "incomplete-environment",
@@ -518,7 +540,7 @@
     },
     {
       "code": "invalid-image",
-      "hint": "Threads needs a public https URL to a JPEG or PNG image, 8 MB at most: host a local file first, then pass its URL. X needs a local JPEG, PNG, GIF or WEBP file, 5 MB at most: download a remote image first, then pass its path."
+      "hint": "Threads needs a public https URL to a JPEG or PNG image, 8 MB at most: host a local file first, then pass its URL. X needs a local JPEG, PNG, GIF or WEBP file, 5 MB at most: download a remote image first, then pass its path. Facebook takes an https URL, or a local JPEG, PNG, GIF, BMP or TIFF file of 10 MB at most."
     },
     {
       "code": "invalid-keys",
@@ -530,7 +552,7 @@
     },
     {
       "code": "invalid-post-id",
-      "hint": "Pass the numeric id that post returned, for example --id 17890000000000001 on Threads or --id 1880000000000000001 on X."
+      "hint": "Pass the id that post returned, for example --id 17890000000000001 on Threads, --id 1880000000000000001 on X, or --id 104000000000001_122000000000001 on Facebook, the Page id and the post number joined by an underscore."
     },
     {
       "code": "invalid-profile",
@@ -546,7 +568,7 @@
     },
     {
       "code": "missing-text",
-      "hint": "Pass the text of the post with --text (quoted when it contains spaces), an image with --image (a URL on Threads, a local file on X), or both."
+      "hint": "Pass the text of the post with --text (quoted when it contains spaces), an image with --image (a URL on Threads, a local file on X, either on Facebook), or both."
     },
     {
       "code": "network-failed",
@@ -610,7 +632,7 @@
     },
     {
       "code": "unsupported",
-      "hint": "Threads cannot edit a published post. Pass --repost to delete it and publish the new version: it gets a new id and link, and loses its likes and replies."
+      "hint": "Threads cannot edit a published post, and Facebook edits the text of one but not its image. Pass --repost to delete the post and publish the new version: it gets a new id and link, and loses its likes, replies and comments."
     },
     {
       "code": "write-failed",

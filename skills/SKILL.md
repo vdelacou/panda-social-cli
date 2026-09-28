@@ -5,8 +5,8 @@ description: >
   Facebook Page, and publish images with captions to their Instagram account, through the
   local panda-social CLI, as text, an image (a public URL on Threads and Instagram, a local
   file on X, either on Facebook), or a long text split into a thread of replies; check a
-  connected account and its limits; and walk a first-time user through connecting Threads, X,
-  a Facebook Page or an Instagram account. Use it whenever the user asks to post, share,
+  connected account and its limits; post the same thing to several of them at once; and walk a
+  first-time user through connecting Threads, X, a Facebook Page or an Instagram account. Use it whenever the user asks to post, share,
   publish, tweet, thread, reword, edit, repost or delete something on Threads, X, Instagram or
   their Facebook Page, or asks whether their connection works or how many posts they have
   left today. Do NOT use it to read a feed, replies, mentions or insights, or to schedule a
@@ -58,6 +58,7 @@ For several accounts, the same commands take `--profile <name>` (lowercase lette
 | A text post | `post --to threads --text "<text>"`, or `--to x`, or `--to facebook`; Instagram has no text-only posts |
 | An image post, with or without a caption | `post --to threads --image <https URL> --text "<caption>"`; on X, `post --to x --image <local file> --text "<caption>"`; on Facebook, either kind of image; on Instagram, `post --to instagram --image <https URL to a JPEG> --text "<caption>"` |
 | A text over the limit (500 on Threads, 280 on X; Facebook and Instagram take it whole) | the same with `--split` |
+| The same post on several platforms | `post --to threads,x,facebook --text "<text>"`, one platform after another |
 | A Threads post's wording changed | `update --on threads --id <post id> --text "<text>" --repost` |
 | An X post's wording changed | `update --on x --id <post id> --text "<text>"` edits it in place (X Premium); with `--repost` it deletes and republishes |
 | A Facebook post's wording changed | `update --on facebook --id <post id> --text "<text>"` edits it in place; a new image needs `--repost` |
@@ -81,6 +82,7 @@ panda-social post --to facebook --image https://cdn.example.com/launch.jpg --tex
 panda-social update --on facebook --id 104000000000001_122000000000001 --text "Launch day: the beta is open to everyone"
 panda-social delete --on facebook --id 104000000000001_122000000000001
 panda-social post --to instagram --image https://cdn.example.com/launch.jpg --text "Launch day: the beta is open"
+panda-social post --to threads,x,facebook --text "Launch day: the beta is open"
 ```
 
 The post id is the `id` that `post` answered, on Facebook the Page id and the post number joined by an underscore; keep it if the user may want to change or delete the post later.
@@ -91,6 +93,7 @@ The post id is the `id` that `post` answered, on Facebook the Page id and the po
 - `--split` posts a first post and then replies, each answering the one before, cut at a paragraph, line, sentence or word break. If a part fails, the parts already out are deleted, and `error.details` lists what was deleted and anything left behind: tell the user about both.
 - On Threads, an image is a public `https://` URL to a JPEG or PNG of 8 MB at most, because Threads downloads it itself; a file on the user's machine has to be hosted first, so ask them where. On X, it is a local JPEG, PNG, GIF or WEBP file of 5 MB at most, which the CLI checks and uploads; a URL is refused, so download a remote image first. On Facebook, it is either: an https URL Facebook downloads, or a local JPEG, PNG, GIF, BMP or TIFF file of 10 MB at most that the CLI checks and uploads; the text becomes its caption. `image-rejected` means the platform could not use the image.
 - On Instagram, a post is always an image: a public `https://` URL to a JPEG of 8 MB at most, with an aspect ratio between 4:5 and 1.91:1, which Instagram downloads itself; the text becomes its caption, sent whole (2,200 characters, 30 hashtags and 20 @ tags at most). A text alone is refused with `missing-image`: ask the user for an image. `still-processing` means Instagram had not finished with the image after a minute and nothing was published: offer to try again.
+- `--to threads,x,facebook` posts the same thing to each, one after another, once every platform has accepted the flags; a flag one of them refuses stops the command before anything is posted, naming that platform. An image goes to several platforms only when they all take its kind: an https URL for Threads, Instagram and Facebook, a local file for X and Facebook. The answer is `{"posts":[...]}`, one entry per platform. On `partly-published`, `error.details.published` lists the posts that exist: never post to those platforms again; fix what each entry of `error.details.failed` names, then post again to those platforms only.
 - Facebook takes a long text whole, so `--split` changes nothing there. A Facebook post shows to everyone only once the user's Meta app is published (step 3 of the setup): if the user cannot see a post from a logged-out browser, point them there.
 - A success answers `{"platform":"threads","id":"...","url":"..."}`, or the same with `"platform":"x"` and an `https://x.com/i/status/<id>` link, `"platform":"facebook"` and a facebook.com link, or `"platform":"instagram"` and an instagram.com link, plus `replies` for a split thread: give the user the `url`. A `null` url on Threads or Instagram means the post is up but its link could not be read back; say so, and do not post it again.
 

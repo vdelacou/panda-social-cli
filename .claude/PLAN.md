@@ -1,6 +1,6 @@
 # PLAN: panda-social-cli v1
 
-Current task: 5.2 is done; 5.3 (the Facebook Login option for Instagram) and 4.3 wait for a live spike with real Meta tokens; 2.6 and a live check of X, Facebook and Instagram wait for the user's real tokens and keys. 4.3 and 5.3 wait for a live spike with real Meta tokens; 2.6 and a live check of X, Facebook and Instagram wait for the user's real tokens and keys.
+Current task: 6.1 is done; in 6.2, did-you-mean needs no live token, while the guides' screenshots need the user's logged-in consoles. 5.3 (the Facebook Login option for Instagram) and 4.3 wait for a live spike with real Meta tokens; 2.6 and a live check of X, Facebook and Instagram wait for the user's real tokens and keys. 4.3 and 5.3 wait for a live spike with real Meta tokens; 2.6 and a live check of X, Facebook and Instagram wait for the user's real tokens and keys.
 
 ## What we are building
 
@@ -47,6 +47,9 @@ A Bun/TypeScript CLI and library, published to npm as `panda-social-cli` (bin `p
 | D35 | (5.2) A post asks `/me` for the account id, creates the container (`POST /<id>/media` with `image_url` and `caption`), checks its `status_code` as the Threads container is checked (after 0.5 s, then every 1.5 s, 60 s at most), publishes it (`POST /<id>/media_publish` with `creation_id`), then reads its `permalink`: ERROR is `image-rejected`, EXPIRED `rejected`, still IN_PROGRESS `still-processing`, and a permalink that cannot be read answers a null url, never a failure. The media id is digits, checked before it leaves the adapter | the IG Container reference's five status codes; Meta checks a video container once a minute, but an image is ready in seconds (panda-social-agent waits 2 s); asking `/me` each time serves a saved token and `PANDA_SOCIAL_INSTAGRAM_TOKEN` alike; a post whose link could not be read is still a post, as on Threads |
 | D36 | (5.2) Meta's codes 9004 (the image could not be fetched), 36000 (over 8 MB), 36001 (the format) and 36003 (the aspect ratio) are `image-rejected`, 9 (the publishing limit) `rate-limited`, and 9007 (not ready yet) `still-processing` | Meta's Instagram error codes page (2026-09-28) |
 | D37 | (5.2) `delete --on instagram` and `update --on instagram` answer `unsupported` before any credential is read or Instagram is asked: Instagram Login can neither delete nor edit a post, and with no delete there is no `--repost`; the hint sends the user to the Instagram app. The id is still read, as digits | D5; 5.3 brings delete under Facebook Login |
+| D38 | (6.1) `post --to threads,x,...` names several platforms, separated by commas, each posted once however often it is named; one `--text`, `--image`, `--split` and `--profile` serve them all, and every platform's content is read before anything is posted, so a flag one platform refuses (an https image for X, a text alone for Instagram) stops the whole command and names that platform. One platform answers exactly as before | a cross-post that fails halfway on a flag the CLI could have checked would leave the agent a partial post to reconcile; until 4.3, an image goes to every named platform only when they all take its kind (an https URL for Threads, Instagram and Facebook, a local file for X and Facebook) |
+| D39 | (6.1) The platforms post one after another, in the order given, each with its own credentials, and a failure on one never stops the next; nothing that went out is rolled back | D10; one at a time, so two token renewals never write the credentials file at once (rule 31); Instagram cannot delete, and deleting a good post because another platform failed would surprise |
+| D40 | (6.1) All posted: `{"ok":true,"data":{"posts":[...]}}`, each item the answer that platform gives alone. Any failure: exit 1 with `partly-published` (something went out) or `not-published`, `details.published` listing the posts that exist and `details.failed` each failed platform with its code, message, hint and its own details | the agent must see which posts exist before it retries, so it retries only the failed platforms and never duplicates a post |
 
 ## Platform facts that shape the code (verified 2026-09-28)
 
@@ -137,7 +140,10 @@ A Bun/TypeScript CLI and library, published to npm as `panda-social-cli` (bin `p
 
 ## Phase 6: cross-posting and polish
 
-- [ ] 6.1 `post --to` several platforms with per-platform results; `--profile`.
+- [x] 6.1 `post --to` several platforms with per-platform results (D38 to D40); `--profile` already serves every command and here serves every platform of the post. (The 9 confirmed tests were seen red, the use-case file failing to load and 5 tests failing, then green, and mutation is 100 on the new use-case with no survivor. The platform runners now answer a result that the single command prints and the cross-post collects, through one `accountOutcome`; `--on` alone reads one platform.)
+  - [x] 6.1a Use-case: the cross-post, one platform after another, all posted or `partly-published` or `not-published` with what exists and what failed.
+  - [x] 6.1b CLI: `--to` reads a comma list (trimmed, each name once, an unknown or empty one refused), every platform's content read before anything posts, a refusal naming its platform; the account runners answer a result the cross-post can collect; the output with a hint on each failed platform; `partly-published` and `not-published` hints; the post page, the README and the skill.
+  - Done when: the proposed tests were confirmed, seen red, then green; every gate passes, mutation 100 on the new domain and use-case code; slices of at most 10 files and 300 lines, each green; one platform answers exactly as before.
 - [ ] 6.2 README, onboarding guides with screenshots, did-you-mean.
 
 ## Phase 7: MCP gateway (list, docs, run-read, run-write tools, as in ask-marcel-office-cli ADR 0001)

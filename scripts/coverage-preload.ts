@@ -46,6 +46,7 @@ import '../src/presenter/commands/help-json.ts';
 import '../src/presenter/commands/post.ts';
 import '../src/presenter/commands/setup.ts';
 import '../src/presenter/commands/shared-options.ts';
+import '../src/presenter/commands/status.ts';
 import '../src/presenter/commands/update.ts';
 import '../src/presenter/contract.ts';
 import '../src/presenter/failure.ts';

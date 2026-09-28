@@ -10,6 +10,7 @@ Every command prints one JSON line on stdout: `{"ok":true,"data":...}` on succes
 | [`update`](#update) | Replace a Threads post. Threads has no edit, so --repost deletes it and publishes the new version. |
 | [`delete`](#delete) | Delete a Threads post by its id. |
 | [`setup`](#setup) | Connect a Threads account and save its token under a profile. |
+| [`status`](#status) | Check a connected Threads account: whose token it is, how old it is, and how much of the 24-hour quotas is used. |
 | [`help-json`](#help-json) | Describe every command, option, example and error code as JSON. Start here. |
 | [`docs`](#docs) | Show one command's full documentation as markdown. |
 
@@ -236,6 +237,54 @@ The connected account, `{"platform":"threads","profile":"<name>","userId":"<id>"
 | `unreadable` | The credentials file could not be read. Check that ~/.panda-social/credentials.json belongs to you. |
 | `write-failed` | The token could not be saved. Check that your home folder is writable, then run the setup again. |
 
+## status
+
+Asks Threads whose token the profile holds and reads its rolling 24-hour quotas for posts, replies and deletes. A saved token 30 days old or more is refreshed first, as every Threads command does, so running status now and then keeps an idle token alive: Threads lets a token lapse 60 days after its last refresh, and an expired one needs `panda-social setup threads` again. It never posts.
+
+### Usage
+
+```bash
+panda-social status <platform> [--profile <name>]
+```
+
+### Parameters
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `<platform>` | yes | The platform to check. One of: threads. |
+| `--profile <name>` | no | The profile whose saved account acts. Defaults to "default". A saved token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, when set, overrides the saved token. |
+
+### Examples
+
+```bash
+# Check the account saved in the default profile.
+panda-social status threads
+# Check the account saved in the brand-a profile.
+panda-social status threads --profile brand-a
+```
+
+### Output
+
+The account, its token and its quotas: `{"platform":"threads","profile":"<name>","account":{"userId":"<id>","username":"<username>"},"token":{"source":"saved","savedAt":"<time>","ageDays":<n>,"expiresAt":"<time, or null until the first refresh>","refreshed":<true when this run refreshed it>},"limits":{"posts":{"used":<n>,"total":250,"windowSeconds":86400},"replies":{...},"deletes":{...}}}`. With PANDA_SOCIAL_THREADS_TOKEN set, `token` is `{"source":"environment"}`.
+
+### Errors
+
+| Code | Next step |
+| --- | --- |
+| `unknown-option` | Run `panda-social docs <command>` for the options that command takes. |
+| `unexpected-argument` | Quote any value that contains spaces, for example --text "Hello from panda". |
+| `unknown-platform` | Threads is the only platform so far: name threads, as the command examples show. |
+| `invalid-profile` | Use lowercase letters, digits, - and _, starting with a letter or digit, 40 characters at most. Example: --profile brand-a |
+| `missing-credentials` | Connect an account with `panda-social setup threads` (add `--profile <name>` for another profile), or set PANDA_SOCIAL_THREADS_TOKEN. |
+| `corrupt` | The credentials file is not valid. Fix or delete ~/.panda-social/credentials.json, then run `panda-social setup threads`. |
+| `unreadable` | The credentials file could not be read. Check that ~/.panda-social/credentials.json belongs to you. |
+| `unauthorized` | Threads refused the token. Generate a new one (Meta app dashboard, Use cases, Access the Threads API, Settings, User Token Generator) and run `panda-social setup threads` again. |
+| `forbidden` | The token lacks a permission this action needs: threads_delete to delete, threads_manage_replies for --split. Add it under Use cases, Access the Threads API, Customize, generate a new token, and run `panda-social setup threads` again. |
+| `rate-limited` | Threads allows 250 posts and 100 deletes per 24 hours. Wait, then retry. |
+| `rejected` | Threads rejected the request; the message says why. Fix what it names (the text, the image URL or the post id), then retry. |
+| `network-failed` | graph.threads.net could not be reached. Check the network, then retry. |
+| `timeout` | Threads did not answer in time, so the post or the delete may still have gone through: check the profile before retrying. |
+
 ## help-json
 
 The manifest an agent reads on first contact: the output contract, the global flags, every command with its usage line, parameters, examples and error codes, and the next step for every error code. The same manifest ships as docs/commands.json.
@@ -282,7 +331,7 @@ panda-social docs <command>
 
 | Parameter | Required | Description |
 | --- | --- | --- |
-| `<command>` | yes | The command to document. One of: post, update, delete, setup, help-json, docs. |
+| `<command>` | yes | The command to document. One of: post, update, delete, setup, status, help-json, docs. |
 
 ### Examples
 

@@ -1,7 +1,7 @@
-export type CommandName = 'post' | 'update' | 'delete' | 'setup' | 'help-json' | 'docs';
+export type CommandName = 'post' | 'update' | 'delete' | 'setup' | 'status' | 'help-json' | 'docs';
 
 // The order commands appear in the manifest and in docs/COMMANDS.md.
-export const COMMAND_NAMES: ReadonlyArray<CommandName> = ['post', 'update', 'delete', 'setup', 'help-json', 'docs'];
+export const COMMAND_NAMES: ReadonlyArray<CommandName> = ['post', 'update', 'delete', 'setup', 'status', 'help-json', 'docs'];
 
 export type OptionSpec = {
   // The flag without its dashes, as node:util parseArgs reads it.
@@ -36,7 +36,8 @@ export type CommandSpec = {
   readonly examples: ReadonlyArray<ExampleSpec>;
   // What the `data` field holds on success, in markdown.
   readonly output: string;
-  // True when the command changes something outside the CLI: a post, the credentials file.
+  // True when the command publishes, deletes or connects an account. Refreshing a saved token,
+  // which every Threads command may do, does not count.
   readonly mutates: boolean;
   readonly errors: ReadonlyArray<string>;
 };

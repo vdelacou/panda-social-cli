@@ -7,6 +7,7 @@ import type { CliCommand } from './cli-command.ts';
 import { COMMANDS, findCommand, specFor } from './command-registry.ts';
 import type { CommandName } from './command-spec.ts';
 import { SETUP_PLATFORMS } from './commands/setup.ts';
+import { THREADS_ONLY } from './commands/shared-options.ts';
 import type { Failure } from './failure.ts';
 import { readContent, readPlatform, readPostId, readProfile } from './post-flags.ts';
 import type { Flags } from './read-flags.ts';
@@ -73,6 +74,20 @@ const buildSetup = ({ values, positionals }: Flags): Result<CliCommand, Failure>
   return ok({ command: 'setup', platform: 'threads', profile: profile.value ?? DEFAULT_PROFILE, tokenFromStdin: values['token-stdin'] === true });
 };
 
+const buildStatus = ({ values, positionals }: Flags): Result<CliCommand, Failure> => {
+  const [platform = ''] = positionals;
+  if (!THREADS_ONLY.includes(platform)) {
+    return err({
+      code: 'unknown-platform',
+      message: `No status exists for "${platform}".`,
+      hint: `Platforms with a status: ${THREADS_ONLY.join(', ')}. Example: ${exampleOf('status')}`,
+    });
+  }
+  const profile = readProfile(values['profile']);
+  if (!profile.ok) return profile;
+  return ok({ command: 'status', platform: 'threads', ...withProfile(profile.value) });
+};
+
 const buildDocs = ({ positionals }: Flags): Result<CliCommand, Failure> => {
   const [target = ''] = positionals;
   const spec = findCommand(target);
@@ -85,6 +100,7 @@ export const BUILDERS: Readonly<Record<CommandName, (flags: Flags) => Result<Cli
   update: buildUpdate,
   delete: buildDelete,
   setup: buildSetup,
+  status: buildStatus,
   'help-json': () => ok({ command: 'help-json' }),
   docs: buildDocs,
 };

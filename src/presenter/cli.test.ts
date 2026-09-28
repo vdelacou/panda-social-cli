@@ -83,7 +83,7 @@ describe('reading the agent entry points', () => {
     const result = parseCliArgs(['docs', 'myspace']);
 
     expect(!result.ok && result.error.code).toBe('unknown-command');
-    expect(!result.ok && result.error.hint).toContain('post, update, delete, setup, help-json, docs');
+    expect(!result.ok && result.error.hint).toContain('post, update, delete, setup, status, help-json, docs');
   });
 
   it('an unknown option is refused, and the hint lists the command options', () => {
@@ -137,5 +137,17 @@ describe('reading the Threads features', () => {
     expect(parseCliArgs(['update', '--on', 'threads', '--id', POST, '--text', 'Fixed', '--repost'])).toEqual(
       ok({ command: 'update', platform: 'threads', id: threadsPostIdUnsafe(POST), text: 'Fixed', repost: true })
     );
+  });
+
+  it('`status threads` reads as a status check of the default profile, and --profile names another', () => {
+    expect(parseCliArgs(['status', 'threads'])).toEqual(ok({ command: 'status', platform: 'threads' }));
+    expect(parseCliArgs(['status', 'threads', '--profile', 'brand-a'])).toEqual(ok({ command: 'status', platform: 'threads', profile: profileNameUnsafe('brand-a') }));
+  });
+
+  it('`status` for a platform with no support is refused, and the hint names threads', () => {
+    const result = parseCliArgs(['status', 'myspace']);
+
+    expect(!result.ok && result.error.code).toBe('unknown-platform');
+    expect(!result.ok && result.error.hint).toContain('threads');
   });
 });

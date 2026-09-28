@@ -291,6 +291,57 @@
       ]
     },
     {
+      "name": "status",
+      "summary": "Check a connected Threads account: whose token it is, how old it is, and how much of the 24-hour quotas is used.",
+      "description": "Asks Threads whose token the profile holds and reads its rolling 24-hour quotas for posts, replies and deletes. A saved token 30 days old or more is refreshed first, as every Threads command does, so running status now and then keeps an idle token alive: Threads lets a token lapse 60 days after its last refresh, and an expired one needs `panda-social setup threads` again. It never posts.",
+      "usage": "panda-social status <platform> [--profile <name>]",
+      "arguments": [
+        {
+          "name": "platform",
+          "required": true,
+          "description": "The platform to check.",
+          "values": [
+            "threads"
+          ]
+        }
+      ],
+      "options": [
+        {
+          "flag": "--profile",
+          "value": "<name>",
+          "required": false,
+          "description": "The profile whose saved account acts. Defaults to \"default\". A saved token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, when set, overrides the saved token."
+        }
+      ],
+      "examples": [
+        {
+          "command": "panda-social status threads",
+          "explanation": "Check the account saved in the default profile."
+        },
+        {
+          "command": "panda-social status threads --profile brand-a",
+          "explanation": "Check the account saved in the brand-a profile."
+        }
+      ],
+      "output": "The account, its token and its quotas: `{\"platform\":\"threads\",\"profile\":\"<name>\",\"account\":{\"userId\":\"<id>\",\"username\":\"<username>\"},\"token\":{\"source\":\"saved\",\"savedAt\":\"<time>\",\"ageDays\":<n>,\"expiresAt\":\"<time, or null until the first refresh>\",\"refreshed\":<true when this run refreshed it>},\"limits\":{\"posts\":{\"used\":<n>,\"total\":250,\"windowSeconds\":86400},\"replies\":{...},\"deletes\":{...}}}`. With PANDA_SOCIAL_THREADS_TOKEN set, `token` is `{\"source\":\"environment\"}`.",
+      "mutates": false,
+      "errors": [
+        "unknown-option",
+        "unexpected-argument",
+        "unknown-platform",
+        "invalid-profile",
+        "missing-credentials",
+        "corrupt",
+        "unreadable",
+        "unauthorized",
+        "forbidden",
+        "rate-limited",
+        "rejected",
+        "network-failed",
+        "timeout"
+      ]
+    },
+    {
       "name": "help-json",
       "summary": "Describe every command, option, example and error code as JSON. Start here.",
       "description": "The manifest an agent reads on first contact: the output contract, the global flags, every command with its usage line, parameters, examples and error codes, and the next step for every error code. The same manifest ships as docs/commands.json.",
@@ -325,6 +376,7 @@
             "update",
             "delete",
             "setup",
+            "status",
             "help-json",
             "docs"
           ]

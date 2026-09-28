@@ -191,6 +191,12 @@ describe('the agent entry points', () => {
   });
 });
 
+// One quota as Threads answers it: the usage, and its total over 24 hours.
+const quota = (used: number, total: number): { readonly quota_usage: number; readonly config: { readonly quota_total: number; readonly quota_duration: number } } => ({
+  quota_usage: used,
+  config: { quota_total: total, quota_duration: 86_400 },
+});
+
 describe('the Threads features, end to end', () => {
   const CONTAINER = '18000000000000001';
   const NEW_ID = '17890000000000002';
@@ -230,5 +236,38 @@ describe('the Threads features, end to end', () => {
 
     expect(result).toEqual({ exitCode: 0, answers: [{ ok: true, data: { platform: 'threads', id: NEW_ID, url: PERMALINK, replaced: POST_ID } }] });
     expect(mock.calls.map((call) => call.init?.method)).toEqual(['DELETE', 'POST', 'GET']);
+  });
+
+  it('`status threads` runs end to end: the account, the token source and the three quotas', async () => {
+    const posts = quota(3, 250);
+    mock = installFetchMock([
+      { match: (url) => url.endsWith('/me?fields=id,username'), respond: () => json({ id: '26000000000000001', username: 'panda' }) },
+      {
+        match: (url) => url.includes('/26000000000000001/threads_publishing_limit?'),
+        respond: () => json({ data: [{ ...posts, reply_quota_usage: 0, reply_config: quota(0, 1000).config, delete_quota_usage: 0, delete_config: quota(0, 100).config }] }),
+      },
+    ]);
+
+    const result = await run(['status', 'threads'], env);
+
+    expect(result).toEqual({
+      exitCode: 0,
+      answers: [
+        {
+          ok: true,
+          data: {
+            platform: 'threads',
+            profile: 'default',
+            account: { userId: '26000000000000001', username: 'panda' },
+            token: { source: 'environment' },
+            limits: {
+              posts: { used: 3, total: 250, windowSeconds: 86_400 },
+              replies: { used: 0, total: 1000, windowSeconds: 86_400 },
+              deletes: { used: 0, total: 100, windowSeconds: 86_400 },
+            },
+          },
+        },
+      ],
+    });
   });
 });

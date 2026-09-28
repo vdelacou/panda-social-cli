@@ -4,12 +4,12 @@ description: >
   Publish, edit, replace and delete posts on the user's own Threads and X accounts and
   Facebook Page through the local panda-social CLI, as text, an image (a public URL on Threads,
   a local file on X, either on Facebook), or a long text split into a thread of replies; check
-  a connected account and its limits; and walk a first-time user through connecting Threads, X
-  or a Facebook Page. Use it whenever the user asks to post, share, publish, tweet, thread,
-  reword, edit, repost or delete something on Threads, X or their Facebook Page, or asks
-  whether their connection works or how many posts they have left today. Do NOT use it to read
-  a feed, replies, mentions or insights, to schedule a post for later, or for Instagram, which
-  the CLI does not do yet.
+  a connected account and its limits; and walk a first-time user through connecting Threads, X,
+  a Facebook Page or an Instagram account. Use it whenever the user asks to post, share,
+  publish, tweet, thread, reword, edit, repost or delete something on Threads, X or their
+  Facebook Page, or asks whether their connection works or how many posts they have left
+  today. Do NOT use it to read a feed, replies, mentions or insights, to schedule a post for
+  later, or to post to Instagram, which the CLI does not do yet.
 ---
 
 # Post to Threads, X and Facebook with panda-social
@@ -46,6 +46,8 @@ Connecting X runs the same way with `panda-social setup x`: five steps as JSON t
 
 Connecting a Facebook Page runs the same way with `panda-social setup facebook`: five steps as JSON to relay one at a time (`docs/setup/facebook.md` has them with the usual failures). Step 3 publishes the app, since until then only people with a role on it see its posts: say so if the user wants to skip it. Then the user runs `panda-social setup facebook` in their own terminal and pastes the extended token of step 5 where it does not show; when the token grants several Pages, the CLI names them and asks for the id of the one to keep. `panda-social status facebook` then answers with the Page.
 
+Connecting Instagram runs the same way with `panda-social setup instagram`: six steps as JSON to relay one at a time (`docs/setup/instagram.md` has them with the usual failures). Step 1 switches the account to a professional one, whose profile is public: say so before it. Then the user runs `panda-social setup instagram` in their own terminal and pastes the token of step 6 where it does not show. `panda-social status instagram` then answers with their username and the day's posts quota. Posting to Instagram is not in the CLI yet.
+
 For several accounts, the same commands take `--profile <name>` (lowercase letters, digits, `-` and `_`), for example `--profile brand-a`.
 
 ## What to run
@@ -59,7 +61,7 @@ For several accounts, the same commands take `--profile <name>` (lowercase lette
 | An X post's wording changed | `update --on x --id <post id> --text "<text>"` edits it in place (X Premium); with `--repost` it deletes and republishes |
 | A Facebook post's wording changed | `update --on facebook --id <post id> --text "<text>"` edits it in place; a new image needs `--repost` |
 | A post deleted | `delete --on threads --id <post id>`, `--on x` or `--on facebook` |
-| To know the connection works | `status threads`, with the day's quotas, `status x` or `status facebook` |
+| To know the connection works | `status threads` or `status instagram`, with the day's quotas, `status x` or `status facebook` |
 
 For example:
 
@@ -96,10 +98,11 @@ The post id is the `id` that `post` answered, on Facebook the Page id and the po
 - X keys never expire. On X, `unauthorized` means they were regenerated or revoked, and `read-only-keys` that the app could not post when they were made: the hint gives the fix, then the user runs `panda-social setup x` again. `credits-depleted` means the app's credits are spent: the user buys more in the X developer console.
 - `edit-refused` means the platform declined the edit: X edits only for X Premium accounts, shortly after posting and 5 times at most, and Facebook only the posts this Meta app made. Offer `--repost`, which deletes the post, so get a yes first. `unsupported` on Facebook means a new image, which an edit cannot change: `--repost` again. `duplicate-text` means the text repeats one of the account's recent posts: change it.
 - A Facebook Page token does not expire. `unauthorized` on Facebook means it stopped working (a changed password, a lost Page role, or a token not extended in step 5): the user makes and extends a new token (steps 4 and 5) and runs `panda-social setup facebook` again. `missing-page-task` means their role on the Page cannot create posts; `choose-page` lists the Pages the token grants, for `--page <id>`.
-- `PANDA_SOCIAL_THREADS_TOKEN`, when set, is used instead of the saved Threads token and is never refreshed; the four `PANDA_SOCIAL_X_` variables, when all set, replace the saved X keys; `PANDA_SOCIAL_FACEBOOK_PAGE_ID` and `PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN`, when both set, replace the saved Page.
+- An Instagram token, like a Threads one, lives 60 days and is renewed once it is 30 days old whenever a command runs. `unauthorized` on Instagram means it lapsed or was revoked: the user generates a new one (step 6) and runs `panda-social setup instagram` again.
+- `PANDA_SOCIAL_THREADS_TOKEN` and `PANDA_SOCIAL_INSTAGRAM_TOKEN`, when set, are used instead of the saved tokens and are never refreshed; the four `PANDA_SOCIAL_X_` variables, when all set, replace the saved X keys; `PANDA_SOCIAL_FACEBOOK_PAGE_ID` and `PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN`, when both set, replace the saved Page.
 
 ## Known limitations
 
-- Posting works on Threads, X and a Facebook Page; Instagram comes next.
+- Posting works on Threads, X and a Facebook Page; an Instagram account connects and answers `status`, and posting there comes next.
 - Nothing is read back: no feed, replies, mentions or insights. No scheduling.
 - Threads has no edit, so `update` there always deletes and republishes; Facebook edits the text only.

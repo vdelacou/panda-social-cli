@@ -2,7 +2,7 @@
 
 Post text, an image, or both to Threads, X, Facebook Pages and Instagram from one command line or one TypeScript library. It is built for AI agents first: every command answers in JSON, and every error names its cause and the next step to fix it.
 
-> Status: under construction. Threads works from source: guided setup, text and image posts, long texts as reply threads, delete, update by reposting, a `status` check, a saved token that refreshes itself, and commands that document themselves for agents. The other three platforms are next. Nothing is published to npm yet.
+> Status: under construction. Threads works from source: guided setup, text and image posts, long texts as reply threads, delete, update by reposting, a `status` check, a saved token that refreshes itself, and commands that document themselves for agents. X can be connected and checked, and posting to it is next; Facebook and Instagram come after. Nothing is published to npm yet.
 
 ## What each platform allows
 
@@ -24,6 +24,8 @@ bun run src/main.ts post --to threads --text "Hello from panda"
 bun run src/main.ts post --to threads --image https://cdn.example.com/cat.jpg --text "A cat on the sofa"
 bun run src/main.ts delete --on threads --id 17890000000000001
 bun run src/main.ts status threads
+bun run src/main.ts setup x
+bun run src/main.ts status x
 ```
 
 `setup threads` walks you through the six one-time steps (a Meta developer account, an app with the Threads API, its permissions, a tester invitation, and the token), one at a time. You paste the token without it showing on screen; the CLI checks it with Threads and saves it in `~/.panda-social/credentials.json`, readable by you only. The same steps, with what each permission is for and the usual failures and their fixes, are in [docs/setup/threads.md](docs/setup/threads.md).
@@ -34,13 +36,15 @@ Threads downloads images itself, so `--image` takes a public https URL, not a lo
 
 A Threads token lives 60 days from its last refresh. Every Threads command refreshes a saved token once it is 30 days old, so a CLI that runs at least once a month never needs the setup again; a refresh that fails leaves a warning on stderr and the command carries on with the token it has. `status threads` shows whose token it is, how old it is and how much of the rolling 24-hour quotas is used (250 posts, 1,000 replies, 100 deletes).
 
-For several accounts, add `--profile brand-a` to `setup`, `post`, `update`, `delete` and `status`. `PANDA_SOCIAL_THREADS_TOKEN` overrides the saved token, which suits CI.
+`setup x` connects X the same way, in five steps: the developer console, API credits with a spending limit, an app, its Read and write permission, and the four keys, which you paste without them showing and the CLI checks with X before saving them in the same file. X has no free tier: every request spends the app's prepaid credits, the setup's own check included (about $0.01). The steps, the prices and the usual failures are in [docs/setup/x.md](docs/setup/x.md). An agent finishes with `panda-social setup x --keys-stdin`, piping the four keys in, one per line. `status x` shows whose keys they are and the access level X states for them.
+
+For several accounts, add `--profile brand-a` to `setup`, `post`, `update`, `delete` and `status`. `PANDA_SOCIAL_THREADS_TOKEN` overrides the saved Threads token, and the four `PANDA_SOCIAL_X_` variables the saved X keys, which suits CI.
 
 Every command prints one JSON line on stdout and exits 0 or 1; the guide and the logs go to stderr.
 
 ```json
 {"ok":true,"data":{"platform":"threads","id":"17890000000000001","url":"https://www.threads.com/@you/post/..."}}
-{"ok":false,"error":{"code":"missing-credentials","message":"No Threads token is configured for the \"default\" profile.","hint":"Connect an account with `panda-social setup threads` (add `--profile <name>` for another profile), or set PANDA_SOCIAL_THREADS_TOKEN."}}
+{"ok":false,"error":{"code":"missing-credentials","message":"No Threads token is configured for the \"default\" profile.","hint":"Connect the account with `panda-social setup threads` or `panda-social setup x` (add `--profile <name>` for another profile), or set PANDA_SOCIAL_THREADS_TOKEN, or all four PANDA_SOCIAL_X_ variables."}}
 ```
 
 ## For agents
@@ -75,7 +79,7 @@ git config core.hooksPath .githooks
 
 The hooks run the fast gates on every commit. CI runs the full set, coverage and mutation included.
 
-Every command is described once, in `src/presenter/command-registry.ts` with one file per command under `src/presenter/commands/`: the parser, `help-json`, `docs` and the generated docs all read it. After changing a command, run `bun run docs:gen`; CI fails when `docs/COMMANDS.md` or `docs/commands.json` no longer matches the registry. The same `docs:check` holds the two hand-written pages to the code: every `panda-social` line in their bash blocks must parse, and the setup guide must carry every step the CLI shows.
+Every command is described once, in `src/presenter/command-registry.ts` with one file per command under `src/presenter/commands/`: the parser, `help-json`, `docs` and the generated docs all read it. After changing a command, run `bun run docs:gen`; CI fails when `docs/COMMANDS.md` or `docs/commands.json` no longer matches the registry. The same `docs:check` holds the hand-written pages to the code: every `panda-social` line in the bash blocks of the skill and the setup guides must parse, and each setup guide must carry every step the CLI shows.
 
 `bun run build` writes the npm package to `dist/`: `cli.js` (the `panda-social` bin) and `index.js` (the library), both bundled for Node 20+ and Bun, with type declarations. `bun run smoke:dist` runs the built package under both runtimes.
 

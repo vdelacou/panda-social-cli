@@ -4,11 +4,11 @@ description: >
   Publish, replace and delete posts on the user's own Threads account through the local
   panda-social CLI, as text, an image by public URL, or a long text split into a thread of
   replies; check the connected account, its token and the day's quotas; and walk a first-time
-  user through connecting Threads. Use it whenever the user asks to post, share, publish,
-  thread, reword, repost or delete something on Threads, or asks whether their Threads
+  user through connecting Threads or X. Use it whenever the user asks to post, share, publish,
+  thread, reword, repost or delete something on Threads, or asks whether their Threads or X
   connection works or how many posts they have left today. Do NOT use it to read a feed,
-  replies, mentions or insights, to schedule a post for later, or for X, Facebook or Instagram,
-  which the CLI does not do yet.
+  replies, mentions or insights, to schedule a post for later, or to post on X, Facebook or
+  Instagram, which the CLI does not do yet.
 ---
 
 # Post to Threads with panda-social
@@ -20,7 +20,7 @@ description: >
 - The user approves every post before it exists. Show the exact text, and the image URL when there is one, and wait for a yes before running `post`: a post is public the moment the command succeeds. Text the user dictated word for word can go out as given.
 - Deleting cannot be undone, and `update --repost` deletes too: it publishes the new version as a new post with a new id and link, and the old post's likes and replies are gone. Name the post you are about to remove, and get a yes.
 - Never retry a publish on your own. After a `timeout`, the post may already be up: ask the user to look at their profile before anything is posted again.
-- Keep the token out of the conversation. The user pastes it into their own terminal, never into the chat; never ask for it, and never echo one you see.
+- Keep the token and the X keys out of the conversation. The user pastes them into their own terminal, never into the chat; never ask for them, and never echo one you see.
 - A failure names its own fix: follow `error.hint`, or relay it, before trying again. Tell the user what happened in plain words; error codes and command names are for you.
 - `panda-social help-json` describes every command, option, example and error code in one JSON document; `panda-social docs <command>` gives one command's page. Look there for anything this skill does not cover.
 
@@ -40,6 +40,8 @@ If the command is missing, the user installs it with `npm i -g panda-social-cli`
 3. After step 6, ask the user to run `panda-social setup threads` in their own terminal, press Enter past the six steps they have just done, and paste the token at the prompt, where it does not show. The CLI saves it only once Threads confirms whose it is.
 4. Run `panda-social status threads` again: `"ok":true` with their username means it worked.
 
+Connecting X runs the same way with `panda-social setup x`: five steps as JSON to relay one at a time (`docs/setup/x.md` has them with the prices and the usual failures), then the user runs `panda-social setup x` in their own terminal and pastes the four keys where they do not show. X has no free tier: before step 2, tell the user that every request spends their prepaid credits, about $0.01 for the setup's own check. `panda-social status x` then answers with their username.
+
 For several accounts, the same commands take `--profile <name>` (lowercase letters, digits, `-` and `_`), for example `--profile brand-a`.
 
 ## What to run
@@ -52,6 +54,7 @@ For several accounts, the same commands take `--profile <name>` (lowercase lette
 | A post's wording changed | `update --on threads --id <post id> --text "<text>" --repost` |
 | A post deleted | `delete --on threads --id <post id>` |
 | To know the connection works, and the quotas | `status threads` |
+| To know the X connection works | `status x` |
 
 For example:
 
@@ -82,6 +85,6 @@ The post id is the `id` that `post` answered; keep it if the user may want to ch
 
 ## Known limitations
 
-- Threads only for now; X, Facebook and Instagram come later.
+- Posting works on Threads only for now: X can be connected and checked, and Facebook and Instagram come later.
 - Nothing is read back: no feed, replies, mentions or insights. No scheduling.
 - Threads has no edit, so `update` always deletes and republishes.

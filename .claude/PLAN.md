@@ -1,6 +1,6 @@
 # PLAN: panda-social-cli v1
 
-Current task: phase 2, step 2.6 (the live QA with a real token). Resume from the first unchecked box.
+Current task: phase 3, X (2.6 waits for the user's real token). Resume from the first unchecked box of phase 3.
 
 ## What we are building
 
@@ -21,12 +21,18 @@ A Bun/TypeScript CLI and library, published to npm as `panda-social-cli` (bin `p
 | D9 | X uses the four OAuth 1.0a keys behind a swappable signer | simplest setup; X says 1.0a is being retired, no date yet |
 | D10 | `post --to a,b,c` posts to each platform independently and reports per platform; over-limit text fails unless `--split` builds a reply chain, rolled back if it breaks midway | panda-social-agent's chain and rollback policy |
 | D11 | Graph API pinned to v26.0 in one module; Threads v1.0 | v26.0 is current (2026-07-29); panda-social-agent pins v23.0 |
+| D12 | X requests are signed by `oauth-1.0a` (MIT, no dependencies) with node:crypto HMAC-SHA1 behind one signer function; HTTP stays on `fetch` with a deadline | rule 33 wants a vetted library, not a hand-rolled signature; `twitter-api-v2` does its own HTTP (no deadline we control) and panda-social-agent still uploads through the sunset v1.1 endpoint with it |
+| D13 | X text is counted by twitter-text's config v3, written in the domain: NFC, code points 0-4351 and three punctuation ranges weigh 1, everything else 2, an emoji 2, an http(s) link 23 | the `twitter-text` package pulls core-js and the Babel runtime and was last published in 2020; a bare domain X links is counted as plain text, a known gap X reports if it matters |
+| D14 | On X, `--image` is a local JPEG, PNG, GIF or WEBP file of 5 MB at most, recognised by its first bytes before anything is sent, then uploaded as base64 JSON to `POST /2/media/upload`; an https URL is refused with a hint to download it first | D3; the byte check stops a misled agent from uploading a key file as an "image" |
+| D15 | X keys can come from four environment variables for CI (`PANDA_SOCIAL_X_API_KEY`, `_API_SECRET`, `_ACCESS_TOKEN`, `_ACCESS_SECRET`): all four, or an error naming the missing ones; the keys never expire, so nothing refreshes them | the Threads token's `PANDA_SOCIAL_THREADS_TOKEN`, for four values |
+| D16 | `status x` shows the account and the keys' access level, not a quota | OAuth 1.0a keys read neither the credit balance (`/2/usage/credits` wants an OAuth 2.0 or app-only token) nor the rate windows |
 
 ## Platform facts that shape the code (verified 2026-09-28)
 
 - Threads: text up to 500 chars (one call with `auto_publish_text=true`); images by public URL only (JPEG/PNG, 8 MB); no edit; delete with `threads_delete`, 100 per 24h; 250 posts per 24h; token from the dashboard's User Token Generator for a Threads Tester; 60-day tokens refreshed with `th_refresh_token` (token at least 24h old).
 - Threads, checked for 2.4: `GET /refresh_access_token?grant_type=th_refresh_token` needs an unexpired token at least 24h old with `threads_basic` and answers `access_token`, `token_type`, `expires_in` (60 days from the refresh); it reads the token from the `Authorization` header (a dummy token answered "Cannot parse access token", no token "Invalid OAuth 2.0 Access Token"), so the token stays out of the URL. `GET /{threads-user-id}/threads_publishing_limit?fields=quota_usage,config,reply_quota_usage,reply_config,delete_quota_usage,delete_config` answers `data[0]` with each usage and a `{quota_total, quota_duration}` config (250 posts, 1,000 replies, 100 deletes per 86,400 s); `me` in that path is not documented, so the id from `/me` is used. `GET /debug_token` gives expiry and scopes but takes the inspected token in the query string, so it is not used. A path is checked only after the token, so a dummy-token probe cannot prove a path exists: the live QA in 2.6 must.
 - X: pay-per-use credits only ($0.015 a post, about $0.015 more per image, $0.20 with a URL); 280 weighted chars; `POST /2/media/upload` for images (v1.1 upload sunset 2025-06-09); edit only for Premium within 1h via `edit_options.previous_post_id`; delete 50 per 15 min; OAuth 1.0a keys never expire.
+- X, checked for phase 3 (docs.x.com and the OpenAPI spec v2.168): `POST /2/tweets` (`text`, `media.media_ids` 1 to 4, `reply.in_reply_to_tweet_id`, `edit_options.previous_post_id`), `DELETE /2/tweets/{id}` (`data.deleted`), `GET /2/users/me` and `POST /2/media/upload` (JSON with base64 `media` and `media_category: tweet_image`, or multipart; answers `data.id`) all accept OAuth 1.0a user context; per user, 100 posts and 50 deletes per 15 min, `/2/users/me` 75, uploads 500; pricing: $0.015 a post, $0.200 a post with a URL, $0.010 a delete, $0.010 per user read; out of credits answers 402 `CreditsDepleted`, and an app outside the pay-per-use package or with read-only keys answers 403; editing needs X Premium, within an hour, up to 5 edits; images JPG, PNG, GIF, WEBP up to 5 MB; apps are made at console.x.com, and keys generated before the app was set to Read and write stay read-only.
 - Facebook: Page only; text via `/{page}/feed`, photo via multipart `/{page}/photos`; edit via `POST /{post}` only for posts made by the same app; delete via `DELETE /{post}` (one doc says restricted, to be probed live); posts from a Development-mode app are visible to app roles only until the app is published.
 - Instagram: professional account; `image_url` only, JPEG, 8 MB, aspect 4:5 to 1.91:1; no text-only posts; no caption edit; delete only under Facebook Login with `instagram_manage_contents`; 50 or 100 posts per 24h (docs disagree, read `content_publishing_limit` at runtime).
 
@@ -60,8 +66,18 @@ A Bun/TypeScript CLI and library, published to npm as `panda-social-cli` (bin `p
 
 ## Phase 3: X
 
-- [ ] 3.1 `setup x` (four keys, verify with `GET /2/users/me`, check `x-access-level: read-write`), credits warning.
+- [x] 3.1 `setup x` (four keys, verify with `GET /2/users/me`, check `x-access-level: read-write`), credits warning. (The 26 confirmed tests were seen red, 12 failing and 5 erroring, then green, and one confirmed assertion was added for two mutation survivors in the guide; mutation is 100 on the domain and use-cases. `x-access-level` is in neither docs.x.com nor the OpenAPI spec (2026-09-28), so without it the level reads null, `setup x` saves the keys, and read-only keys surface at the first post as `read-only-keys`. X's pages disagree on the button (New App, Create App), so the steps say "Create a new app". `docs:check` now holds `docs/setup/x.md` to X_SETUP_STEPS, seen red for a refused command line and a missing action. Landed as 13 slices, each green. A live `setup x` with real keys is left to the QA step, as are the X console screenshots.)
+  - [x] 3.1a Domain: X credentials in the profile (the four keys, the account id and username, when they were saved).
+  - [x] 3.1b Signer and adapter: `oauth-1.0a` with HMAC-SHA1 (D12); `whoAmI` from `GET /2/users/me` with the `x-access-level` header; the X failures as their own kinds (unauthorized, credits-depleted on 402, read-only keys, forbidden, rate-limited, rejected, network-failed, timeout).
+  - [x] 3.1c Use-cases: connect X (verify, refuse read-only keys with the fix, save), the guided terminal setup (the steps, then four hidden answers), `status x`.
+  - [x] 3.1d CLI: `setup x [--keys-stdin] [--profile <name>]` (the steps as JSON without a terminal), `status x`, the environment keys (D15), `docs/setup/x.md` with its shot list and the credits warning, docs regenerated.
+  - Done when: the proposed tests were confirmed, seen red, then green; every gate passes, mutation 100 on the new domain and use-case code; slices of at most 10 files and 300 lines, each green; a live `setup x` with real keys is left to the QA step and said so.
 - [ ] 3.2 `post` text and image (`/2/media/upload`), weighted 280-char count, `delete`, `update` native for Premium, `--repost`, 402 and 403 hints.
+  - [ ] 3.2a Domain: the X weighted length (D13) and `--split` for X on a splitter shared with Threads; X post ids; image files recognised by their first bytes and size; local image paths.
+  - [ ] 3.2b Adapter: `POST /2/tweets` (text, media, reply, edit), `DELETE /2/tweets/{id}`, the media upload (D14), 402 and 403 told apart by X's own detail (credits, read-only keys, duplicate text).
+  - [ ] 3.2c Use-cases: publish on X (image first, then the post, then the reply chain, rolled back newest first if it breaks), delete, update (a native edit, or `--repost`; a refused edit says to use `--repost`).
+  - [ ] 3.2d CLI: `post --to x`, `update --on x`, `delete --on x`, the image and the id read per platform, hints that fit both platforms, the skill and the README.
+  - Done when: as 3.1, plus a text of exactly 280 weighted characters goes out whole and 281 is refused or split.
 
 ## Phase 4: Facebook
 

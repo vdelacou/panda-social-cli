@@ -9,7 +9,7 @@ const HINTS: Readonly<Record<string, string>> = {
   'unknown-command': 'Run `panda-social help-json` for every command, or `panda-social docs <command>` for one.',
   'unknown-option': 'Run `panda-social docs <command>` for the options that command takes.',
   'unexpected-argument': 'Quote any value that contains spaces, for example --text "Hello from panda".',
-  'unknown-platform': 'Threads is the only platform so far: name threads, as the command examples show.',
+  'unknown-platform': 'Name a platform the command takes, as its examples show: threads for post, update and delete; threads or x for setup and status.',
   'missing-text': 'Pass the text of the post with --text (quoted when it contains spaces), an image URL with --image, or both.',
   'text-too-long': 'Threads allows 500 characters per post, an emoji counting its UTF-8 bytes. Shorten the text, or pass --split to post it as a thread of replies.',
   'invalid-image': 'Threads needs a public https URL to a JPEG or PNG image, 8 MB at most. Host a local file first, then pass its URL with --image.',
@@ -18,19 +18,21 @@ const HINTS: Readonly<Record<string, string>> = {
   'invalid-post-id': 'Pass the numeric id that post returned, for example --id 17890000000000001.',
   unsupported: 'Threads cannot edit a published post. Pass --repost to delete it and publish the new version: it gets a new id and link, and loses its likes and replies.',
   forbidden:
-    'The token lacks a permission this action needs: threads_delete to delete, threads_manage_replies for --split. Add it under Use cases, Access the Threads API, Customize, generate a new token, and run `panda-social setup threads` again.',
+    "The credentials lack a permission this action needs. Threads: add threads_delete (to delete) or threads_manage_replies (for --split) under Use cases, Access the Threads API, Customize, generate a new token, and run `panda-social setup threads` again. X: the message gives X's reason; an app outside the pay-per-use package is refused, so check it in the developer console.",
   'invalid-profile': 'Use lowercase letters, digits, - and _, starting with a letter or digit, 40 characters at most. Example: --profile brand-a',
-  'missing-credentials': 'Connect an account with `panda-social setup threads` (add `--profile <name>` for another profile), or set PANDA_SOCIAL_THREADS_TOKEN.',
-  unauthorized: `Threads refused the token. Generate a new one (${TOKEN_SOURCE}) and run \`panda-social setup threads\` again.`,
-  'rate-limited': 'Threads allows 250 posts and 100 deletes per 24 hours. Wait, then retry.',
-  rejected: 'Threads rejected the request; the message says why. Fix what it names (the text, the image URL or the post id), then retry.',
-  'network-failed': 'graph.threads.net could not be reached. Check the network, then retry.',
-  timeout: 'Threads did not answer in time, so the post or the delete may still have gone through: check the profile before retrying.',
-  cancelled: 'The setup stopped before a token was pasted. Run `panda-social setup threads` again when you have it.',
-  corrupt: `The credentials file is not valid. Fix or delete ${CREDENTIALS_FILE}, then run \`panda-social setup threads\`.`,
+  'missing-credentials':
+    'Connect the account with `panda-social setup threads` or `panda-social setup x` (add `--profile <name>` for another profile), or set PANDA_SOCIAL_THREADS_TOKEN, or all four PANDA_SOCIAL_X_ variables.',
+  unauthorized: `The platform refused the credentials. Threads: generate a new token (${TOKEN_SOURCE}) and run \`panda-social setup threads\` again. X: regenerate the Access Token and Secret in the developer console and run \`panda-social setup x\` again.`,
+  'rate-limited': 'Threads allows 250 posts and 100 deletes per 24 hours; X allows 100 posts and 50 deletes per 15 minutes, and 75 account checks. Wait, then retry.',
+  rejected: 'The platform rejected the request; the message says why. Fix what it names (the text, the image or the post id), then retry.',
+  'network-failed': 'The platform could not be reached (graph.threads.net or api.x.com). Check the network, then retry.',
+  timeout: 'The platform did not answer in time, so the post or the delete may still have gone through: check the profile before retrying.',
+  cancelled: 'The setup stopped before the credentials were pasted. Run the same setup command again when you have them.',
+  corrupt: `The credentials file is not valid. Fix or delete ${CREDENTIALS_FILE}, then run the setup again for each platform.`,
   unreadable: `The credentials file could not be read. Check that ${CREDENTIALS_FILE} belongs to you.`,
-  'write-failed': 'The token could not be saved. Check that your home folder is writable, then run the setup again.',
-  'no-home': 'Set HOME (USERPROFILE on Windows), or pass the token in PANDA_SOCIAL_THREADS_TOKEN instead of saving it.',
+  'write-failed': 'The credentials could not be saved. Check that your home folder is writable, then run the setup again.',
+  'no-home':
+    'Set HOME (USERPROFILE on Windows), or pass the credentials in the environment instead of saving them: PANDA_SOCIAL_THREADS_TOKEN, or the four PANDA_SOCIAL_X_ variables.',
 };
 
 const FALLBACK = 'Rerun with PANDA_SOCIAL_LOG_LEVEL=info to see the details on stderr.';

@@ -38,7 +38,7 @@
           "flag": "--profile",
           "value": "<name>",
           "required": false,
-          "description": "The profile whose saved account acts. Defaults to \"default\". A saved token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, when set, overrides the saved token."
+          "description": "The profile whose saved account acts. Defaults to \"default\". A saved Threads token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, or all four PANDA_SOCIAL_X_ variables, when set, override the saved credentials."
         },
         {
           "flag": "--image",
@@ -125,7 +125,7 @@
           "flag": "--profile",
           "value": "<name>",
           "required": false,
-          "description": "The profile whose saved account acts. Defaults to \"default\". A saved token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, when set, overrides the saved token."
+          "description": "The profile whose saved account acts. Defaults to \"default\". A saved Threads token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, or all four PANDA_SOCIAL_X_ variables, when set, override the saved credentials."
         },
         {
           "flag": "--image",
@@ -201,7 +201,7 @@
           "flag": "--profile",
           "value": "<name>",
           "required": false,
-          "description": "The profile whose saved account acts. Defaults to \"default\". A saved token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, when set, overrides the saved token."
+          "description": "The profile whose saved account acts. Defaults to \"default\". A saved Threads token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, or all four PANDA_SOCIAL_X_ variables, when set, override the saved credentials."
         }
       ],
       "examples": [
@@ -310,7 +310,7 @@
           "flag": "--profile",
           "value": "<name>",
           "required": false,
-          "description": "The profile whose saved account acts. Defaults to \"default\". A saved token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, when set, overrides the saved token."
+          "description": "The profile whose saved account acts. Defaults to \"default\". A saved Threads token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, or all four PANDA_SOCIAL_X_ variables, when set, override the saved credentials."
         }
       ],
       "examples": [
@@ -401,15 +401,15 @@
   "errors": [
     {
       "code": "cancelled",
-      "hint": "The setup stopped before a token was pasted. Run `panda-social setup threads` again when you have it."
+      "hint": "The setup stopped before the credentials were pasted. Run the same setup command again when you have them."
     },
     {
       "code": "corrupt",
-      "hint": "The credentials file is not valid. Fix or delete ~/.panda-social/credentials.json, then run `panda-social setup threads`."
+      "hint": "The credentials file is not valid. Fix or delete ~/.panda-social/credentials.json, then run the setup again for each platform."
     },
     {
       "code": "forbidden",
-      "hint": "The token lacks a permission this action needs: threads_delete to delete, threads_manage_replies for --split. Add it under Use cases, Access the Threads API, Customize, generate a new token, and run `panda-social setup threads` again."
+      "hint": "The credentials lack a permission this action needs. Threads: add threads_delete (to delete) or threads_manage_replies (for --split) under Use cases, Access the Threads API, Customize, generate a new token, and run `panda-social setup threads` again. X: the message gives X's reason; an app outside the pay-per-use package is refused, so check it in the developer console."
     },
     {
       "code": "image-rejected",
@@ -429,7 +429,7 @@
     },
     {
       "code": "missing-credentials",
-      "hint": "Connect an account with `panda-social setup threads` (add `--profile <name>` for another profile), or set PANDA_SOCIAL_THREADS_TOKEN."
+      "hint": "Connect the account with `panda-social setup threads` or `panda-social setup x` (add `--profile <name>` for another profile), or set PANDA_SOCIAL_THREADS_TOKEN, or all four PANDA_SOCIAL_X_ variables."
     },
     {
       "code": "missing-text",
@@ -437,19 +437,19 @@
     },
     {
       "code": "network-failed",
-      "hint": "graph.threads.net could not be reached. Check the network, then retry."
+      "hint": "The platform could not be reached (graph.threads.net or api.x.com). Check the network, then retry."
     },
     {
       "code": "no-home",
-      "hint": "Set HOME (USERPROFILE on Windows), or pass the token in PANDA_SOCIAL_THREADS_TOKEN instead of saving it."
+      "hint": "Set HOME (USERPROFILE on Windows), or pass the credentials in the environment instead of saving them: PANDA_SOCIAL_THREADS_TOKEN, or the four PANDA_SOCIAL_X_ variables."
     },
     {
       "code": "rate-limited",
-      "hint": "Threads allows 250 posts and 100 deletes per 24 hours. Wait, then retry."
+      "hint": "Threads allows 250 posts and 100 deletes per 24 hours; X allows 100 posts and 50 deletes per 15 minutes, and 75 account checks. Wait, then retry."
     },
     {
       "code": "rejected",
-      "hint": "Threads rejected the request; the message says why. Fix what it names (the text, the image URL or the post id), then retry."
+      "hint": "The platform rejected the request; the message says why. Fix what it names (the text, the image or the post id), then retry."
     },
     {
       "code": "still-processing",
@@ -461,11 +461,11 @@
     },
     {
       "code": "timeout",
-      "hint": "Threads did not answer in time, so the post or the delete may still have gone through: check the profile before retrying."
+      "hint": "The platform did not answer in time, so the post or the delete may still have gone through: check the profile before retrying."
     },
     {
       "code": "unauthorized",
-      "hint": "Threads refused the token. Generate a new one (Meta app dashboard, Use cases, Access the Threads API, Settings, User Token Generator) and run `panda-social setup threads` again."
+      "hint": "The platform refused the credentials. Threads: generate a new token (Meta app dashboard, Use cases, Access the Threads API, Settings, User Token Generator) and run `panda-social setup threads` again. X: regenerate the Access Token and Secret in the developer console and run `panda-social setup x` again."
     },
     {
       "code": "unexpected-argument",
@@ -481,7 +481,7 @@
     },
     {
       "code": "unknown-platform",
-      "hint": "Threads is the only platform so far: name threads, as the command examples show."
+      "hint": "Name a platform the command takes, as its examples show: threads for post, update and delete; threads or x for setup and status."
     },
     {
       "code": "unreadable",
@@ -493,7 +493,7 @@
     },
     {
       "code": "write-failed",
-      "hint": "The token could not be saved. Check that your home folder is writable, then run the setup again."
+      "hint": "The credentials could not be saved. Check that your home folder is writable, then run the setup again."
     }
   ]
 }

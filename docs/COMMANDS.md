@@ -35,7 +35,7 @@ panda-social post --to <platform> [--text <text>] [--profile <name>] [--image <u
 | --- | --- | --- |
 | `--to <platform>` | yes | The platform to post to. One of: threads. |
 | `--text <text>` | no | The text of the post, quoted when it contains spaces. Required unless --image is given. 500 characters at most on Threads, an emoji counting its UTF-8 bytes (a thumbs-up is 4). |
-| `--profile <name>` | no | The profile whose saved account acts. Defaults to "default". A saved token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, when set, overrides the saved token. |
+| `--profile <name>` | no | The profile whose saved account acts. Defaults to "default". A saved Threads token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, or all four PANDA_SOCIAL_X_ variables, when set, override the saved credentials. |
 | `--image <url>` | no | A public https URL to a JPEG or PNG image, 8 MB at most. Threads downloads it itself, so a local file must be hosted first. |
 | `--split` | no | Post a text over the limit as a thread: the first post, then replies, each answering the one before. If a part fails, the parts already published are deleted. |
 
@@ -62,22 +62,22 @@ The new post: `{"platform":"threads","id":"<post id>","url":"<link, or null when
 | --- | --- |
 | `unknown-option` | Run `panda-social docs <command>` for the options that command takes. |
 | `unexpected-argument` | Quote any value that contains spaces, for example --text "Hello from panda". |
-| `unknown-platform` | Threads is the only platform so far: name threads, as the command examples show. |
+| `unknown-platform` | Name a platform the command takes, as its examples show: threads for post, update and delete; threads or x for setup and status. |
 | `invalid-profile` | Use lowercase letters, digits, - and _, starting with a letter or digit, 40 characters at most. Example: --profile brand-a |
 | `missing-text` | Pass the text of the post with --text (quoted when it contains spaces), an image URL with --image, or both. |
 | `invalid-image` | Threads needs a public https URL to a JPEG or PNG image, 8 MB at most. Host a local file first, then pass its URL with --image. |
 | `text-too-long` | Threads allows 500 characters per post, an emoji counting its UTF-8 bytes. Shorten the text, or pass --split to post it as a thread of replies. |
 | `image-rejected` | Threads could not download or read the image. Check that the URL opens in a private browser window and serves a JPEG or PNG of 8 MB at most, then retry. |
 | `still-processing` | Threads was still processing the image after 60 seconds, so nothing was published. Retry the post. |
-| `missing-credentials` | Connect an account with `panda-social setup threads` (add `--profile <name>` for another profile), or set PANDA_SOCIAL_THREADS_TOKEN. |
-| `corrupt` | The credentials file is not valid. Fix or delete ~/.panda-social/credentials.json, then run `panda-social setup threads`. |
+| `missing-credentials` | Connect the account with `panda-social setup threads` or `panda-social setup x` (add `--profile <name>` for another profile), or set PANDA_SOCIAL_THREADS_TOKEN, or all four PANDA_SOCIAL_X_ variables. |
+| `corrupt` | The credentials file is not valid. Fix or delete ~/.panda-social/credentials.json, then run the setup again for each platform. |
 | `unreadable` | The credentials file could not be read. Check that ~/.panda-social/credentials.json belongs to you. |
-| `unauthorized` | Threads refused the token. Generate a new one (Meta app dashboard, Use cases, Access the Threads API, Settings, User Token Generator) and run `panda-social setup threads` again. |
-| `forbidden` | The token lacks a permission this action needs: threads_delete to delete, threads_manage_replies for --split. Add it under Use cases, Access the Threads API, Customize, generate a new token, and run `panda-social setup threads` again. |
-| `rate-limited` | Threads allows 250 posts and 100 deletes per 24 hours. Wait, then retry. |
-| `rejected` | Threads rejected the request; the message says why. Fix what it names (the text, the image URL or the post id), then retry. |
-| `network-failed` | graph.threads.net could not be reached. Check the network, then retry. |
-| `timeout` | Threads did not answer in time, so the post or the delete may still have gone through: check the profile before retrying. |
+| `unauthorized` | The platform refused the credentials. Threads: generate a new token (Meta app dashboard, Use cases, Access the Threads API, Settings, User Token Generator) and run `panda-social setup threads` again. X: regenerate the Access Token and Secret in the developer console and run `panda-social setup x` again. |
+| `forbidden` | The credentials lack a permission this action needs. Threads: add threads_delete (to delete) or threads_manage_replies (for --split) under Use cases, Access the Threads API, Customize, generate a new token, and run `panda-social setup threads` again. X: the message gives X's reason; an app outside the pay-per-use package is refused, so check it in the developer console. |
+| `rate-limited` | Threads allows 250 posts and 100 deletes per 24 hours; X allows 100 posts and 50 deletes per 15 minutes, and 75 account checks. Wait, then retry. |
+| `rejected` | The platform rejected the request; the message says why. Fix what it names (the text, the image or the post id), then retry. |
+| `network-failed` | The platform could not be reached (graph.threads.net or api.x.com). Check the network, then retry. |
+| `timeout` | The platform did not answer in time, so the post or the delete may still have gone through: check the profile before retrying. |
 
 ## update
 
@@ -96,7 +96,7 @@ panda-social update --on <platform> --id <post-id> [--text <text>] [--profile <n
 | `--on <platform>` | yes | The platform the post is on. One of: threads. |
 | `--id <post-id>` | yes | The numeric id of the post, as post returned it. |
 | `--text <text>` | no | The text of the post, quoted when it contains spaces. Required unless --image is given. 500 characters at most on Threads, an emoji counting its UTF-8 bytes (a thumbs-up is 4). |
-| `--profile <name>` | no | The profile whose saved account acts. Defaults to "default". A saved token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, when set, overrides the saved token. |
+| `--profile <name>` | no | The profile whose saved account acts. Defaults to "default". A saved Threads token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, or all four PANDA_SOCIAL_X_ variables, when set, override the saved credentials. |
 | `--image <url>` | no | A public https URL to a JPEG or PNG image, 8 MB at most. Threads downloads it itself, so a local file must be hosted first. |
 | `--split` | no | Post a text over the limit as a thread: the first post, then replies, each answering the one before. If a part fails, the parts already published are deleted. |
 | `--repost` | no | Delete the post and publish the new version. Without it, Threads updates are refused as unsupported. |
@@ -118,7 +118,7 @@ The new post and the id it replaced: `{"platform":"threads","id":"<new id>","url
 | --- | --- |
 | `unknown-option` | Run `panda-social docs <command>` for the options that command takes. |
 | `unexpected-argument` | Quote any value that contains spaces, for example --text "Hello from panda". |
-| `unknown-platform` | Threads is the only platform so far: name threads, as the command examples show. |
+| `unknown-platform` | Name a platform the command takes, as its examples show: threads for post, update and delete; threads or x for setup and status. |
 | `invalid-post-id` | Pass the numeric id that post returned, for example --id 17890000000000001. |
 | `invalid-profile` | Use lowercase letters, digits, - and _, starting with a letter or digit, 40 characters at most. Example: --profile brand-a |
 | `unsupported` | Threads cannot edit a published post. Pass --repost to delete it and publish the new version: it gets a new id and link, and loses its likes and replies. |
@@ -127,15 +127,15 @@ The new post and the id it replaced: `{"platform":"threads","id":"<new id>","url
 | `text-too-long` | Threads allows 500 characters per post, an emoji counting its UTF-8 bytes. Shorten the text, or pass --split to post it as a thread of replies. |
 | `image-rejected` | Threads could not download or read the image. Check that the URL opens in a private browser window and serves a JPEG or PNG of 8 MB at most, then retry. |
 | `still-processing` | Threads was still processing the image after 60 seconds, so nothing was published. Retry the post. |
-| `missing-credentials` | Connect an account with `panda-social setup threads` (add `--profile <name>` for another profile), or set PANDA_SOCIAL_THREADS_TOKEN. |
-| `corrupt` | The credentials file is not valid. Fix or delete ~/.panda-social/credentials.json, then run `panda-social setup threads`. |
+| `missing-credentials` | Connect the account with `panda-social setup threads` or `panda-social setup x` (add `--profile <name>` for another profile), or set PANDA_SOCIAL_THREADS_TOKEN, or all four PANDA_SOCIAL_X_ variables. |
+| `corrupt` | The credentials file is not valid. Fix or delete ~/.panda-social/credentials.json, then run the setup again for each platform. |
 | `unreadable` | The credentials file could not be read. Check that ~/.panda-social/credentials.json belongs to you. |
-| `unauthorized` | Threads refused the token. Generate a new one (Meta app dashboard, Use cases, Access the Threads API, Settings, User Token Generator) and run `panda-social setup threads` again. |
-| `forbidden` | The token lacks a permission this action needs: threads_delete to delete, threads_manage_replies for --split. Add it under Use cases, Access the Threads API, Customize, generate a new token, and run `panda-social setup threads` again. |
-| `rate-limited` | Threads allows 250 posts and 100 deletes per 24 hours. Wait, then retry. |
-| `rejected` | Threads rejected the request; the message says why. Fix what it names (the text, the image URL or the post id), then retry. |
-| `network-failed` | graph.threads.net could not be reached. Check the network, then retry. |
-| `timeout` | Threads did not answer in time, so the post or the delete may still have gone through: check the profile before retrying. |
+| `unauthorized` | The platform refused the credentials. Threads: generate a new token (Meta app dashboard, Use cases, Access the Threads API, Settings, User Token Generator) and run `panda-social setup threads` again. X: regenerate the Access Token and Secret in the developer console and run `panda-social setup x` again. |
+| `forbidden` | The credentials lack a permission this action needs. Threads: add threads_delete (to delete) or threads_manage_replies (for --split) under Use cases, Access the Threads API, Customize, generate a new token, and run `panda-social setup threads` again. X: the message gives X's reason; an app outside the pay-per-use package is refused, so check it in the developer console. |
+| `rate-limited` | Threads allows 250 posts and 100 deletes per 24 hours; X allows 100 posts and 50 deletes per 15 minutes, and 75 account checks. Wait, then retry. |
+| `rejected` | The platform rejected the request; the message says why. Fix what it names (the text, the image or the post id), then retry. |
+| `network-failed` | The platform could not be reached (graph.threads.net or api.x.com). Check the network, then retry. |
+| `timeout` | The platform did not answer in time, so the post or the delete may still have gone through: check the profile before retrying. |
 
 ## delete
 
@@ -153,7 +153,7 @@ panda-social delete --on <platform> --id <post-id> [--profile <name>]
 | --- | --- | --- |
 | `--on <platform>` | yes | The platform the post is on. One of: threads. |
 | `--id <post-id>` | yes | The numeric id of the post, as post returned it. |
-| `--profile <name>` | no | The profile whose saved account acts. Defaults to "default". A saved token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, when set, overrides the saved token. |
+| `--profile <name>` | no | The profile whose saved account acts. Defaults to "default". A saved Threads token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, or all four PANDA_SOCIAL_X_ variables, when set, override the saved credentials. |
 
 ### Examples
 
@@ -172,18 +172,18 @@ The deleted post: `{"platform":"threads","id":"<post id>","deleted":true}`.
 | --- | --- |
 | `unknown-option` | Run `panda-social docs <command>` for the options that command takes. |
 | `unexpected-argument` | Quote any value that contains spaces, for example --text "Hello from panda". |
-| `unknown-platform` | Threads is the only platform so far: name threads, as the command examples show. |
+| `unknown-platform` | Name a platform the command takes, as its examples show: threads for post, update and delete; threads or x for setup and status. |
 | `invalid-post-id` | Pass the numeric id that post returned, for example --id 17890000000000001. |
 | `invalid-profile` | Use lowercase letters, digits, - and _, starting with a letter or digit, 40 characters at most. Example: --profile brand-a |
-| `missing-credentials` | Connect an account with `panda-social setup threads` (add `--profile <name>` for another profile), or set PANDA_SOCIAL_THREADS_TOKEN. |
-| `corrupt` | The credentials file is not valid. Fix or delete ~/.panda-social/credentials.json, then run `panda-social setup threads`. |
+| `missing-credentials` | Connect the account with `panda-social setup threads` or `panda-social setup x` (add `--profile <name>` for another profile), or set PANDA_SOCIAL_THREADS_TOKEN, or all four PANDA_SOCIAL_X_ variables. |
+| `corrupt` | The credentials file is not valid. Fix or delete ~/.panda-social/credentials.json, then run the setup again for each platform. |
 | `unreadable` | The credentials file could not be read. Check that ~/.panda-social/credentials.json belongs to you. |
-| `unauthorized` | Threads refused the token. Generate a new one (Meta app dashboard, Use cases, Access the Threads API, Settings, User Token Generator) and run `panda-social setup threads` again. |
-| `forbidden` | The token lacks a permission this action needs: threads_delete to delete, threads_manage_replies for --split. Add it under Use cases, Access the Threads API, Customize, generate a new token, and run `panda-social setup threads` again. |
-| `rate-limited` | Threads allows 250 posts and 100 deletes per 24 hours. Wait, then retry. |
-| `rejected` | Threads rejected the request; the message says why. Fix what it names (the text, the image URL or the post id), then retry. |
-| `network-failed` | graph.threads.net could not be reached. Check the network, then retry. |
-| `timeout` | Threads did not answer in time, so the post or the delete may still have gone through: check the profile before retrying. |
+| `unauthorized` | The platform refused the credentials. Threads: generate a new token (Meta app dashboard, Use cases, Access the Threads API, Settings, User Token Generator) and run `panda-social setup threads` again. X: regenerate the Access Token and Secret in the developer console and run `panda-social setup x` again. |
+| `forbidden` | The credentials lack a permission this action needs. Threads: add threads_delete (to delete) or threads_manage_replies (for --split) under Use cases, Access the Threads API, Customize, generate a new token, and run `panda-social setup threads` again. X: the message gives X's reason; an app outside the pay-per-use package is refused, so check it in the developer console. |
+| `rate-limited` | Threads allows 250 posts and 100 deletes per 24 hours; X allows 100 posts and 50 deletes per 15 minutes, and 75 account checks. Wait, then retry. |
+| `rejected` | The platform rejected the request; the message says why. Fix what it names (the text, the image or the post id), then retry. |
+| `network-failed` | The platform could not be reached (graph.threads.net or api.x.com). Check the network, then retry. |
+| `timeout` | The platform did not answer in time, so the post or the delete may still have gone through: check the profile before retrying. |
 
 ## setup
 
@@ -224,18 +224,18 @@ The connected account, `{"platform":"threads","profile":"<name>","userId":"<id>"
 | --- | --- |
 | `unknown-option` | Run `panda-social docs <command>` for the options that command takes. |
 | `unexpected-argument` | Quote any value that contains spaces, for example --text "Hello from panda". |
-| `unknown-platform` | Threads is the only platform so far: name threads, as the command examples show. |
+| `unknown-platform` | Name a platform the command takes, as its examples show: threads for post, update and delete; threads or x for setup and status. |
 | `invalid-profile` | Use lowercase letters, digits, - and _, starting with a letter or digit, 40 characters at most. Example: --profile brand-a |
-| `no-home` | Set HOME (USERPROFILE on Windows), or pass the token in PANDA_SOCIAL_THREADS_TOKEN instead of saving it. |
-| `cancelled` | The setup stopped before a token was pasted. Run `panda-social setup threads` again when you have it. |
-| `unauthorized` | Threads refused the token. Generate a new one (Meta app dashboard, Use cases, Access the Threads API, Settings, User Token Generator) and run `panda-social setup threads` again. |
-| `rate-limited` | Threads allows 250 posts and 100 deletes per 24 hours. Wait, then retry. |
-| `rejected` | Threads rejected the request; the message says why. Fix what it names (the text, the image URL or the post id), then retry. |
-| `network-failed` | graph.threads.net could not be reached. Check the network, then retry. |
-| `timeout` | Threads did not answer in time, so the post or the delete may still have gone through: check the profile before retrying. |
-| `corrupt` | The credentials file is not valid. Fix or delete ~/.panda-social/credentials.json, then run `panda-social setup threads`. |
+| `no-home` | Set HOME (USERPROFILE on Windows), or pass the credentials in the environment instead of saving them: PANDA_SOCIAL_THREADS_TOKEN, or the four PANDA_SOCIAL_X_ variables. |
+| `cancelled` | The setup stopped before the credentials were pasted. Run the same setup command again when you have them. |
+| `unauthorized` | The platform refused the credentials. Threads: generate a new token (Meta app dashboard, Use cases, Access the Threads API, Settings, User Token Generator) and run `panda-social setup threads` again. X: regenerate the Access Token and Secret in the developer console and run `panda-social setup x` again. |
+| `rate-limited` | Threads allows 250 posts and 100 deletes per 24 hours; X allows 100 posts and 50 deletes per 15 minutes, and 75 account checks. Wait, then retry. |
+| `rejected` | The platform rejected the request; the message says why. Fix what it names (the text, the image or the post id), then retry. |
+| `network-failed` | The platform could not be reached (graph.threads.net or api.x.com). Check the network, then retry. |
+| `timeout` | The platform did not answer in time, so the post or the delete may still have gone through: check the profile before retrying. |
+| `corrupt` | The credentials file is not valid. Fix or delete ~/.panda-social/credentials.json, then run the setup again for each platform. |
 | `unreadable` | The credentials file could not be read. Check that ~/.panda-social/credentials.json belongs to you. |
-| `write-failed` | The token could not be saved. Check that your home folder is writable, then run the setup again. |
+| `write-failed` | The credentials could not be saved. Check that your home folder is writable, then run the setup again. |
 
 ## status
 
@@ -252,7 +252,7 @@ panda-social status <platform> [--profile <name>]
 | Parameter | Required | Description |
 | --- | --- | --- |
 | `<platform>` | yes | The platform to check. One of: threads. |
-| `--profile <name>` | no | The profile whose saved account acts. Defaults to "default". A saved token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, when set, overrides the saved token. |
+| `--profile <name>` | no | The profile whose saved account acts. Defaults to "default". A saved Threads token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, or all four PANDA_SOCIAL_X_ variables, when set, override the saved credentials. |
 
 ### Examples
 
@@ -273,17 +273,17 @@ The account, its token and its quotas: `{"platform":"threads","profile":"<name>"
 | --- | --- |
 | `unknown-option` | Run `panda-social docs <command>` for the options that command takes. |
 | `unexpected-argument` | Quote any value that contains spaces, for example --text "Hello from panda". |
-| `unknown-platform` | Threads is the only platform so far: name threads, as the command examples show. |
+| `unknown-platform` | Name a platform the command takes, as its examples show: threads for post, update and delete; threads or x for setup and status. |
 | `invalid-profile` | Use lowercase letters, digits, - and _, starting with a letter or digit, 40 characters at most. Example: --profile brand-a |
-| `missing-credentials` | Connect an account with `panda-social setup threads` (add `--profile <name>` for another profile), or set PANDA_SOCIAL_THREADS_TOKEN. |
-| `corrupt` | The credentials file is not valid. Fix or delete ~/.panda-social/credentials.json, then run `panda-social setup threads`. |
+| `missing-credentials` | Connect the account with `panda-social setup threads` or `panda-social setup x` (add `--profile <name>` for another profile), or set PANDA_SOCIAL_THREADS_TOKEN, or all four PANDA_SOCIAL_X_ variables. |
+| `corrupt` | The credentials file is not valid. Fix or delete ~/.panda-social/credentials.json, then run the setup again for each platform. |
 | `unreadable` | The credentials file could not be read. Check that ~/.panda-social/credentials.json belongs to you. |
-| `unauthorized` | Threads refused the token. Generate a new one (Meta app dashboard, Use cases, Access the Threads API, Settings, User Token Generator) and run `panda-social setup threads` again. |
-| `forbidden` | The token lacks a permission this action needs: threads_delete to delete, threads_manage_replies for --split. Add it under Use cases, Access the Threads API, Customize, generate a new token, and run `panda-social setup threads` again. |
-| `rate-limited` | Threads allows 250 posts and 100 deletes per 24 hours. Wait, then retry. |
-| `rejected` | Threads rejected the request; the message says why. Fix what it names (the text, the image URL or the post id), then retry. |
-| `network-failed` | graph.threads.net could not be reached. Check the network, then retry. |
-| `timeout` | Threads did not answer in time, so the post or the delete may still have gone through: check the profile before retrying. |
+| `unauthorized` | The platform refused the credentials. Threads: generate a new token (Meta app dashboard, Use cases, Access the Threads API, Settings, User Token Generator) and run `panda-social setup threads` again. X: regenerate the Access Token and Secret in the developer console and run `panda-social setup x` again. |
+| `forbidden` | The credentials lack a permission this action needs. Threads: add threads_delete (to delete) or threads_manage_replies (for --split) under Use cases, Access the Threads API, Customize, generate a new token, and run `panda-social setup threads` again. X: the message gives X's reason; an app outside the pay-per-use package is refused, so check it in the developer console. |
+| `rate-limited` | Threads allows 250 posts and 100 deletes per 24 hours; X allows 100 posts and 50 deletes per 15 minutes, and 75 account checks. Wait, then retry. |
+| `rejected` | The platform rejected the request; the message says why. Fix what it names (the text, the image or the post id), then retry. |
+| `network-failed` | The platform could not be reached (graph.threads.net or api.x.com). Check the network, then retry. |
+| `timeout` | The platform did not answer in time, so the post or the delete may still have gone through: check the profile before retrying. |
 
 ## help-json
 
@@ -358,27 +358,27 @@ Every failure carries one of these codes. Its `hint` says what to do next.
 
 | Code | Next step |
 | --- | --- |
-| `cancelled` | The setup stopped before a token was pasted. Run `panda-social setup threads` again when you have it. |
-| `corrupt` | The credentials file is not valid. Fix or delete ~/.panda-social/credentials.json, then run `panda-social setup threads`. |
-| `forbidden` | The token lacks a permission this action needs: threads_delete to delete, threads_manage_replies for --split. Add it under Use cases, Access the Threads API, Customize, generate a new token, and run `panda-social setup threads` again. |
+| `cancelled` | The setup stopped before the credentials were pasted. Run the same setup command again when you have them. |
+| `corrupt` | The credentials file is not valid. Fix or delete ~/.panda-social/credentials.json, then run the setup again for each platform. |
+| `forbidden` | The credentials lack a permission this action needs. Threads: add threads_delete (to delete) or threads_manage_replies (for --split) under Use cases, Access the Threads API, Customize, generate a new token, and run `panda-social setup threads` again. X: the message gives X's reason; an app outside the pay-per-use package is refused, so check it in the developer console. |
 | `image-rejected` | Threads could not download or read the image. Check that the URL opens in a private browser window and serves a JPEG or PNG of 8 MB at most, then retry. |
 | `invalid-image` | Threads needs a public https URL to a JPEG or PNG image, 8 MB at most. Host a local file first, then pass its URL with --image. |
 | `invalid-post-id` | Pass the numeric id that post returned, for example --id 17890000000000001. |
 | `invalid-profile` | Use lowercase letters, digits, - and _, starting with a letter or digit, 40 characters at most. Example: --profile brand-a |
-| `missing-credentials` | Connect an account with `panda-social setup threads` (add `--profile <name>` for another profile), or set PANDA_SOCIAL_THREADS_TOKEN. |
+| `missing-credentials` | Connect the account with `panda-social setup threads` or `panda-social setup x` (add `--profile <name>` for another profile), or set PANDA_SOCIAL_THREADS_TOKEN, or all four PANDA_SOCIAL_X_ variables. |
 | `missing-text` | Pass the text of the post with --text (quoted when it contains spaces), an image URL with --image, or both. |
-| `network-failed` | graph.threads.net could not be reached. Check the network, then retry. |
-| `no-home` | Set HOME (USERPROFILE on Windows), or pass the token in PANDA_SOCIAL_THREADS_TOKEN instead of saving it. |
-| `rate-limited` | Threads allows 250 posts and 100 deletes per 24 hours. Wait, then retry. |
-| `rejected` | Threads rejected the request; the message says why. Fix what it names (the text, the image URL or the post id), then retry. |
+| `network-failed` | The platform could not be reached (graph.threads.net or api.x.com). Check the network, then retry. |
+| `no-home` | Set HOME (USERPROFILE on Windows), or pass the credentials in the environment instead of saving them: PANDA_SOCIAL_THREADS_TOKEN, or the four PANDA_SOCIAL_X_ variables. |
+| `rate-limited` | Threads allows 250 posts and 100 deletes per 24 hours; X allows 100 posts and 50 deletes per 15 minutes, and 75 account checks. Wait, then retry. |
+| `rejected` | The platform rejected the request; the message says why. Fix what it names (the text, the image or the post id), then retry. |
 | `still-processing` | Threads was still processing the image after 60 seconds, so nothing was published. Retry the post. |
 | `text-too-long` | Threads allows 500 characters per post, an emoji counting its UTF-8 bytes. Shorten the text, or pass --split to post it as a thread of replies. |
-| `timeout` | Threads did not answer in time, so the post or the delete may still have gone through: check the profile before retrying. |
-| `unauthorized` | Threads refused the token. Generate a new one (Meta app dashboard, Use cases, Access the Threads API, Settings, User Token Generator) and run `panda-social setup threads` again. |
+| `timeout` | The platform did not answer in time, so the post or the delete may still have gone through: check the profile before retrying. |
+| `unauthorized` | The platform refused the credentials. Threads: generate a new token (Meta app dashboard, Use cases, Access the Threads API, Settings, User Token Generator) and run `panda-social setup threads` again. X: regenerate the Access Token and Secret in the developer console and run `panda-social setup x` again. |
 | `unexpected-argument` | Quote any value that contains spaces, for example --text "Hello from panda". |
 | `unknown-command` | Run `panda-social help-json` for every command, or `panda-social docs <command>` for one. |
 | `unknown-option` | Run `panda-social docs <command>` for the options that command takes. |
-| `unknown-platform` | Threads is the only platform so far: name threads, as the command examples show. |
+| `unknown-platform` | Name a platform the command takes, as its examples show: threads for post, update and delete; threads or x for setup and status. |
 | `unreadable` | The credentials file could not be read. Check that ~/.panda-social/credentials.json belongs to you. |
 | `unsupported` | Threads cannot edit a published post. Pass --repost to delete it and publish the new version: it gets a new id and link, and loses its likes and replies. |
-| `write-failed` | The token could not be saved. Check that your home folder is writable, then run the setup again. |
+| `write-failed` | The credentials could not be saved. Check that your home folder is writable, then run the setup again. |

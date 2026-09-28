@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { DEFAULT_PROFILE, profileNameUnsafe } from '../domain/profile-name.ts';
 import { ok } from '../domain/result.ts';
 import { parseCliArgs, renderFailure, renderSuccess } from './cli.ts';
 
@@ -19,6 +20,31 @@ describe('reading the command line', () => {
 
     expect(!result.ok && result.error.code).toBe('missing-text');
     expect(!result.ok && result.error.hint).toContain('panda-social post --to threads --text "Hello from panda"');
+  });
+});
+
+describe('reading the setup and profile flags', () => {
+  it('`setup threads` reads as the Threads setup for the default profile', () => {
+    expect(parseCliArgs(['setup', 'threads'])).toEqual(ok({ command: 'setup', platform: 'threads', profile: DEFAULT_PROFILE, tokenFromStdin: false }));
+  });
+
+  it('`setup threads --token-stdin --profile brand-a` reads as a non-interactive setup for brand-a', () => {
+    expect(parseCliArgs(['setup', 'threads', '--token-stdin', '--profile', 'brand-a'])).toEqual(
+      ok({ command: 'setup', platform: 'threads', profile: profileNameUnsafe('brand-a'), tokenFromStdin: true })
+    );
+  });
+
+  it('`setup myspace` is refused with a hint listing the platforms that have a setup', () => {
+    const result = parseCliArgs(['setup', 'myspace']);
+
+    expect(!result.ok && result.error.code).toBe('unknown-platform');
+    expect(!result.ok && result.error.hint).toContain('Platforms with a setup: threads');
+  });
+
+  it('`post --profile brand-a ...` carries the profile', () => {
+    expect(parseCliArgs(['post', '--to', 'threads', '--text', 'Hello', '--profile', 'brand-a'])).toEqual(
+      ok({ command: 'post', platform: 'threads', text: 'Hello', profile: profileNameUnsafe('brand-a') })
+    );
   });
 });
 

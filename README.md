@@ -2,7 +2,7 @@
 
 Post text, an image, or both to Threads, X, Facebook Pages and Instagram from one command line or one TypeScript library. It is built for AI agents first: every command answers in JSON, and every error names its cause and the next step to fix it.
 
-> Status: under construction. Threads works from source: guided setup and text posts. Images, delete, update and the other three platforms are next. Nothing is published to npm yet.
+> Status: under construction. Threads works from source: guided setup, text posts, and commands that document themselves for agents. Images, delete, update and the other three platforms are next. Nothing is published to npm yet.
 
 ## What each platform allows
 
@@ -33,10 +33,18 @@ Every command prints one JSON line on stdout and exits 0 or 1; the guide and the
 
 ```json
 {"ok":true,"data":{"platform":"threads","id":"17890000000000001","url":"https://www.threads.com/@you/post/..."}}
-{"ok":false,"error":{"code":"missing-credentials","message":"No Threads token is configured.","hint":"Set PANDA_SOCIAL_THREADS_TOKEN to a Threads access token (...)."}}
+{"ok":false,"error":{"code":"missing-credentials","message":"No Threads token is configured for the \"default\" profile.","hint":"Connect an account with `panda-social setup threads` (add `--profile <name>` for another profile), or set PANDA_SOCIAL_THREADS_TOKEN."}}
 ```
 
-As a library, in Bun or Node 20+:
+## For agents
+
+Start with `panda-social help-json`. It answers with one JSON manifest: the output contract, every command with its usage line, parameters, examples and output, and the next step for every error code. `panda-social docs <command>` returns one command's page as markdown, and `panda-social --version` the installed version. The same content is committed as [docs/COMMANDS.md](docs/COMMANDS.md) and [docs/commands.json](docs/commands.json).
+
+An option a command does not take, or an extra argument, is refused rather than ignored: an unquoted `--text Hello from panda` fails with a hint to quote it.
+
+## As a library
+
+In Bun or Node 20+:
 
 ```ts
 import { createThreadsGraph } from 'panda-social-cli';
@@ -55,6 +63,8 @@ git config core.hooksPath .githooks
 ```
 
 The hooks run the fast gates on every commit. CI runs the full set, coverage and mutation included.
+
+Every command is described once, in `src/presenter/command-registry.ts` with one file per command under `src/presenter/commands/`: the parser, `help-json`, `docs` and the generated docs all read it. After changing a command, run `bun run docs:gen`; CI fails when `docs/COMMANDS.md` or `docs/commands.json` no longer matches the registry.
 
 `bun run build` writes the npm package to `dist/`: `cli.js` (the `panda-social` bin) and `index.js` (the library), both bundled for Node 20+ and Bun, with type declarations. `bun run smoke:dist` runs the built package under both runtimes.
 

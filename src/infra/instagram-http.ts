@@ -1,26 +1,25 @@
 import { err, ok } from '../domain/result.ts';
 import type { Result } from '../domain/result.ts';
-import type { FacebookError } from '../use-cases/ports/facebook.ts';
+import type { InstagramError } from '../use-cases/ports/instagram.ts';
 import { GRAPH_API_VERSION } from './graph-version.ts';
 import { isRecord, parsed, recordField, stringField } from './json-body.ts';
 import { thrownFailure } from './thrown-failure.ts';
 
-export const FACEBOOK_GRAPH_BASE = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
+export const INSTAGRAM_GRAPH_HOST = 'https://graph.instagram.com';
+export const INSTAGRAM_GRAPH_BASE = `${INSTAGRAM_GRAPH_HOST}/${GRAPH_API_VERSION}`;
 
-// Rule 29: every call carries a deadline. A publish that timed out may have gone out, so
-// nothing here retries.
+// Rule 29: every call carries a deadline, and nothing here retries.
 const DEFAULT_TIMEOUT_MS = 10_000;
 
-export type FacebookGraphConfig = {
+export type InstagramGraphConfig = {
   readonly token: string;
   readonly timeoutMs?: number;
 };
 
-type Kind = FacebookError['kind'];
+type Kind = InstagramError['kind'];
 
-// D25: Meta's own code sorts a failure (10 and 200-299 are permissions); the HTTP status
-// speaks only when the code is none of these, as for a body that is not Meta's JSON. D29: 324
-// is an image Meta cannot use, 506 a text that repeats a recent post.
+// D32: Meta's own code sorts a failure as it does on Facebook (D25), 10 and 200-299 being
+// permissions; the HTTP status speaks only when the code is none of these.
 const BY_CODE: ReadonlyMap<number, Kind> = new Map<number, Kind>([
   [102, 'unauthorized'],
   [190, 'unauthorized'],
@@ -29,8 +28,6 @@ const BY_CODE: ReadonlyMap<number, Kind> = new Map<number, Kind>([
   [17, 'rate-limited'],
   [32, 'rate-limited'],
   [613, 'rate-limited'],
-  [324, 'image-rejected'],
-  [506, 'duplicate-text'],
 ]);
 const BY_STATUS: ReadonlyMap<number, Kind> = new Map<number, Kind>([
   [401, 'unauthorized'],
@@ -45,7 +42,7 @@ const kindOfCode = (code: unknown): Kind | undefined => {
 };
 
 // Meta's reason in its own words: `{"error":{"message","type","code","error_subcode"}}`.
-const classifyHttp = (status: number, text: string): FacebookError => {
+const classifyHttp = (status: number, text: string): InstagramError => {
   const body = parsed(text);
   const error = isRecord(body) ? recordField(body, 'error') : {};
   const message = stringField(error, 'message') ?? text;
@@ -53,20 +50,20 @@ const classifyHttp = (status: number, text: string): FacebookError => {
   return kind === 'rejected' ? { kind, status, message } : { kind, message };
 };
 
-// The token rides in the header, never in the URL (rule 27): graph.facebook.com reads it
-// there (a dummy token answered code 190, no token code 2500, 2026-09-28). A form body sets
-// its own content type. An upload passes a longer deadline than the default.
+// The token rides in the header, never in the URL (rule 27): graph.instagram.com reads it
+// there (probed 2026-09-28). `path` sits under the versioned base; the token refresh alone
+// lives at the host root.
 export const request = async (
-  config: FacebookGraphConfig,
+  config: InstagramGraphConfig,
   path: string,
   init: RequestInit,
-  timeoutMs = DEFAULT_TIMEOUT_MS
-): Promise<Result<Readonly<Record<string, unknown>>, FacebookError>> => {
+  base: string = INSTAGRAM_GRAPH_BASE
+): Promise<Result<Readonly<Record<string, unknown>>, InstagramError>> => {
   try {
-    const response = await fetch(`${FACEBOOK_GRAPH_BASE}${path}`, {
+    const response = await fetch(`${base}${path}`, {
       ...init,
       headers: { authorization: `Bearer ${config.token}` },
-      signal: AbortSignal.timeout(config.timeoutMs ?? timeoutMs),
+      signal: AbortSignal.timeout(config.timeoutMs ?? DEFAULT_TIMEOUT_MS),
     });
     const text = await response.text();
     if (!response.ok) return err(classifyHttp(response.status, text));

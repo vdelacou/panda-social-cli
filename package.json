@@ -62,7 +62,9 @@
     "build": "rm -rf dist && bun run build:js && bun run build:types",
     "build:js": "bun build src/main.ts --target=node --format=esm --packages=external --banner='#!/usr/bin/env node' --outfile=dist/cli.js && bun build src/index.ts --target=node --format=esm --packages=external --outfile=dist/index.js",
     "build:types": "tsc -p tsconfig.build.json && bun run scripts/fix-dts-extensions.ts",
-    "smoke:dist": "bun run scripts/smoke-dist.ts"
+    "smoke:dist": "bun run scripts/smoke-dist.ts",
+    "docs:gen": "bun run scripts/gen-docs.ts",
+    "docs:check": "bun run scripts/gen-docs.ts --check"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

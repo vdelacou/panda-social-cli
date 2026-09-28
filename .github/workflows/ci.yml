@@ -58,6 +58,8 @@ jobs:
         run: bun run scripts/regenerate-coverage-preload.ts --check
       - name: coverage (per-tier thresholds)
         run: bun run coverage
+      - name: generated command docs match the registry (docs/COMMANDS.md, docs/commands.json)
+        run: bun run docs:check
       - name: package builds and runs under Bun and Node (the published artifact, not the sources)
         run: bun run build && bun run smoke:dist
       - name: README Verify block runs (canon 12.1, references/governance.md)

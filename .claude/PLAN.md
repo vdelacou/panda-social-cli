@@ -1,6 +1,6 @@
 # PLAN: panda-social-cli v1
 
-Current task: phase 2, step 2.5 (the setup guide page and SKILL.md). Resume from the first unchecked box.
+Current task: phase 2, step 2.6 (the live QA with a real token). Resume from the first unchecked box.
 
 ## What we are building
 
@@ -51,7 +51,11 @@ A Bun/TypeScript CLI and library, published to npm as `panda-social-cli` (bin `p
   - [x] 2.4c Use-cases: load the profile's saved token and renew it first when due, where a failed renewal or a failed save never blocks the command (a warning on stderr instead); `status` reports the account, the token (source, saved at, age in days, expiry once known, renewed now or not) and the three quotas.
   - [x] 2.4d CLI: `panda-social status threads [--profile <name>]`; every Threads command loads its token through the renewal; docs regenerated; README and the profile option say a saved token renews itself.
   - Done when: the proposed tests were confirmed, seen red, then green; lint, typecheck, coverage tiers and mutation 100 on the new domain and use-case code pass; every slice is at most 10 files and 300 lines and green on its own; the live renewal with a real token is left to 2.6 and said so.
-- [ ] 2.5 `docs/setup/threads.md` with the screenshot shot list, `skills/SKILL.md`.
+- [x] 2.5 `docs/setup/threads.md` with the screenshot shot list, `skills/SKILL.md`. (The guide carries the six steps in the CLI's words, ten screenshot placeholders and their shot list; the skill's description is 651 characters. `docs:check` now runs `scripts/check-guides.ts`, seen red for a refused command line in each page, a setup action and URL missing from the guide, and a wrong skill name with an overlong description. The screenshots themselves need the user's logged-in consoles and are still to take.)
+  - [x] 2.5a The setup guide for a first-time human: the six steps in the CLI's own words, what each permission is for, a screenshot placeholder per step and a shot list (file, page, what it shows, what to blur, the token always), the finish in the user's own terminal so the token never passes through a chat, a check with `status threads`, and the known failures with their fixes.
+  - [x] 2.5b The agent skill, in the ask-marcel-office-cli shape (an orchestrator that defers details to `help-json` and `docs <command>`): when to use it and when not, the user approves every post before it exists, no blind retry after a timeout, the setup handoff, a command map with concrete examples, what `--split`, images, `details` and a null `url` mean, the token and the quotas, the limits. The skill ships in the repository, as ask-marcel's does; packaging it with npm is a release question (phase 8).
+  - [x] 2.5c `docs:check` also fails when a `panda-social` command line in either page is one the parser refuses, when a setup step or action from the code is missing from the guide, or when the skill's frontmatter lacks its name or runs past 1,024 characters; each check seen red on a planted violation.
+  - Done when: both pages read end to end against the code, the extended `docs:check` passes and was seen red for each of its three reasons, the README links both pages, and every gate passes.
 - [ ] 2.6 Live QA script the user runs with a real token: post, read back, delete, `status`, and the refresh of a token at least a day old.
 
 ## Phase 3: X

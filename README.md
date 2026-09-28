@@ -26,7 +26,7 @@ bun run src/main.ts delete --on threads --id 17890000000000001
 bun run src/main.ts status threads
 ```
 
-`setup threads` walks you through the six one-time steps (a Meta developer account, an app with the Threads API, its permissions, a tester invitation, and the token), one at a time. You paste the token without it showing on screen; the CLI checks it with Threads and saves it in `~/.panda-social/credentials.json`, readable by you only.
+`setup threads` walks you through the six one-time steps (a Meta developer account, an app with the Threads API, its permissions, a tester invitation, and the token), one at a time. You paste the token without it showing on screen; the CLI checks it with Threads and saves it in `~/.panda-social/credentials.json`, readable by you only. The same steps, with what each permission is for and the usual failures and their fixes, are in [docs/setup/threads.md](docs/setup/threads.md).
 
 An agent runs the same command without a terminal and gets the six steps as JSON, to relay to its human. It then finishes with `panda-social setup threads --token-stdin`, piping the token in.
 
@@ -48,6 +48,8 @@ Every command prints one JSON line on stdout and exits 0 or 1; the guide and the
 Start with `panda-social help-json`. It answers with one JSON manifest: the output contract, every command with its usage line, parameters, examples and output, and the next step for every error code. `panda-social docs <command>` returns one command's page as markdown, and `panda-social --version` the installed version. The same content is committed as [docs/COMMANDS.md](docs/COMMANDS.md) and [docs/commands.json](docs/commands.json).
 
 An option a command does not take, or an extra argument, is refused rather than ignored: an unquoted `--text Hello from panda` fails with a hint to quote it.
+
+[skills/SKILL.md](skills/SKILL.md) is an agent skill for the CLI: when to use it and when not, the user's approval before anything is posted or deleted, the setup handoff that keeps the token out of the chat, and what each answer means. For Claude Code, copy it to `~/.claude/skills/panda-social/SKILL.md`, or to `.claude/skills/panda-social/SKILL.md` in one project.
 
 ## As a library
 
@@ -73,7 +75,7 @@ git config core.hooksPath .githooks
 
 The hooks run the fast gates on every commit. CI runs the full set, coverage and mutation included.
 
-Every command is described once, in `src/presenter/command-registry.ts` with one file per command under `src/presenter/commands/`: the parser, `help-json`, `docs` and the generated docs all read it. After changing a command, run `bun run docs:gen`; CI fails when `docs/COMMANDS.md` or `docs/commands.json` no longer matches the registry.
+Every command is described once, in `src/presenter/command-registry.ts` with one file per command under `src/presenter/commands/`: the parser, `help-json`, `docs` and the generated docs all read it. After changing a command, run `bun run docs:gen`; CI fails when `docs/COMMANDS.md` or `docs/commands.json` no longer matches the registry. The same `docs:check` holds the two hand-written pages to the code: every `panda-social` line in their bash blocks must parse, and the setup guide must carry every step the CLI shows.
 
 `bun run build` writes the npm package to `dist/`: `cli.js` (the `panda-social` bin) and `index.js` (the library), both bundled for Node 20+ and Bun, with type declarations. `bun run smoke:dist` runs the built package under both runtimes.
 

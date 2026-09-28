@@ -3,9 +3,9 @@ import { CALL_ERRORS, FACEBOOK_CALL_ERRORS, IMAGE_OPTION, PLATFORMS, PROFILE_OPT
 
 export const POST: CommandSpec = {
   name: 'post',
-  summary: 'Publish a text post, an image, or both, to Threads, X or a Facebook Page.',
+  summary: 'Publish a text post, an image, or both, to Threads, X or a Facebook Page, or an image with its caption to Instagram.',
   description:
-    'Publishes a new post on the account saved in the profile and answers with its id and link. A text over the platform limit (500 on Threads, 280 on X) is refused unless --split posts it as a thread of replies; Facebook takes a long text whole. Threads downloads the image from its URL; on X the CLI uploads a local file; Facebook takes either, and the text becomes the photo caption. Threads allows 250 posts per 24 hours; X allows 100 per 15 minutes and bills each one against the app credits, $0.015, or $0.20 when the text contains a link; Facebook posts are free, and show to everyone once the Meta app is published. Publishing is never retried: a post that timed out may still have gone out, so check the profile before posting again.',
+    "Publishes a new post on the account saved in the profile and answers with its id and link. A text over the platform limit (500 on Threads, 280 on X) is refused unless --split posts it as a thread of replies; Facebook takes a long text whole. Threads downloads the image from its URL; on X the CLI uploads a local file; Facebook takes either, and the text becomes the photo caption. Instagram has no text-only posts: it takes an https URL to a JPEG, which it downloads itself, and the text as its caption, sent whole. Threads allows 250 posts per 24 hours; X allows 100 per 15 minutes and bills each one against the app credits, $0.015, or $0.20 when the text contains a link; Facebook posts are free, and show to everyone once the Meta app is published; Instagram allows 50 or 100 API posts per 24 hours (Meta's pages differ; `status instagram` shows the account's own). Publishing is never retried: a post that timed out may still have gone out, so check the profile before posting again.",
   arguments: [],
   options: [
     { name: 'to', type: 'string', placeholder: 'platform', required: true, description: 'The platform to post to.', values: PLATFORMS },
@@ -23,9 +23,13 @@ export const POST: CommandSpec = {
     { argv: ['post', '--to', 'x', '--image', './chart.png', '--text', 'This week in one chart'], explanation: 'Upload a local image to X with a caption.' },
     { argv: ['post', '--to', 'facebook', '--text', 'Hello from panda'], explanation: 'Post to the Facebook Page saved in the default profile.' },
     { argv: ['post', '--to', 'facebook', '--image', './chart.png', '--text', 'This week in one chart'], explanation: 'Upload a local photo to the Page with a caption.' },
+    {
+      argv: ['post', '--to', 'instagram', '--image', 'https://cdn.example.com/cat.jpg', '--text', 'A cat on the sofa'],
+      explanation: 'Post an image to Instagram, which downloads it, with a caption.',
+    },
   ],
   output:
-    'The new post: `{"platform":"threads","id":"<post id>","url":"<link, or null when Threads did not return one>"}` on Threads, `{"platform":"x","id":"<post id>","url":"https://x.com/i/status/<post id>"}` on X, `{"platform":"facebook","id":"<page id>_<post id>","url":"https://www.facebook.com/<page id>/posts/<post id>"}` on Facebook, plus `"replies":["<id>",...]` for a --split thread.',
+    'The new post: `{"platform":"threads","id":"<post id>","url":"<link, or null when Threads did not return one>"}` on Threads, `{"platform":"x","id":"<post id>","url":"https://x.com/i/status/<post id>"}` on X, `{"platform":"facebook","id":"<page id>_<post id>","url":"https://www.facebook.com/<page id>/posts/<post id>"}` on Facebook, `{"platform":"instagram","id":"<post id>","url":"<link, or null when Instagram did not return one>"}` on Instagram, plus `"replies":["<id>",...]` for a --split thread.',
   mutates: true,
   errors: ['unknown-option', 'unexpected-argument', 'unknown-platform', 'invalid-profile', ...PUBLISH_ERRORS, ...CALL_ERRORS, ...X_CALL_ERRORS, ...FACEBOOK_CALL_ERRORS],
 };

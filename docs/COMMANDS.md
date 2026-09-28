@@ -6,8 +6,8 @@ Every command prints one JSON line on stdout: `{"ok":true,"data":...}` on succes
 
 | Command | What it does |
 | --- | --- |
-| [`post`](#post) | Publish a text post, an image, or both, to Threads, X or a Facebook Page. |
-| [`update`](#update) | Replace a post: an edit in place on X and Facebook, or with --repost on any platform, delete it and publish the new version. |
+| [`post`](#post) | Publish a text post, an image, or both, to Threads, X or a Facebook Page, or an image with its caption to Instagram. |
+| [`update`](#update) | Replace a post: an edit in place on X and Facebook, or with --repost on Threads, X and Facebook, delete it and publish the new version. |
 | [`delete`](#delete) | Delete a Threads, X or Facebook post by its id. |
 | [`setup`](#setup) | Connect a Threads account, X keys, a Facebook Page or an Instagram account, and save the credentials under a profile. |
 | [`status`](#status) | Check a connected Threads, X, Facebook or Instagram account: whose credentials they are and whether they still work, with the Threads and Instagram quotas. |
@@ -21,7 +21,7 @@ Every command prints one JSON line on stdout: `{"ok":true,"data":...}` on succes
 
 ## post
 
-Publishes a new post on the account saved in the profile and answers with its id and link. A text over the platform limit (500 on Threads, 280 on X) is refused unless --split posts it as a thread of replies; Facebook takes a long text whole. Threads downloads the image from its URL; on X the CLI uploads a local file; Facebook takes either, and the text becomes the photo caption. Threads allows 250 posts per 24 hours; X allows 100 per 15 minutes and bills each one against the app credits, $0.015, or $0.20 when the text contains a link; Facebook posts are free, and show to everyone once the Meta app is published. Publishing is never retried: a post that timed out may still have gone out, so check the profile before posting again.
+Publishes a new post on the account saved in the profile and answers with its id and link. A text over the platform limit (500 on Threads, 280 on X) is refused unless --split posts it as a thread of replies; Facebook takes a long text whole. Threads downloads the image from its URL; on X the CLI uploads a local file; Facebook takes either, and the text becomes the photo caption. Instagram has no text-only posts: it takes an https URL to a JPEG, which it downloads itself, and the text as its caption, sent whole. Threads allows 250 posts per 24 hours; X allows 100 per 15 minutes and bills each one against the app credits, $0.015, or $0.20 when the text contains a link; Facebook posts are free, and show to everyone once the Meta app is published; Instagram allows 50 or 100 API posts per 24 hours (Meta's pages differ; `status instagram` shows the account's own). Publishing is never retried: a post that timed out may still have gone out, so check the profile before posting again.
 
 ### Usage
 
@@ -33,11 +33,11 @@ panda-social post --to <platform> [--text <text>] [--profile <name>] [--image <i
 
 | Parameter | Required | Description |
 | --- | --- | --- |
-| `--to <platform>` | yes | The platform to post to. One of: threads, x, facebook. |
-| `--text <text>` | no | The text of the post, quoted when it contains spaces. Required unless --image is given. Threads takes 500 characters, an emoji counting its UTF-8 bytes (a thumbs-up is 4); X takes 280 as X counts them: most characters 1, CJK characters and emoji 2, a link 23; Facebook takes a long text whole. |
+| `--to <platform>` | yes | The platform to post to. One of: threads, x, facebook, instagram. |
+| `--text <text>` | no | The text of the post, quoted when it contains spaces. Required unless --image is given. Threads takes 500 characters, an emoji counting its UTF-8 bytes (a thumbs-up is 4); X takes 280 as X counts them: most characters 1, CJK characters and emoji 2, a link 23; Facebook takes a long text whole; on Instagram it is the caption of the image, which Instagram limits to 2,200 characters, 30 hashtags and 20 @ tags. |
 | `--profile <name>` | no | The profile whose saved account acts. Defaults to "default". A saved Threads or Instagram token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, PANDA_SOCIAL_INSTAGRAM_TOKEN, all four PANDA_SOCIAL_X_ variables, or both PANDA_SOCIAL_FACEBOOK_PAGE_ID and PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN, when set, override the saved credentials. |
-| `--image <image>` | no | Threads: a public https URL to a JPEG or PNG image, 8 MB at most, which Threads downloads itself. X: a local JPEG, PNG, GIF or WEBP file, 5 MB at most, which the CLI uploads. Facebook: either, an https URL Facebook downloads or a local JPEG, PNG, GIF, BMP or TIFF file of 10 MB at most, which the CLI uploads. |
-| `--split` | no | Post a text over the limit as a thread: the first post, then replies, each answering the one before. If a part fails, the parts already published are deleted. Facebook takes a long text whole, so there it changes nothing. |
+| `--image <image>` | no | Threads: a public https URL to a JPEG or PNG image, 8 MB at most, which Threads downloads itself. X: a local JPEG, PNG, GIF or WEBP file, 5 MB at most, which the CLI uploads. Facebook: either, an https URL Facebook downloads or a local JPEG, PNG, GIF, BMP or TIFF file of 10 MB at most, which the CLI uploads. Instagram: required, a public https URL to a JPEG of 8 MB at most with an aspect ratio between 4:5 and 1.91:1, which Instagram downloads itself. |
+| `--split` | no | Post a text over the limit as a thread: the first post, then replies, each answering the one before. If a part fails, the parts already published are deleted. Facebook and Instagram take a long text whole, so there it changes nothing. |
 
 ### Examples
 
@@ -58,11 +58,13 @@ panda-social post --to x --image ./chart.png --text "This week in one chart"
 panda-social post --to facebook --text "Hello from panda"
 # Upload a local photo to the Page with a caption.
 panda-social post --to facebook --image ./chart.png --text "This week in one chart"
+# Post an image to Instagram, which downloads it, with a caption.
+panda-social post --to instagram --image https://cdn.example.com/cat.jpg --text "A cat on the sofa"
 ```
 
 ### Output
 
-The new post: `{"platform":"threads","id":"<post id>","url":"<link, or null when Threads did not return one>"}` on Threads, `{"platform":"x","id":"<post id>","url":"https://x.com/i/status/<post id>"}` on X, `{"platform":"facebook","id":"<page id>_<post id>","url":"https://www.facebook.com/<page id>/posts/<post id>"}` on Facebook, plus `"replies":["<id>",...]` for a --split thread.
+The new post: `{"platform":"threads","id":"<post id>","url":"<link, or null when Threads did not return one>"}` on Threads, `{"platform":"x","id":"<post id>","url":"https://x.com/i/status/<post id>"}` on X, `{"platform":"facebook","id":"<page id>_<post id>","url":"https://www.facebook.com/<page id>/posts/<post id>"}` on Facebook, `{"platform":"instagram","id":"<post id>","url":"<link, or null when Instagram did not return one>"}` on Instagram, plus `"replies":["<id>",...]` for a --split thread.
 
 ### Errors
 
@@ -95,7 +97,7 @@ The new post: `{"platform":"threads","id":"<post id>","url":"<link, or null when
 
 ## update
 
-On X, update edits the post in place and answers the new version with the id it edited; X allows it with X Premium only, for a short window after posting (30 minutes or 1 hour, X pages differ) and 5 times at most, and one edited post stays one post, so the text must fit 280. On Facebook, update edits the text in place, for posts this app made, and answers the same id and link; an image cannot be edited there, so a new --image needs --repost. Threads cannot edit a published post, so there update refuses unless --repost is given. With --repost, on any platform, it deletes the old post first, then publishes the new text or image as post does: the new post gets a new id and link, and the old one takes its likes and replies with it. If the delete fails, nothing is published; if the publish fails after the delete, the error says the old post is gone.
+On X, update edits the post in place and answers the new version with the id it edited; X allows it with X Premium only, for a short window after posting (30 minutes or 1 hour, X pages differ) and 5 times at most, and one edited post stays one post, so the text must fit 280. On Facebook, update edits the text in place, for posts this app made, and answers the same id and link; an image cannot be edited there, so a new --image needs --repost. Threads cannot edit a published post, so there update refuses unless --repost is given. Instagram, connected through Instagram Login, can neither edit nor delete a post, so update refuses there, --repost included. With --repost, on Threads, X and Facebook, it deletes the old post first, then publishes the new text or image as post does: the new post gets a new id and link, and the old one takes its likes and replies with it. If the delete fails, nothing is published; if the publish fails after the delete, the error says the old post is gone.
 
 ### Usage
 
@@ -107,12 +109,12 @@ panda-social update --on <platform> --id <post-id> [--text <text>] [--profile <n
 
 | Parameter | Required | Description |
 | --- | --- | --- |
-| `--on <platform>` | yes | The platform the post is on. One of: threads, x, facebook. |
-| `--id <post-id>` | yes | The id of the post, as post returned it: digits on Threads and X, the Page id and the post number joined by an underscore on Facebook. |
-| `--text <text>` | no | The text of the post, quoted when it contains spaces. Required unless --image is given. Threads takes 500 characters, an emoji counting its UTF-8 bytes (a thumbs-up is 4); X takes 280 as X counts them: most characters 1, CJK characters and emoji 2, a link 23; Facebook takes a long text whole. |
+| `--on <platform>` | yes | The platform the post is on. One of: threads, x, facebook, instagram. |
+| `--id <post-id>` | yes | The id of the post, as post returned it: digits on Threads, X and Instagram, the Page id and the post number joined by an underscore on Facebook. |
+| `--text <text>` | no | The text of the post, quoted when it contains spaces. Required unless --image is given. Threads takes 500 characters, an emoji counting its UTF-8 bytes (a thumbs-up is 4); X takes 280 as X counts them: most characters 1, CJK characters and emoji 2, a link 23; Facebook takes a long text whole; on Instagram it is the caption of the image, which Instagram limits to 2,200 characters, 30 hashtags and 20 @ tags. |
 | `--profile <name>` | no | The profile whose saved account acts. Defaults to "default". A saved Threads or Instagram token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, PANDA_SOCIAL_INSTAGRAM_TOKEN, all four PANDA_SOCIAL_X_ variables, or both PANDA_SOCIAL_FACEBOOK_PAGE_ID and PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN, when set, override the saved credentials. |
-| `--image <image>` | no | Threads: a public https URL to a JPEG or PNG image, 8 MB at most, which Threads downloads itself. X: a local JPEG, PNG, GIF or WEBP file, 5 MB at most, which the CLI uploads. Facebook: either, an https URL Facebook downloads or a local JPEG, PNG, GIF, BMP or TIFF file of 10 MB at most, which the CLI uploads. |
-| `--split` | no | Post a text over the limit as a thread: the first post, then replies, each answering the one before. If a part fails, the parts already published are deleted. Facebook takes a long text whole, so there it changes nothing. |
+| `--image <image>` | no | Threads: a public https URL to a JPEG or PNG image, 8 MB at most, which Threads downloads itself. X: a local JPEG, PNG, GIF or WEBP file, 5 MB at most, which the CLI uploads. Facebook: either, an https URL Facebook downloads or a local JPEG, PNG, GIF, BMP or TIFF file of 10 MB at most, which the CLI uploads. Instagram: required, a public https URL to a JPEG of 8 MB at most with an aspect ratio between 4:5 and 1.91:1, which Instagram downloads itself. |
+| `--split` | no | Post a text over the limit as a thread: the first post, then replies, each answering the one before. If a part fails, the parts already published are deleted. Facebook and Instagram take a long text whole, so there it changes nothing. |
 | `--repost` | no | Delete the post and publish the new version instead of editing it. Required on Threads, which cannot edit, and for a new image on Facebook; on X and Facebook it replaces the edit. |
 
 ### Examples
@@ -164,7 +166,7 @@ The new post: `{"platform":"<platform>","id":"<new id>","url":"<link>","edited":
 
 ## delete
 
-Deletes one post from the account saved in the profile. Replies, the other parts of a --split thread included, are posts of their own: delete each id. On X, deleting an edited post deletes every version of it. Threads allows 100 deletes per 24 hours and needs the threads_delete permission; X allows 50 per 15 minutes and bills $0.01 each. A Facebook post id is the Page id and the post number joined by an underscore, as post returned it.
+Deletes one post from the account saved in the profile. Replies, the other parts of a --split thread included, are posts of their own: delete each id. On X, deleting an edited post deletes every version of it. Threads allows 100 deletes per 24 hours and needs the threads_delete permission; X allows 50 per 15 minutes and bills $0.01 each. A Facebook post id is the Page id and the post number joined by an underscore, as post returned it. Instagram, connected through Instagram Login, cannot delete a post, so delete refuses there: delete it in the Instagram app.
 
 ### Usage
 
@@ -176,8 +178,8 @@ panda-social delete --on <platform> --id <post-id> [--profile <name>]
 
 | Parameter | Required | Description |
 | --- | --- | --- |
-| `--on <platform>` | yes | The platform the post is on. One of: threads, x, facebook. |
-| `--id <post-id>` | yes | The id of the post, as post returned it: digits on Threads and X, the Page id and the post number joined by an underscore on Facebook. |
+| `--on <platform>` | yes | The platform the post is on. One of: threads, x, facebook, instagram. |
+| `--id <post-id>` | yes | The id of the post, as post returned it: digits on Threads, X and Instagram, the Page id and the post number joined by an underscore on Facebook. |
 | `--profile <name>` | no | The profile whose saved account acts. Defaults to "default". A saved Threads or Instagram token 30 days old or more is refreshed before use. PANDA_SOCIAL_THREADS_TOKEN, PANDA_SOCIAL_INSTAGRAM_TOKEN, all four PANDA_SOCIAL_X_ variables, or both PANDA_SOCIAL_FACEBOOK_PAGE_ID and PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN, when set, override the saved credentials. |
 
 ### Examples
@@ -204,6 +206,7 @@ The deleted post: `{"platform":"<platform>","id":"<post id>","deleted":true}`.
 | `unknown-platform` | Name a platform the command takes, as `panda-social docs <command>` lists them. |
 | `invalid-post-id` | Pass the id that post returned, for example --id 17890000000000001 on Threads, --id 1880000000000000001 on X, --id 17900000000000001 on Instagram, or --id 104000000000001_122000000000001 on Facebook, the Page id and the post number joined by an underscore. |
 | `invalid-profile` | Use lowercase letters, digits, - and _, starting with a letter or digit, 40 characters at most. Example: --profile brand-a |
+| `unsupported` | Threads cannot edit a published post, and Facebook edits the text of one but not its image. Pass --repost to delete the post and publish the new version: it gets a new id and link, and loses its likes, replies and comments. Instagram, connected through Instagram Login, can neither edit nor delete a post: change or delete it in the Instagram app. |
 | `missing-credentials` | Connect the account with `panda-social setup threads`, `panda-social setup x`, `panda-social setup facebook` or `panda-social setup instagram` (add `--profile <name>` for another profile), or set PANDA_SOCIAL_THREADS_TOKEN, all four PANDA_SOCIAL_X_ variables, both PANDA_SOCIAL_FACEBOOK_ variables, or PANDA_SOCIAL_INSTAGRAM_TOKEN. |
 | `corrupt` | The credentials file is not valid. Fix or delete ~/.panda-social/credentials.json, then run the setup again for each platform. |
 | `unreadable` | The credentials file could not be read. Check that ~/.panda-social/credentials.json belongs to you. |
@@ -220,7 +223,7 @@ The deleted post: `{"platform":"<platform>","id":"<post id>","deleted":true}`.
 
 ## setup
 
-On a terminal, walks a first-time user through the one-time steps of the platform (six for Threads and Instagram, five for X and for Facebook) one at a time, then reads the Threads token, the four X keys, the Facebook token or the Instagram token without showing them. Without a terminal it answers with the same steps as JSON, for an agent to relay to its human, and the command that finishes the setup. With --token-stdin (Threads, Facebook, Instagram) or --keys-stdin (X, four lines: API Key, API Key Secret, Access Token, Access Token Secret) it reads them from standard input. The credentials are checked with the platform before they are saved in ~/.panda-social/credentials.json, readable by its owner only; X keys that X reports as read-only are refused. Checking X keys spends about $0.01 of X credits. For Facebook, the token is the long-lived user token of step 5: the CLI reads the Pages it grants, saves the chosen Page's own token, which does not expire, and never the user token; --page names the Page when the token grants several, and a Page on which the user cannot create content is refused. For Instagram, the token is the one the app dashboard generates for a professional account (Instagram Login, no Facebook Page needed); it lasts 60 days and renews itself once it is 30 days old, as the Threads token does; `post` does not take Instagram yet.
+On a terminal, walks a first-time user through the one-time steps of the platform (six for Threads and Instagram, five for X and for Facebook) one at a time, then reads the Threads token, the four X keys, the Facebook token or the Instagram token without showing them. Without a terminal it answers with the same steps as JSON, for an agent to relay to its human, and the command that finishes the setup. With --token-stdin (Threads, Facebook, Instagram) or --keys-stdin (X, four lines: API Key, API Key Secret, Access Token, Access Token Secret) it reads them from standard input. The credentials are checked with the platform before they are saved in ~/.panda-social/credentials.json, readable by its owner only; X keys that X reports as read-only are refused. Checking X keys spends about $0.01 of X credits. For Facebook, the token is the long-lived user token of step 5: the CLI reads the Pages it grants, saves the chosen Page's own token, which does not expire, and never the user token; --page names the Page when the token grants several, and a Page on which the user cannot create content is refused. For Instagram, the token is the one the app dashboard generates for a professional account (Instagram Login, no Facebook Page needed); it lasts 60 days and renews itself once it is 30 days old, as the Threads token does.
 
 ### Usage
 

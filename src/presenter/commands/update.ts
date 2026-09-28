@@ -14,9 +14,9 @@ import {
 
 export const UPDATE: CommandSpec = {
   name: 'update',
-  summary: 'Replace a post: an edit in place on X and Facebook, or with --repost on any platform, delete it and publish the new version.',
+  summary: 'Replace a post: an edit in place on X and Facebook, or with --repost on Threads, X and Facebook, delete it and publish the new version.',
   description:
-    'On X, update edits the post in place and answers the new version with the id it edited; X allows it with X Premium only, for a short window after posting (30 minutes or 1 hour, X pages differ) and 5 times at most, and one edited post stays one post, so the text must fit 280. On Facebook, update edits the text in place, for posts this app made, and answers the same id and link; an image cannot be edited there, so a new --image needs --repost. Threads cannot edit a published post, so there update refuses unless --repost is given. With --repost, on any platform, it deletes the old post first, then publishes the new text or image as post does: the new post gets a new id and link, and the old one takes its likes and replies with it. If the delete fails, nothing is published; if the publish fails after the delete, the error says the old post is gone.',
+    'On X, update edits the post in place and answers the new version with the id it edited; X allows it with X Premium only, for a short window after posting (30 minutes or 1 hour, X pages differ) and 5 times at most, and one edited post stays one post, so the text must fit 280. On Facebook, update edits the text in place, for posts this app made, and answers the same id and link; an image cannot be edited there, so a new --image needs --repost. Threads cannot edit a published post, so there update refuses unless --repost is given. Instagram, connected through Instagram Login, can neither edit nor delete a post, so update refuses there, --repost included. With --repost, on Threads, X and Facebook, it deletes the old post first, then publishes the new text or image as post does: the new post gets a new id and link, and the old one takes its likes and replies with it. If the delete fails, nothing is published; if the publish fails after the delete, the error says the old post is gone.',
   arguments: [],
   options: [
     ON_OPTION,

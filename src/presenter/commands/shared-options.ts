@@ -1,11 +1,10 @@
 import type { OptionSpec } from '../command-spec.ts';
 
 // The platforms every command takes.
-export const PLATFORMS: ReadonlyArray<string> = ['threads', 'x', 'facebook'];
+export const PLATFORMS: ReadonlyArray<string> = ['threads', 'x', 'facebook', 'instagram'];
 
-// Every platform a command takes; the command pages list Instagram for post, update and delete
-// from the next change on.
-export const ACCOUNT_PLATFORMS: ReadonlyArray<string> = [...PLATFORMS, 'instagram'];
+// The same list, under the name the platform readers still use until the next change.
+export const ACCOUNT_PLATFORMS: ReadonlyArray<string> = PLATFORMS;
 
 export const PROFILE_OPTION: OptionSpec = {
   name: 'profile',
@@ -22,7 +21,7 @@ export const TEXT_OPTION: OptionSpec = {
   placeholder: 'text',
   required: false,
   description:
-    'The text of the post, quoted when it contains spaces. Required unless --image is given. Threads takes 500 characters, an emoji counting its UTF-8 bytes (a thumbs-up is 4); X takes 280 as X counts them: most characters 1, CJK characters and emoji 2, a link 23; Facebook takes a long text whole.',
+    'The text of the post, quoted when it contains spaces. Required unless --image is given. Threads takes 500 characters, an emoji counting its UTF-8 bytes (a thumbs-up is 4); X takes 280 as X counts them: most characters 1, CJK characters and emoji 2, a link 23; Facebook takes a long text whole; on Instagram it is the caption of the image, which Instagram limits to 2,200 characters, 30 hashtags and 20 @ tags.',
 };
 
 export const IMAGE_OPTION: OptionSpec = {
@@ -31,7 +30,7 @@ export const IMAGE_OPTION: OptionSpec = {
   placeholder: 'image',
   required: false,
   description:
-    'Threads: a public https URL to a JPEG or PNG image, 8 MB at most, which Threads downloads itself. X: a local JPEG, PNG, GIF or WEBP file, 5 MB at most, which the CLI uploads. Facebook: either, an https URL Facebook downloads or a local JPEG, PNG, GIF, BMP or TIFF file of 10 MB at most, which the CLI uploads.',
+    'Threads: a public https URL to a JPEG or PNG image, 8 MB at most, which Threads downloads itself. X: a local JPEG, PNG, GIF or WEBP file, 5 MB at most, which the CLI uploads. Facebook: either, an https URL Facebook downloads or a local JPEG, PNG, GIF, BMP or TIFF file of 10 MB at most, which the CLI uploads. Instagram: required, a public https URL to a JPEG of 8 MB at most with an aspect ratio between 4:5 and 1.91:1, which Instagram downloads itself.',
 };
 
 export const SPLIT_OPTION: OptionSpec = {
@@ -39,7 +38,7 @@ export const SPLIT_OPTION: OptionSpec = {
   type: 'boolean',
   required: false,
   description:
-    'Post a text over the limit as a thread: the first post, then replies, each answering the one before. If a part fails, the parts already published are deleted. Facebook takes a long text whole, so there it changes nothing.',
+    'Post a text over the limit as a thread: the first post, then replies, each answering the one before. If a part fails, the parts already published are deleted. Facebook and Instagram take a long text whole, so there it changes nothing.',
 };
 
 export const ON_OPTION: OptionSpec = { name: 'on', type: 'string', placeholder: 'platform', required: true, description: 'The platform the post is on.', values: PLATFORMS };
@@ -49,7 +48,7 @@ export const ID_OPTION: OptionSpec = {
   type: 'string',
   placeholder: 'post-id',
   required: true,
-  description: 'The id of the post, as post returned it: digits on Threads and X, the Page id and the post number joined by an underscore on Facebook.',
+  description: 'The id of the post, as post returned it: digits on Threads, X and Instagram, the Page id and the post number joined by an underscore on Facebook.',
 };
 
 // The failures any command that reaches a platform with saved credentials can return.

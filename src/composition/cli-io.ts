@@ -11,3 +11,6 @@ export type CliIo = {
   readonly readStdin?: () => Promise<string>;
   readonly terminal?: { readonly input: Readable; readonly output: Writable };
 };
+
+// Piped input, or nothing when the run has none.
+export const readStdin = async (io: CliIo): Promise<string> => (io.readStdin ? io.readStdin() : '');

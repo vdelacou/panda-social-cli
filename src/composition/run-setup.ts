@@ -11,6 +11,7 @@ import { createConnectThreads } from '../use-cases/connect-threads.ts';
 import type { ConnectThreads } from '../use-cases/connect-threads.ts';
 import { createGuideThreadsSetup } from '../use-cases/guide-threads-setup.ts';
 import { answer, fail, succeed } from './answer.ts';
+import { readStdin } from './cli-io.ts';
 import type { CliIo } from './cli-io.ts';
 import type { Config } from './env.ts';
 
@@ -22,12 +23,11 @@ const runGuided = async (streams: NonNullable<CliIo['terminal']>, profile: Profi
   return result;
 };
 
-const readStdin = async (io: CliIo): Promise<string> => (io.readStdin ? io.readStdin() : '');
-
 // Three ways in: a piped token (agents, scripts), a terminal (a human, step by step),
 // or neither (an agent asking what to tell its human: the steps as JSON).
 export const runSetup = async (io: CliIo, command: SetupCommand, config: Config): Promise<number> => {
-  if (config.credentialsFile === undefined) return fail(io, { code: 'no-home', message: 'No home folder is set, so the token has nowhere to be saved.', hint: hintFor('no-home') });
+  if (config.credentialsFile === undefined)
+    return fail(io, { code: 'no-home', message: 'No home folder is set, so the credentials have nowhere to be saved.', hint: hintFor('no-home') });
   const connectThreads = createConnectThreads({
     threadsFor: (token) => createThreadsGraph({ token }),
     store: createCredentialStoreFile(config.credentialsFile),
@@ -37,6 +37,6 @@ export const runSetup = async (io: CliIo, command: SetupCommand, config: Config)
     const piped = await readStdin(io);
     return answer(io, await connectThreads({ profile: command.profile, token: piped.trim() }));
   }
-  if (io.terminal === undefined) return succeed(io, setupGuide(command.profile, THREADS_SETUP_STEPS));
+  if (io.terminal === undefined) return succeed(io, setupGuide('threads', command.profile, THREADS_SETUP_STEPS));
   return answer(io, await runGuided(io.terminal, command.profile, connectThreads));
 };

@@ -46,6 +46,8 @@
     "/*.md",
     "/*.toml",
     "/*.lock",
-    "/*.json"
-  ]
+    "/*.json",
+    "!/package.json"
+  ],
+  "_packageJson_comment": "package.json is copied back into the sandbox: src/composition/package-info.ts imports it for --version, so without it the dry run cannot load the composition tests."
 }

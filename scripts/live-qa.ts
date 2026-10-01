@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /*
- * Live QA (plan 2.6, D42 to D44): the built CLI against the real platforms, run by the user on
+ * Live QA (plan 2.6, D42 to D45): the built CLI against the real platforms, run by the user on
  * their own machine with the credentials setup saved there, or with the environment variables.
  * The report goes to stdout, to paste back; it holds ids and what each command answered, never a
  * token, a username or a profile link.
@@ -9,6 +9,8 @@
  *   bun scripts/live-qa.ts threads                                  status only
  *   bun scripts/live-qa.ts threads --publish --image <https URL>    posts, then deletes them
  *   bun scripts/live-qa.ts instagram --renewal                      renews a token a day old or more
+ *   bun scripts/live-qa.ts image-host --image <https URL>           4.3's probe, publishes nothing
+ *   bun scripts/live-qa.ts page-instagram --image <https URL>       5.3's probe, publishes nothing
  *
  * --profile <name> picks a profile, --runtime bun runs the CLI under Bun instead of Node.
  */
@@ -19,7 +21,9 @@ import { parseArgs } from 'node:util';
 import { formatError } from '../src/domain/utilities/format-error.ts';
 import { createRunner, pick } from './live-qa/answer.ts';
 import { facebookQa } from './live-qa/facebook.ts';
+import { imageHostProbe } from './live-qa/image-host.ts';
 import { instagramQa } from './live-qa/instagram.ts';
+import { pageInstagramProbe } from './live-qa/page-instagram.ts';
 import { check, failed, renderReport } from './live-qa/report.ts';
 import type { Findings } from './live-qa/report.ts';
 import { downloadImage } from './live-qa/session.ts';
@@ -32,6 +36,8 @@ const TARGETS: Readonly<Record<string, (session: Session) => Promise<Findings>>>
   x: xQa,
   facebook: facebookQa,
   instagram: instagramQa,
+  'image-host': imageHostProbe,
+  'page-instagram': pageInstagramProbe,
 };
 
 // What --publish posts, said before anything goes out (D43).

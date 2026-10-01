@@ -149,6 +149,8 @@ Every command is described once, in `src/presenter/command-registry.ts` with one
 
 `bun run build` writes the npm package to `dist/`: `cli.js` (the `panda-social` bin) and `index.js` (the library), both bundled for Node 20+ and Bun, with type declarations. `bun run smoke:dist` runs the built package under both runtimes.
 
+`bun scripts/live-qa.ts <platform>` runs the built CLI against the real platform with the credentials saved on your machine and prints a markdown report, with ids and answers but never a token: `status` alone by default; with `--publish`, test posts it deletes again (Instagram's by hand, in the app); with `--renewal`, a Threads or Instagram token renewal. `image-host` and `page-instagram` are two probes that publish nothing. Run it with no argument for the options.
+
 ## Verify
 
 ```bash

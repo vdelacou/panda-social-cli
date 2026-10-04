@@ -2,7 +2,7 @@
 
 <!-- Generated from src/presenter/command-registry.ts by scripts/gen-docs.ts. Edit the registry, then run `bun run docs:gen`. -->
 
-Every command prints one JSON line on stdout: `{"ok":true,"data":...}` on success, or `{"ok":false,"error":{"code":"...","message":"...","hint":"..."}}` on failure, and exits 0 or 1. The `hint` names the next step for the `code`; an optional `details` object carries the ids to act on after a partial failure, such as the parts of a thread that could not be deleted. The interactive setup guide and the logs go to stderr, never to stdout.
+Every command prints one JSON line on stdout: `{"ok":true,"data":...}` on success, or `{"ok":false,"error":{"code":"...","message":"...","hint":"..."}}` on failure, and exits 0 or 1. The `hint` names the next step for the `code`; an optional `details` object carries the ids to act on after a partial failure, such as the parts of a thread that could not be deleted. The interactive setup guide and the logs go to stderr, never to stdout. Only `mcp` writes no JSON line: until the client closes stdin, its stdout contains only the JSON-RPC messages of the MCP protocol.
 
 | Command | What it does |
 | --- | --- |

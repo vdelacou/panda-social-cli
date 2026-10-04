@@ -1,6 +1,6 @@
 # PLAN: panda-social-cli v1
 
-Current task: 6.2e, the notes of `setup x` and `setup facebook` in STE (D48), is done. The user does 2.6b and 6.2b on the computer of the user, in one session: the setup of each platform, the live QA runs and the screenshots. The reports of these runs decide 4.3 and 5.3.
+Current task: 7.1 and 7.2, the `mcp` command and its check on the built CLI (D49 to D53), are done. The user does 2.6b, 6.2b and 7.3 on the computer of the user, in one session: the setup of each platform, the live QA runs, the screenshots and a first run in an MCP client. The reports of these runs decide 4.3 and 5.3.
 
 ## What we are building
 
@@ -58,6 +58,11 @@ A Bun/TypeScript CLI and library, published to npm as `panda-social-cli` (bin `p
 | D46 | (6.2) The README and the four setup guides are in Simplified Technical English (ASD-STE100). The STE check tool finds no errors in them. The guides keep the setup steps of the CLI word for word, because `docs:check` compares them with the CLI. The messages of the CLI do not change. | The user asked for STE in all technical text, and asked for no change to the CLI messages. STE text is clear to readers who do not know much English. |
 | D47 | (6.2) The setup steps of the CLI and the agent skill (`skills/SKILL.md`) are in STE. Each action of a step has one instruction. A title changes only where STE makes it necessary: step 1 of Instagram ("Change your Instagram account to a professional account") and step 2 of X ("Add API credits and set a spending limit"). The skill keeps the trigger words of its description. | The user asked for the two changes after 6.2c. The terminal guide, the JSON guide for agents and the setup guides show the same steps. |
 | D48 | (6.2) The two notes that `setup x` and `setup facebook` add to their output after the save are in STE. The other messages of the CLI do not change. | The user asked for this change after 6.2d. The Facebook note keeps the word "published", because `run-cli.test.ts` looks for it. |
+| D49 | (7) `panda-social mcp` is an MCP server on stdio with five tools: `list-commands`, `get-command-docs`, `get-setup-guide`, `run-command` and `run-write-command`, as in ADR 0001 of ask-marcel-office-cli. `run-command` runs the commands with `mutates: false` (now `status`), and `run-write-command` runs the commands with `mutates: true` (now `post`, `update` and `delete`). Each run tool rejects the commands of the other run tool before they run. `help-json`, `docs`, `setup` and `mcp` are only for the CLI: `list-commands`, `get-command-docs` and `get-setup-guide` replace the first three. | The gateway keeps the list of tools short, and the same as in the other CLI. A client can approve the read tool automatically, and ask the user before each call of the write tool. |
+| D50 | (7) Each run tool calls `runCli` in the same process, with the words of a CLI command. The result of the tool is the JSON line that the CLI prints, and `isError` is true when `ok` is false. The params of a call become the words: an argument by its name, a string as `--name=value`, a true boolean as the flag, and a false boolean as no flag. A param name can start with dashes. A number is not a valid value. | One path runs the commands, thus the MCP results and the CLI results cannot be different (the lesson of ADR 0001). With `--name=value`, a text that starts with a dash stays a text. A post id in a JSON number can lose digits, and then the CLI can delete the wrong post. |
+| D51 | (7) A token or a key never goes through MCP. `get-setup-guide` gives the steps of `setup <platform>`, as the CLI gives them without a terminal. Then the user runs `panda-social setup <platform>` in a terminal. | The setup reads the token from a hidden prompt or from stdin. In MCP, stdin carries the protocol, and a token in a tool call goes into the chat. |
+| D52 | (7) `@modelcontextprotocol/server` 2.x and `zod` 4.x are dependencies. They load only when `mcp` runs, with a dynamic import. | Version 2 of the SDK is the stable line for the 2026-07-28 MCP spec. Its server package has 2 dependencies (its core and zod), and the v1 package has 17, with express and hono. The load took 100 to 180 ms in a test, and the other commands must not wait for it. |
+| D53 | (7) In `mcp` mode, stdout carries only JSON-RPC messages. `main.ts` gives stdin and stdout to the server, each run puts its line in the tool result, and the logs go to stderr. A test reads each line that the server writes, and `smoke:dist` does the same with the built CLI. The output contract of the CLI tells this exception. | One line that is not JSON-RPC stops the client. ADR 0001 found that its in-memory transport cannot see such a line. Here, the test reads the stdout stream that `runCli` writes to. |
 
 ## Platform facts that shape the code (verified 2026-09-28)
 
@@ -168,6 +173,19 @@ A Bun/TypeScript CLI and library, published to npm as `panda-social-cli` (bin `p
 
 ## Phase 7: MCP gateway (list, docs, run-read, run-write tools, as in ask-marcel-office-cli ADR 0001)
 
+- [x] 7.1 The `mcp` command and its five tools (D49 to D53). (The 20 approved tests and the 3 approved edits failed first, with 23 failures, because `mcp` was not a command. Then they passed. `panda-social --version` took a median of 124 ms before and after the change, in 25 runs of each build. The STE check tool finds 0 errors in the new texts.)
+  - The registry gets `mcp`: its docs page (the registration in Claude Code and Claude Desktop) and the exception in the output contract.
+  - `main.ts` gives stdin and stdout as `CliIo.stdio`. `runMcp` loads the SDK with a dynamic import, serves until stdin closes, and then exits 0.
+  - The five tools and the instructions of the server are in STE. The instructions tell an agent to start with `list-commands`, to get a yes before each post or delete, and to keep tokens in the terminal.
+  - The params of a call become the words of the CLI, and the read/write gate stops the wrong commands.
+  - The tests run `runCli(['mcp'])` over stdio streams in memory, with a test helper that sends JSON-RPC. Three approved edits add `mcp` to the command lists in `manifest.test.ts` and `cli.test.ts`.
+  - Done when: the proposed tests were confirmed, seen red, then green. Every gate passes. `panda-social --version` takes no more time than before, because the other commands do not load the SDK. Each commit has a maximum of 10 files and 300 lines, and each commit is green.
+  - (Seven commits land 7.1 and 7.2, each within the size limit. In the first commit, the server is in the code but is not a command yet. Thus, its coverage is below the gate until the next commit adds the tests. All the tests pass at each commit.)
+- [x] 7.2 The built CLI as an MCP server. `smoke:dist` starts `dist/cli.js mcp`, does the handshake, lists the tools, calls `list-commands`, closes stdin, and fails if a line on stdout is not JSON-RPC. The README gets a section in STE about MCP clients, and `docs/COMMANDS.md` gets the `mcp` page.
+  - Done when: `smoke:dist` was seen red on a stray line on stdout, then green. `check-docs.sh`, `docs:check` and the other gates pass.
+  - (When `runMcp` wrote one stray line, the probe failed on Bun and on Node, and the test of the stdout lines failed too. Without the stray line, they passed.)
+- [ ] 7.3 Live, with 2.6b: the user registers `panda-social mcp` in Claude Code or Claude Desktop, then runs `status` and one post through the tools.
+
 ## Phase 8: release (npm publish from CI, CHANGELOG; the user confirms every publish)
 
 ## Open risks
@@ -181,3 +199,5 @@ A Bun/TypeScript CLI and library, published to npm as `panda-social-cli` (bin `p
 - A status read right after an Instagram container is made may answer not found, as a Threads one does (code 24): the adapter does not wait past it yet, so the QA step's first post shows whether it must.
 - X OAuth 1.0a retirement date is unannounced: the signer stays swappable.
 - Screenshots need the user's logged-in developer consoles: the guides ship with a shot list and placeholders.
+- Version 2 of the MCP SDK is new (2.3.0 on 2026-10-02). The caret range accepts only 2.x, and the tests run the real protocol, thus a change that breaks the server breaks a test.
+- No MCP client ran in the cloud container: 7.3 is the first run with Claude Code or Claude Desktop.

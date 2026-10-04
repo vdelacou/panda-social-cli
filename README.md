@@ -8,7 +8,7 @@ AI agents are the first users of the tool. Each command writes its result in JSO
 
 The tool is not complete. The package is not on npm at this time. You can use the tool from the source code.
 
-All four platforms have a guided setup, posts, and a `status` command. One `post` command can post to more than one platform.
+All four platforms have a guided setup, posts, and a `status` command. One `post` command can post to more than one platform. An MCP server gives the commands to clients that have no shell.
 
 ## Limits of each platform
 
@@ -218,6 +218,36 @@ If a name has a small error, the hint gives the correct name. For example, `--to
 - How to read each output.
 
 For Claude Code, copy the file to `~/.claude/skills/panda-social/SKILL.md`. For one project only, copy it to `.claude/skills/panda-social/SKILL.md` in that project.
+
+## MCP clients
+
+`panda-social mcp` starts an MCP server on stdin and stdout. Then a client that has no shell, for example Claude Desktop, can use the commands.
+
+To add the server to Claude Code, run this command:
+
+```bash
+claude mcp add --transport stdio --scope user panda-social -- panda-social mcp
+```
+
+To add the server to Claude Desktop, put this item in `mcpServers` of `claude_desktop_config.json`:
+
+```json
+"panda-social": { "command": "panda-social", "args": ["mcp"] }
+```
+
+The server has five tools:
+
+| Tool | Function |
+|---|---|
+| `list-commands` | Gives each command, its summary and the tool that runs it. |
+| `get-command-docs` | Gives the page of one command, as `panda-social docs <command>` does. |
+| `get-setup-guide` | Gives the setup steps of one platform. |
+| `run-command` | Runs `status`. A client can approve this tool automatically. |
+| `run-write-command` | Runs `post`, `update` and `delete`. Before each call, the client gets the approval of the user. |
+
+Each run tool gives the JSON line that the CLI prints for the same command. The params of a call are the arguments and the options of the command, without the dashes. For example: `{"command":"post","params":{"to":"threads","text":"Hello"}}`.
+
+The setup stays in the terminal, because a token must not go through a chat. `get-setup-guide` gives the steps. Then the user runs `panda-social setup <platform>` in a terminal.
 
 ## As a library
 

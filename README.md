@@ -335,6 +335,37 @@ After you change a command, run `bun run docs:gen`. CI shows an error if `docs/C
 
 Run the script without an argument to see its options.
 
+## Release
+
+A release goes to npm through staged publishing. CI stages each version, and a maintainer approves it with 2FA. Nothing is public before that approval. CI uses trusted publishing, thus no npm token is in GitHub, and npm adds the provenance of each version.
+
+You must have npm 11.15.0 or higher (`npm install --global npm@11.21.0`) and an npm account with 2FA.
+
+For each release:
+
+1. Change the version in `package.json`, for example to `0.1.0`.
+2. In `CHANGELOG.md`, change `## [Unreleased]` to `## [0.1.0] - <date>`. Then add a new empty `## [Unreleased]` section above it.
+3. Commit and push the two files.
+4. Push the tag: `git tag v0.1.0`, then `git push origin v0.1.0`.
+5. The `release` workflow runs all the gates. Then it makes sure that the tag, `package.json` and `CHANGELOG.md` agree, packs the package, makes its SBOM and stages it on npm.
+6. Approve the staged version on npmjs.com, or with `npm stage list` and `npm stage approve <stage-id>`. npm asks for your 2FA code.
+
+The release run keeps the tarball and its SBOM (CycloneDX) as artifacts.
+
+The first version needs these steps one time, because npm cannot connect CI to a package that is not on the registry yet:
+
+1. Do steps 1 to 3 above.
+2. In a clean clone of the release commit, run `bun install --frozen-lockfile`, then `npm login` and `npm stage publish`. `prepack` builds `dist/` first. Then approve the staged version, as in step 6.
+3. Connect the package to the release workflow. The trust allows only `npm stage publish`:
+
+   ```bash
+   npm trust github panda-social-cli --file release.yml --repo vdelacou/panda-social-cli --env npm --allow-stage-publish
+   ```
+
+4. Push the tag (step 4). The workflow runs the gates and makes the SBOM. npm already has this version, thus the workflow does not stage it again.
+
+In the GitHub settings of the repository, you can also limit the `npm` environment to the tags `v*`.
+
 ## Verify
 
 ```bash

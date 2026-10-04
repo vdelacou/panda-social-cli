@@ -1,6 +1,6 @@
 # PLAN: panda-social-cli v1
 
-Current task: 7.1 and 7.2, the `mcp` command and its check on the built CLI (D49 to D53), are done. The user does 2.6b, 6.2b and 7.3 on the computer of the user, in one session: the setup of each platform, the live QA runs, the screenshots and a first run in an MCP client. The reports of these runs decide 4.3 and 5.3.
+Current task: 8.1 to 8.3, the release workflow with npm staged publishing (D54 to D57), are done. The first release (8.4) comes after the live QA. The user does 2.6b, 6.2b and 7.3 on the computer of the user, in one session: the setup of each platform, the live QA runs, the screenshots and a first run in an MCP client. The reports of these runs decide 4.3 and 5.3.
 
 ## What we are building
 
@@ -63,6 +63,10 @@ A Bun/TypeScript CLI and library, published to npm as `panda-social-cli` (bin `p
 | D51 | (7) A token or a key never goes through MCP. `get-setup-guide` gives the steps of `setup <platform>`, as the CLI gives them without a terminal. Then the user runs `panda-social setup <platform>` in a terminal. | The setup reads the token from a hidden prompt or from stdin. In MCP, stdin carries the protocol, and a token in a tool call goes into the chat. |
 | D52 | (7) `@modelcontextprotocol/server` 2.x and `zod` 4.x are dependencies. They load only when `mcp` runs, with a dynamic import. | Version 2 of the SDK is the stable line for the 2026-07-28 MCP spec. Its server package has 2 dependencies (its core and zod), and the v1 package has 17, with express and hono. The load took 100 to 180 ms in a test, and the other commands must not wait for it. |
 | D53 | (7) In `mcp` mode, stdout carries only JSON-RPC messages. `main.ts` gives stdin and stdout to the server, each run puts its line in the tool result, and the logs go to stderr. A test reads each line that the server writes, and `smoke:dist` does the same with the built CLI. The output contract of the CLI tells this exception. | One line that is not JSON-RPC stops the client. ADR 0001 found that its in-memory transport cannot see such a line. Here, the test reads the stdout stream that `runCli` writes to. |
+| D54 | (8) A release goes through npm staged publishing. On a tag `v<version>`, the release workflow runs the gates and the build, then `npm stage publish` with trusted publishing (OIDC, with provenance). The user approves each staged version with 2FA, on npmjs.com or with `npm stage approve`. The trust relationship allows only `npm stage publish`. | The plan tells that the user confirms each publish. A workflow or a GitHub session that an attacker controls can only stage a version, not publish it (npm docs, 2026-09-29). No npm token is kept in GitHub. |
+| D55 | (8) The first version comes from the computer of the user, with `npm stage publish` and an approval. Then `npm trust github` connects the package to `release.yml`, and each later version comes from CI. | npm cannot connect trusted publishing to a package that is not on the registry yet (npm docs, 2026-09-30). |
+| D56 | (8) CI installs the packed tarball in an empty folder, as a user does, and `npm sbom` writes the CycloneDX SBOM of that install. The release run keeps the SBOM and the tarball as its artifacts. | In the repository, `npm sbom --omit dev` drops zod, because a dev tool also uses it (npm 11.21.0, tested on 2026-10-04). The install of the tarball gives the same tree that a user gets. |
+| D57 | (8) `CHANGELOG.md` follows Keep a Changelog. The version stays 0.0.0 until the release commit, after the live QA (2.6b). `scripts/check-release.sh` stops a release in three cases. The tag is not `v` and the version of package.json, CHANGELOG.md has no section for that version, or package.json is private. Its self-test shows each of these stops. | The live QA did not run yet. The check keeps the tag, the package and the release notes in agreement. |
 
 ## Platform facts that shape the code (verified 2026-09-28)
 
@@ -188,6 +192,15 @@ A Bun/TypeScript CLI and library, published to npm as `panda-social-cli` (bin `p
 
 ## Phase 8: release (npm publish from CI, CHANGELOG; the user confirms every publish)
 
+- [x] 8.1 The release check, the changelog and the package (D57). `scripts/check-release.sh` with its self-test, `CHANGELOG.md` with an Unreleased section, and package.json without `private` and with `prepack` (the build). (The self-test failed on four broken copies of the check: no tag check, no notes check, no private check, and a check that stops each release. Then it passed. The pack has 147 files and 74 KB.)
+  - Done when: the self-test was seen red on each case of D57, then green. Every gate passes. Each commit has a maximum of 10 files and 300 lines.
+- [x] 8.2 The release workflow (D54, D56). `.github/workflows/release.yml` runs on a tag `v*.*.*`. It runs the gates of `ci.yml` (which becomes reusable), then the check, the build, `npm stage publish` and the SBOM. The publish job uses the GitHub environment `npm` and the permission `id-token: write`.
+  - Done when: actionlint finds no error in the two workflows, and `npm stage publish --dry-run` and the SBOM steps run in the container.
+  - (actionlint 1.7.12 finds no error in the four workflows. In the container, npm 11.21.0 packed the package and staged the tarball with `--dry-run`. A clean install of the tarball gave a CycloneDX SBOM of 34 components. The workflow does not stage a version that npm already has. Thus, a re-run and the tag of the first version give a green run.)
+- [x] 8.3 The release procedure in the README, in STE: the one-time setup (npm account with 2FA, the first version, `npm trust github`, the GitHub environment) and the steps of each release.
+  - Done when: `check-docs.sh` and the other gates pass.
+- [ ] 8.4 With the user, after 2.6b: the first release, 0.1.0.
+
 ## Open risks
 
 - The Facebook Page image host is undocumented for Instagram and Threads: phase 4.3 proves it live before anything depends on it.
@@ -201,3 +214,4 @@ A Bun/TypeScript CLI and library, published to npm as `panda-social-cli` (bin `p
 - Screenshots need the user's logged-in developer consoles: the guides ship with a shot list and placeholders.
 - Version 2 of the MCP SDK is new (2.3.0 on 2026-10-02). The caret range accepts only 2.x, and the tests run the real protocol, thus a change that breaks the server breaks a test.
 - No MCP client ran in the cloud container: 7.3 is the first run with Claude Code or Claude Desktop.
+- The release workflow did not run on GitHub yet. The first tag (8.4) is the first run of the stage step, of trusted publishing and of the provenance of a staged tarball.

@@ -1,21 +1,27 @@
 # panda-social-cli
 
-Post text, an image, or both to Threads, X, Facebook Pages and Instagram from one command line or one TypeScript library. It is built for AI agents first: every command answers in JSON, and every error names its cause and the next step to fix it.
+panda-social-cli is a command-line tool and a TypeScript library. It posts a text, an image, or a text with an image to Threads, X, Facebook Pages and Instagram.
 
-> Status: under construction. Threads works from source: guided setup, text and image posts, long texts as reply threads, delete, update by reposting, a `status` check, a saved token that refreshes itself, and commands that document themselves for agents. X works too: guided setup, text and image posts, long texts as threads, edits in place (X Premium) or by reposting, delete and a `status` check. A Facebook Page works too: guided setup, text and photo posts (a URL or a local file), edits of the text in place, delete and a `status` check. Instagram works too: guided setup, image posts with a caption (a public URL), a `status` check and a saved token that renews itself; editing and deleting there wait for the Facebook Login option. One `post` can go to several platforms at once. Nothing is published to npm yet.
+AI agents are the first users of the tool. Each command writes its result in JSON. Each error gives its cause and the next step.
 
-## What each platform allows
+## Status
 
-The CLI can only do what each platform's API permits. As of September 2026:
+The tool is not complete. The package is not on npm at this time. You can use the tool from the source code.
 
-| Platform | Text only | Local image | Edit | Delete | Cost |
+All four platforms have a guided setup, posts, and a `status` command. One `post` command can post to more than one platform.
+
+## Limits of each platform
+
+The tool cannot do more than the API of each platform lets it do. These data are from September 2026.
+
+| Platform | Text only | Image | Edit | Delete | Cost |
 |---|---|---|---|---|---|
-| Threads | yes, 500 characters | public URL only | no, `--repost` deletes and republishes | yes, 100 a day | free |
-| X | yes, 280 weighted characters | direct upload | X Premium only, shortly after posting | yes | pay-per-use credits |
-| Facebook Page | yes | direct upload | posts made by this app | yes | free |
-| Instagram | no | public URL only, JPEG | no | with Facebook Login only | free |
+| Threads | Yes, 500 characters | Public https URL only | No. `--repost` deletes the post and publishes it again | Yes, 100 each day | Free |
+| X | Yes, 280 weighted characters | Upload of a local file | X Premium only, a short time after the post | Yes | Pay-per-use credits |
+| Facebook Page | Yes | Upload of a local file, or an https URL | Only the posts that this app made | Yes | Free |
+| Instagram | No | Public https URL only, JPEG | No | Only with Facebook Login, which the tool does not have at this time | Free |
 
-## Try it from source
+## Use the tool from the source code
 
 ```bash
 bun install
@@ -37,31 +43,153 @@ bun run src/main.ts status instagram
 bun run src/main.ts post --to threads,x,facebook --text "Hello from panda"
 ```
 
-`setup threads` walks you through the six one-time steps (a Meta developer account, an app with the Threads API, its permissions, a tester invitation, and the token), one at a time. You paste the token without it showing on screen; the CLI checks it with Threads and saves it in `~/.panda-social/credentials.json`, readable by you only. The same steps, with what each permission is for and the usual failures and their fixes, are in [docs/setup/threads.md](docs/setup/threads.md).
+## Threads
 
-An agent runs the same command without a terminal and gets the six steps as JSON, to relay to its human. It then finishes with `panda-social setup threads --token-stdin`, piping the token in.
+`setup threads` connects a Threads account in six steps. The command shows the steps one at a time. You do these steps one time only:
 
-Threads downloads images itself, so `--image` takes a public https URL, not a local file. A text over 500 characters is refused unless `--split` posts it as a thread of replies; if one reply fails, the parts already out are deleted and the error lists any that could not be. Threads has no edit: `update --on threads --id <id> --text "..." --repost` deletes the post and publishes the new version, which gets a new id and link.
+1. Make a Meta developer account.
+2. Make an app with the Threads API.
+3. Give the app its permissions.
+4. Make your Threads account a tester of the app.
+5. Accept the invitation in Threads.
+6. Generate a token.
 
-A Threads token lives 60 days from its last refresh. Every Threads command refreshes a saved token once it is 30 days old, so a CLI that runs at least once a month never needs the setup again; a refresh that fails leaves a warning on stderr and the command carries on with the token it has. `status threads` shows whose token it is, how old it is and how much of the rolling 24-hour quotas is used (250 posts, 1,000 replies, 100 deletes).
+At the end, you paste the token. The token does not show on the screen. The tool makes sure that Threads accepts the token. Then the tool keeps the token in `~/.panda-social/credentials.json`. Only you can read this file.
 
-`setup x` connects X the same way, in five steps: the developer console, API credits with a spending limit, an app, its Read and write permission, and the four keys, which you paste without them showing and the CLI checks with X before saving them in the same file. X has no free tier: every request spends the app's prepaid credits, the setup's own check included (about $0.01). The steps, the prices and the usual failures are in [docs/setup/x.md](docs/setup/x.md). An agent finishes with `panda-social setup x --keys-stdin`, piping the four keys in, one per line. `status x` shows whose keys they are and the access level X states for them.
+The guide [docs/setup/threads.md](docs/setup/threads.md) gives the steps, the function of each permission, and the usual errors with their solutions.
 
-On X, `--image` takes a local JPEG, PNG, GIF or WEBP file of 5 MB at most, which the CLI checks by its first bytes and uploads; an https URL is refused, since the CLI never downloads anything for you. X counts 280 characters its own way: most characters 1, CJK characters and emoji 2, a link 23 however long, and `--split` threads a longer text as on Threads. `update --on x` edits the post in place, which X allows only for X Premium accounts, shortly after posting and 5 times at most; `--repost` deletes and republishes instead. Every post costs $0.015 of credits, and $0.20 when its text contains a link.
+An agent can run the same command without a terminal. Then the command gives the six steps in JSON, and the agent tells them to its user. The setup ends with `panda-social setup threads --token-stdin`, which reads the token on standard input.
 
-`setup facebook` connects a Facebook Page in five steps: an app with the "Manage everything on your Page" use case, its posting permissions, publishing the app (until then, only people with a role on it see its posts), a user token from the Graph API Explorer, and that token extended to 60 days in the Access Token Debugger, which spares you the app secret. You paste the extended token without it showing; the CLI asks Meta which Pages it grants, keeps the chosen Page's own token, which does not expire, and never saves yours. When the token grants several Pages, it asks which one to keep, or takes `--page <id>`. The steps and the usual failures are in [docs/setup/facebook.md](docs/setup/facebook.md). An agent finishes with `panda-social setup facebook --token-stdin`, piping the token in. `status facebook` shows which Page the saved token belongs to.
+Threads downloads each image from its URL. Thus, `--image` must be a public https URL, not a local file.
 
-On Facebook, `--image` takes an https URL, which Facebook downloads, or a local JPEG, PNG, GIF, BMP or TIFF file of 10 MB at most, which the CLI checks by its first bytes and uploads; the text becomes the photo's caption. A long text goes out whole, so `--split` changes nothing there. A post id is the Page id and the post number joined by an underscore, as `post` answers it. `update --on facebook` edits the text in place, which Meta allows for posts this app made; a new image needs `--repost`, which deletes the post and publishes the new version. Facebook posts are free.
+Threads rejects a text of more than 500 characters. With `--split`, the tool posts the text as a thread of replies. If one reply does not go out, the tool deletes the parts that are on Threads. The error shows each part that the tool did not delete.
 
-`setup instagram` connects an Instagram account in six steps: switching it to a professional account (Creator or Business), an app with the "Manage messaging & content on Instagram" use case, its permissions, a tester invitation and its acceptance in Instagram, and a token generated in the app dashboard. It goes through Instagram Login, so no Facebook Page is needed. You paste the token without it showing; the CLI checks it with Instagram and saves it with the account's id and username. Like the Threads token, it lasts 60 days and is renewed once it is 30 days old whenever a command runs. The steps and the usual failures are in [docs/setup/instagram.md](docs/setup/instagram.md). An agent finishes with `panda-social setup instagram --token-stdin`, piping the token in. `status instagram` shows whose token it is, how old it is and how much of the rolling 24-hour posts quota is used (Meta's pages give 50 or 100 posts; the answer is the account's own figure).
+Threads cannot edit a post. With `--repost`, `update --on threads --id <id> --text "..." --repost` deletes the post and publishes the new text. The new post has a new id and a new link.
 
-On Instagram, a post is an image: `--image` takes a public https URL to a JPEG of 8 MB at most, with an aspect ratio between 4:5 and 1.91:1, which Instagram downloads itself, and `--text` becomes its caption, sent whole (Instagram holds 2,200 characters, 30 hashtags and 20 @ tags); a text alone is refused as `missing-image`. The CLI waits for Instagram to process the image, 60 seconds at most, publishes it and answers its id and link. Instagram Login can neither edit nor delete a post, so `update` and `delete` answer `unsupported` there: change or delete it in the Instagram app. Instagram posts are free.
+A Threads token expires 60 days after its last refresh. Each Threads command refreshes a saved token 30 days after the tool saved it. Thus, if you use the tool one time each month, you do not do the setup again.
 
-To post the same thing to several platforms, name them in one `--to`, separated by commas: `post --to threads,x,facebook --text "..."`. The CLI first checks the flags against every named platform, so a flag one of them refuses (an https image for X, a text alone for Instagram) stops the command before anything is posted, naming that platform. Then the platforms post one after another, in the order given, and a failure on one never stops the next. When every post goes out, the answer is `{"ok":true,"data":{"posts":[...]}}`, each post as that platform answers it alone. Otherwise the run exits 1 with `partly-published` (or `not-published`), `details.published` listing the posts that exist and `details.failed` each platform that failed, with its code and hint: retry only those, since posting again to the others would duplicate their post. Until a Facebook Page can host local images for Threads and Instagram, an image goes to several platforms only when they all take its kind: an https URL for Threads, Instagram and Facebook, a local file for X and Facebook.
+If Threads rejects a refresh, the command writes a warning to stderr. Then the command continues with the same token.
 
-For several accounts, add `--profile brand-a` to `setup`, `post`, `update`, `delete` and `status`. `PANDA_SOCIAL_THREADS_TOKEN` overrides the saved Threads token, the four `PANDA_SOCIAL_X_` variables the saved X keys, `PANDA_SOCIAL_FACEBOOK_PAGE_ID` with `PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN` the saved Page, and `PANDA_SOCIAL_INSTAGRAM_TOKEN` the saved Instagram token, which suits CI. A token from the environment is never renewed by the CLI.
+`status threads` shows the account of the token, the date when the tool saved the token, and the used part of each quota. Each quota is for the last 24 hours: 250 posts, 1,000 replies and 100 deletes.
 
-Every command prints one JSON line on stdout and exits 0 or 1; the guide and the logs go to stderr.
+## X
+
+`setup x` connects an X account with the same procedure, in five steps:
+
+1. Sign in to the X developer console.
+2. Add API credits, with a spending limit.
+3. Make an app.
+4. Give the app the Read and write permission.
+5. Generate the four keys.
+
+At the end, you paste the four keys. The keys do not show on the screen. The tool makes sure that X accepts the keys. Then the tool keeps the keys in the same file.
+
+X has no free tier. Each call to X uses some of the prepaid credits of the app. The check of the setup also uses credits, approximately $0.01.
+
+The guide [docs/setup/x.md](docs/setup/x.md) gives the steps, the credits that each command uses, and the usual errors.
+
+The setup ends with `panda-social setup x --keys-stdin`, which reads the four keys on standard input, with one key on each line. `status x` shows the account of the keys and the access level that X gives for them.
+
+On X, `--image` must be a local file: JPEG, PNG, GIF or WEBP, 5 MB maximum. The tool examines the first bytes of the file. Then the tool uploads the file. The tool rejects an https URL, because it does not download files for you.
+
+X counts the 280 characters with special weights. Most characters count 1, CJK characters and emoji count 2, and a link counts 23 at all lengths. With `--split`, the tool posts a longer text as a thread, as on Threads.
+
+`update --on x` edits the post. X lets only X Premium accounts edit a post, a short time after the post and a maximum of 5 times. With `--repost`, the tool deletes the post and publishes it again.
+
+Each post uses $0.015 of the credits. A post with a link in its text uses $0.20.
+
+## Facebook Page
+
+`setup facebook` connects a Facebook Page in five steps:
+
+1. Make an app with the "Manage everything on your Page" use case.
+2. Give the app its post permissions.
+3. Publish the app. Before you publish it, only persons with a role on the app see its posts.
+4. Get a user token in the Graph API Explorer.
+5. Extend the token to 60 days in the Access Token Debugger. Thus, you do not use the app secret.
+
+At the end, you paste the extended token. The token does not show on the screen. The tool gets the Pages of the token from Meta. Then the tool keeps the token of one Page. This Page token does not expire. The tool does not keep your user token.
+
+If the token has more than one Page, the setup shows the Pages, and you type the id of one Page. You can also give the id with `--page <id>`.
+
+The guide [docs/setup/facebook.md](docs/setup/facebook.md) gives the steps and the usual errors. The setup ends with `panda-social setup facebook --token-stdin`, which reads the token on standard input. `status facebook` shows the Page of the saved token.
+
+On Facebook, `--image` can be an https URL or a local file. Facebook downloads the image from the URL. A local file must be JPEG, PNG, GIF, BMP or TIFF, 10 MB maximum. The tool examines the first bytes of the file, and then uploads it. The text becomes the caption of the photo.
+
+Facebook keeps a long text in one post. Thus, `--split` has no effect on Facebook.
+
+A post id is the Page id and the post number, with an underscore between them. `post` gives the post id in this format.
+
+`update --on facebook` edits the text of the post. Meta lets the app edit only the posts that this app made. For a new image, use `--repost`. Then the tool deletes the post and publishes the new post.
+
+Facebook posts are free.
+
+## Instagram
+
+`setup instagram` connects an Instagram account in six steps:
+
+1. Change the account to a professional account (Creator or Business).
+2. Make an app with the "Manage messaging & content on Instagram" use case.
+3. Give the app its permissions.
+4. Make the account a tester of the app.
+5. Accept the invitation in Instagram.
+6. Generate a token in the app dashboard.
+
+The setup uses Instagram Login. Thus, a Facebook Page is not necessary.
+
+At the end, you paste the token. The token does not show on the screen. The tool makes sure that Instagram accepts the token. Then the tool keeps the token with the id and the username of the account.
+
+The token expires 60 days after its last renewal, as on Threads. Each command renews a saved token 30 days after the tool saved it.
+
+The guide [docs/setup/instagram.md](docs/setup/instagram.md) gives the steps and the usual errors. The setup ends with `panda-social setup instagram --token-stdin`, which reads the token on standard input.
+
+`status instagram` shows the account of the token and the date when the tool saved the token. It also shows the used part of the posts quota for the last 24 hours. The Meta documentation gives two different numbers: 50 posts and 100 posts. The output shows the number for your account.
+
+On Instagram, each post is an image. `--image` must be a public https URL to a JPEG of 8 MB maximum. Use an image with an aspect ratio between 4:5 and 1.91:1. Instagram downloads the image from the URL.
+
+`--text` becomes the caption, in one part. A caption has a maximum of 2,200 characters, 30 hashtags and 20 @ tags. The tool rejects a text without an image with the error `missing-image`.
+
+Instagram must prepare the image before the post. The tool gives Instagram a maximum of 60 seconds for this. Then the tool publishes the post and writes its id and its link.
+
+Instagram Login cannot edit or delete a post. Thus, `update` and `delete` give the error `unsupported` on Instagram. Edit or delete the post in the Instagram app.
+
+Instagram posts are free.
+
+## Post to more than one platform
+
+To post the same text to more than one platform, put the platforms in one `--to`, with commas between them: `post --to threads,x,facebook --text "..."`.
+
+First, the tool examines the flags for each platform. If one platform rejects a flag, the command stops before it posts. Examples are an https image for X, and a text without an image for Instagram. The error gives the name of that platform.
+
+Then the platforms post one after the other, in the sequence that you gave. An error on one platform does not stop the next platform.
+
+When all the posts go out, the output is `{"ok":true,"data":{"posts":[...]}}`. Each post in the list is the same as the output of one platform.
+
+At the end, if a platform showed an error, the exit code is 1, and the error code is `partly-published` or `not-published`:
+
+- `details.published` gives the posts that went out.
+- `details.failed` gives each platform with an error, with its code and its hint.
+
+Post again only to the platforms in `details.failed`. If you post again to the other platforms, they will show the same post two times.
+
+At this time, a Facebook Page cannot keep local images for Threads and Instagram. Thus, one image can go to more than one platform only when all of them accept its type. An https URL is applicable to Threads, Instagram and Facebook. A local file is applicable to X and Facebook.
+
+## Profiles and environment variables
+
+For more than one account, add `--profile brand-a` to `setup`, `post`, `update`, `delete` and `status`.
+
+Environment variables can replace the saved credentials, for example in CI:
+
+- `PANDA_SOCIAL_THREADS_TOKEN` replaces the saved Threads token.
+- The four `PANDA_SOCIAL_X_` variables replace the saved X keys.
+- `PANDA_SOCIAL_FACEBOOK_PAGE_ID` and `PANDA_SOCIAL_FACEBOOK_PAGE_TOKEN` replace the saved Page.
+- `PANDA_SOCIAL_INSTAGRAM_TOKEN` replaces the saved Instagram token.
+
+The tool does not renew a token from the environment.
+
+## Output
+
+Each command writes one JSON line to stdout. The exit code is 0 or 1. The guided setup and the logs go to stderr.
 
 ```json
 {"ok":true,"data":{"platform":"threads","id":"17890000000000001","url":"https://www.threads.com/@you/post/..."}}
@@ -70,11 +198,26 @@ Every command prints one JSON line on stdout and exits 0 or 1; the guide and the
 
 ## For agents
 
-Start with `panda-social help-json`. It answers with one JSON manifest: the output contract, every command with its usage line, parameters, examples and output, and the next step for every error code. `panda-social docs <command>` returns one command's page as markdown, and `panda-social --version` the installed version. The same content is committed as [docs/COMMANDS.md](docs/COMMANDS.md) and [docs/commands.json](docs/commands.json).
+Start with `panda-social help-json`. This command gives one JSON manifest with these items:
 
-An option a command does not take, or an extra argument, is refused rather than ignored: an unquoted `--text Hello from panda` fails with a hint to quote it. A near miss names what it was meant to be: `--to thread` fails with a hint that starts `Did you mean "threads"?`, and so does a mistyped command, platform or option.
+- The output contract
+- Each command, with its usage line, its parameters, its examples and its output
+- The next step for each error code.
 
-[skills/SKILL.md](skills/SKILL.md) is an agent skill for the CLI: when to use it and when not, the user's approval before anything is posted or deleted, the setup handoff that keeps the token out of the chat, and what each answer means. For Claude Code, copy it to `~/.claude/skills/panda-social/SKILL.md`, or to `.claude/skills/panda-social/SKILL.md` in one project.
+`panda-social docs <command>` gives the page of one command in Markdown. `panda-social --version` gives the installed version. The repository also has the same data in [docs/COMMANDS.md](docs/COMMANDS.md) and [docs/commands.json](docs/commands.json).
+
+The tool rejects an option or an argument that the command does not have. For example, `--text Hello from panda` without quotes gives an error, and the hint tells you to add quotes.
+
+If a name has a small error, the hint gives the correct name. For example, `--to thread` gives a hint that starts with `Did you mean "threads"?`. Names of commands, platforms and options get the same help.
+
+[skills/SKILL.md](skills/SKILL.md) is an agent skill for the tool. It tells the agent these items:
+
+- When to use the tool, and when not to use it
+- To get the approval of the user before each post or delete
+- How to do the setup without the token in the chat
+- How to read each output.
+
+For Claude Code, copy the file to `~/.claude/skills/panda-social/SKILL.md`. For one project only, copy it to `.claude/skills/panda-social/SKILL.md` in that project.
 
 ## As a library
 
@@ -87,7 +230,7 @@ const posted = await createThreadsGraph({ token }).publishText('Hello from panda
 if (posted.ok) console.log(posted.value.url);
 ```
 
-The same adapter answers `whoAmI()`, `refreshToken()` and `publishingLimits(userId)`, the id being the one `whoAmI()` returns.
+The same adapter also gives `whoAmI()`, `refreshToken()` and `publishingLimits(userId)`. The id is the id from `whoAmI()`.
 
 For X, with the four keys of the setup:
 
@@ -102,9 +245,9 @@ if (xTextLength(text) <= 280) {
 }
 ```
 
-`x.uploadImage(image)` takes an image checked by `parseXImage(bytes, name)` and answers the media id to pass as `mediaIds`; `x.deletePost(id)` takes an id checked by `parseXPostId`.
+`x.uploadImage(image)` uploads an image from `parseXImage(bytes, name)`, and gives the media id for `mediaIds`. `x.deletePost(id)` deletes the post with an id from `parseXPostId`.
 
-For a Facebook Page, with the Page's own token and id, as `setup facebook` saves them:
+For a Facebook Page, with the token and the id of the Page that `setup facebook` saves:
 
 ```ts
 import { createFacebookGraph, parseFacebookPageId } from 'panda-social-cli';
@@ -116,7 +259,7 @@ if (pageId.ok) {
 }
 ```
 
-The same adapter answers `publishPhoto(pageId, photo, caption)`, with a photo `{ kind: 'url', url }` checked by `parseImageUrl` or `{ kind: 'upload', image }` checked by `parseFacebookImage(bytes, name)`, and `editText(id, text)` and `deletePost(id)` with an id checked by `parseFacebookPostId`.
+The same adapter also gives `publishPhoto(pageId, photo, caption)`. The photo is `{ kind: 'url', url }` from `parseImageUrl`, or `{ kind: 'upload', image }` from `parseFacebookImage(bytes, name)`. The adapter also gives `editText(id, text)` and `deletePost(id)`, with an id from `parseFacebookPostId`.
 
 For Instagram, with the token of `setup instagram`:
 
@@ -132,24 +275,35 @@ if (account.ok && imageUrl.ok) {
 }
 ```
 
-The same adapter answers `refreshToken()` and `publishingLimit(userId)`.
+The same adapter also gives `refreshToken()` and `publishingLimit(userId)`.
 
 ## Develop
 
-Requires Bun 1.3 or newer.
+You must have Bun version 1.3 or higher.
 
 ```bash
 bun install
 git config core.hooksPath .githooks
 ```
 
-The hooks run the fast gates on every commit. CI runs the full set, coverage and mutation included.
+The hooks run the fast gates at each commit. CI runs all the gates, with coverage and mutation.
 
-Every command is described once, in `src/presenter/command-registry.ts` with one file per command under `src/presenter/commands/`: the parser, `help-json`, `docs` and the generated docs all read it. After changing a command, run `bun run docs:gen`; CI fails when `docs/COMMANDS.md` or `docs/commands.json` no longer matches the registry. The same `docs:check` holds the hand-written pages to the code: every `panda-social` line in the bash blocks of the skill and the setup guides must parse, and each setup guide must carry every step the CLI shows.
+The data of each command are in one location: `src/presenter/command-registry.ts`, with one file for each command in `src/presenter/commands/`. The parser, `help-json`, `docs` and the generated docs read these data.
 
-`bun run build` writes the npm package to `dist/`: `cli.js` (the `panda-social` bin) and `index.js` (the library), both bundled for Node 20+ and Bun, with type declarations. `bun run smoke:dist` runs the built package under both runtimes.
+After you change a command, run `bun run docs:gen`. CI shows an error if `docs/COMMANDS.md` or `docs/commands.json` is different from the registry.
 
-`bun scripts/live-qa.ts <platform>` runs the built CLI against the real platform with the credentials saved on your machine and prints a markdown report, with ids and answers but never a token: `status` alone by default; with `--publish`, test posts it deletes again (Instagram's by hand, in the app); with `--renewal`, a Threads or Instagram token renewal. `image-host` and `page-instagram` are two probes that publish nothing. Run it with no argument for the options.
+`docs:check` also compares the written pages with the code. Each `panda-social` line in the bash blocks of the skill and of the setup guides must parse. Each setup guide must contain each step that the CLI shows.
+
+`bun run build` writes the npm package to `dist/`: `cli.js` (the `panda-social` bin) and `index.js` (the library). The two files operate on Node 20+ and Bun, and have type declarations. `bun run smoke:dist` runs the built package on the two runtimes.
+
+`bun scripts/live-qa.ts <platform>` runs the built CLI on the live platform, with the credentials on your computer. It writes a Markdown report with ids and outputs, but with no token:
+
+- Without an option, it runs only `status`.
+- With `--publish`, it posts test posts and then deletes them. You must delete the Instagram post in the Instagram app.
+- With `--renewal`, it renews a Threads or Instagram token.
+- `image-host` and `page-instagram` are two probes. They do not publish.
+
+Run the script without an argument to see its options.
 
 ## Verify
 

@@ -19,7 +19,9 @@ You can do the six steps in a terminal or with an AI agent:
 ## Step 1: Create your Meta developer account
 
 - Log in to Facebook in your browser.
-- Open the registration page, accept the terms, then verify your phone number and email.
+- Open the registration page.
+- Accept the terms.
+- Do the checks of your phone number and your email.
 
 Open https://developers.facebook.com/async/registration
 
@@ -29,9 +31,12 @@ Make sure that the address is developers.facebook.com. The Threads API is on thi
 
 ## Step 2: Create an app that can use the Threads API
 
-- Click Create app and enter an app name and your email.
-- Tick "Access the Threads API", then Next.
-- Choose "I don't want to connect a business portfolio yet", then create the app.
+- Click Create app.
+- Enter an app name and your email.
+- Select "Access the Threads API".
+- Click Next.
+- Select "I don't want to connect a business portfolio yet".
+- Create the app.
 
 Open https://developers.facebook.com/apps/creation/
 
@@ -42,7 +47,8 @@ The app name is not important, for example panda-social. The app stays in develo
 ## Step 3: Give the app permission to post
 
 - In the app dashboard, open Use cases, then Access the Threads API, then Customize.
-- Add threads_content_publish, threads_manage_replies and threads_delete. threads_basic is already there.
+- Add threads_content_publish, threads_manage_replies and threads_delete.
+- threads_basic is in the list automatically.
 
 Open https://developers.facebook.com/apps/
 
@@ -60,14 +66,17 @@ A token does not contain the permissions that you add after you generate it. If 
 ## Step 4: Make your Threads account a tester of the app
 
 - In the same use case, open Settings, then Add or Remove Threads Testers.
-- Click Add People, choose Threads Tester, and enter your Threads username.
+- Click Add People.
+- Select Threads Tester.
+- Enter your Threads username.
 
 > Screenshot to add: `images/threads-05-add-tester.png`.
 
 ## Step 5: Accept the invitation in Threads
 
 - In Threads, open Settings, Account, Website permissions, then Invites.
-- Accept the invitation from your app. Keep the profile public.
+- Accept the invitation from your app.
+- Keep the profile public.
 
 Open https://www.threads.com/settings/account
 
@@ -77,8 +86,10 @@ Keep the profile public, because Meta keeps the permissions of a public profile 
 
 ## Step 6: Generate your access token
 
-- Back in the app dashboard: Use cases, Access the Threads API, Settings, User Token Generator.
-- Click Generate Access Token next to your account, continue, and copy the token.
+- In the app dashboard, open Use cases, Access the Threads API, Settings, then User Token Generator.
+- Click Generate Access Token next to your account.
+- Continue in the dialog that opens.
+- Copy the token.
 
 If your account is not in the list, accept the invitation of step 5. Copy the token as one line, without a space or a line break.
 

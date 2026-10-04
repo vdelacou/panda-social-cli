@@ -21,7 +21,8 @@ You can do the five steps in a terminal or with an AI agent:
 ## Step 1: Sign in to the X developer console
 
 - Sign in with the X account that will post.
-- Accept the Developer Agreement and Policy, and describe how you will use the API, if the console asks.
+- If the console shows the Developer Agreement and Policy, accept it.
+- If the console has a field for your use of the API, write in it how you will use the API.
 
 Open https://console.x.com
 
@@ -29,10 +30,12 @@ The keys of step 5 post as the account that you use to sign in here. To post as 
 
 > Screenshot to add: `images/x-01-console.png` (refer to the [list of screenshots](#screenshots-to-add)).
 
-## Step 2: Buy API credits and cap the spend
+## Step 2: Add API credits and set a spending limit
 
-- X bills every request against prepaid credits: $0.015 a post, $0.20 a post that contains a link, $0.01 a delete or an account check.
-- Buy credits in the console, and set a spending limit so a runaway agent cannot drain them.
+- Each call to X uses prepaid credits.
+- A post uses $0.015. A post with a link uses $0.20. A delete or an account check uses $0.01.
+- Add credits in the console.
+- Set a spending limit. The limit stops an agent that uses too many credits.
 
 Open https://docs.x.com/x-api/getting-started/pricing
 
@@ -54,7 +57,8 @@ When the credits are at 0, X stops all the calls, and panda-social gives the err
 
 ## Step 3: Create an app
 
-- Create a new app, and enter a name, a description and a use case.
+- Create a new app.
+- Enter a name, a description and a use case.
 
 The name is not important, for example panda-social. One sentence is sufficient for the use case, for example "Post to my own account from my scripts".
 
@@ -64,8 +68,9 @@ Some pages of X call the button New App, and other pages call it Create App.
 
 ## Step 4: Let the app post
 
-- In the app's settings, set the app permissions to Read and write, then save.
-- Do this before step 5: an Access Token generated earlier keeps its old permissions.
+- In the settings of the app, set the app permissions to Read and write.
+- Save the settings.
+- Do this before step 5. An Access Token from before this change does not get the new permissions.
 
 | Permission | Function | Sufficient for panda-social |
 |---|---|---|
@@ -79,10 +84,10 @@ The form can also have a field for a callback URL or a website. If it has one, u
 
 ## Step 5: Generate the four keys
 
-- Open the app from Apps in the side menu, then its Keys and tokens tab.
-- Copy the API Key and Secret, or regenerate them if you no longer have them.
-- Generate (or regenerate) the Access Token and Secret for your own account, and copy both.
-- X shows each value once: keep them at hand until the setup has saved them.
+- Open the app from Apps in the side menu, then open its Keys and tokens tab.
+- Copy the API Key and Secret. If you do not have them, regenerate them.
+- Generate or regenerate the Access Token and Secret for your account. Copy the two values.
+- X shows each value one time only. Keep the values until the setup saves them.
 
 panda-social reads the keys in this sequence: API Key, API Key Secret, Access Token, Access Token Secret.
 

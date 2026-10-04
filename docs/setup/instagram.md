@@ -20,10 +20,12 @@ You can do the six steps in a terminal or with an AI agent:
 - In a terminal, `panda-social setup instagram` shows the steps one at a time. Push Enter after each step. At the end, paste the token. The token does not show on the screen.
 - With an AI agent, the agent tells you the steps. At the end, paste the token into your terminal (refer to [Finish](#finish-save-the-token)). Thus, the token does not go through a chat.
 
-## Step 1: Switch your Instagram account to a professional account
+## Step 1: Change your Instagram account to a professional account
 
-- In Instagram, open your profile, then the menu (Settings and activity), then Account type and tools under For professionals.
-- Tap Switch to professional account and choose Creator or Business. A personal account cannot post through the API, and a professional one is public.
+- In Instagram, open your profile, then the menu (Settings and activity), then Account type and tools in For professionals.
+- Tap Switch to professional account.
+- Select Creator or Business.
+- A personal account cannot post through the API. A professional account is public.
 
 Open https://help.instagram.com/502981923235522
 
@@ -33,9 +35,13 @@ Creator is for a person, and Business is for a brand. panda-social operates with
 
 ## Step 2: Create an app that can use the Instagram API
 
-- Log in at developers.facebook.com and register as a developer if it asks.
-- Click Create app, enter an app name, and tick "Manage messaging & content on Instagram".
-- If it asks for a business portfolio, choose "I don't want to connect a business portfolio yet", then create the app.
+- Log in at developers.facebook.com.
+- If the site shows a registration form, register as a developer.
+- Click Create app.
+- Enter an app name.
+- Select "Manage messaging & content on Instagram".
+- If the form shows a business portfolio field, select "I don't want to connect a business portfolio yet".
+- Create the app.
 
 Open https://developers.facebook.com/apps/creation/
 
@@ -46,7 +52,8 @@ The app name is not important, for example panda-social.
 ## Step 3: Give the app permission to post
 
 - In the app dashboard, open Use cases, then Manage messaging & content on Instagram, then Customize.
-- Check that instagram_business_basic and instagram_business_content_publish are among its permissions, and add any that is missing.
+- Make sure that instagram_business_basic and instagram_business_content_publish are in the list of permissions.
+- Add each permission that is not in the list.
 
 Open https://developers.facebook.com/apps/
 
@@ -63,8 +70,10 @@ A token does not contain the permissions that you add after you generate it. If 
 
 ## Step 4: Make your Instagram account a tester of the app
 
-- In the app dashboard, open App roles, then Roles, and click Add People.
-- Choose Instagram Tester and enter your Instagram username.
+- In the app dashboard, open App roles, then Roles.
+- Click Add People.
+- Select Instagram Tester.
+- Enter your Instagram username.
 
 The username is the name on your profile, without the @.
 
@@ -85,9 +94,12 @@ The invitation can show some minutes after step 4. If you do not see it, open th
 
 ## Step 6: Generate your access token
 
-- Back in the app dashboard: Use cases, Manage messaging & content on Instagram, Customize, then API setup with Instagram login.
-- Under Generate access tokens, click Add account and log in to Instagram, then click Generate token next to your account and copy the token.
-- It lasts 60 days, and panda-social renews it once it is 30 days old, whenever a command runs.
+- In the app dashboard, open Use cases, Manage messaging & content on Instagram, Customize, then API setup with Instagram login.
+- In Generate access tokens, click Add account.
+- Log in to Instagram.
+- Click Generate token next to your account.
+- Copy the token.
+- The token expires after 60 days. panda-social renews the token 30 days after it saved the token, when a command runs.
 
 Copy the token as one line, without a space or a line break. If you do not have the token, generate a new token.
 

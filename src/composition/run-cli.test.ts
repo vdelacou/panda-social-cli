@@ -686,7 +686,7 @@ describe('connecting Instagram with `panda-social setup instagram`', () => {
           platform: 'instagram',
           profile: 'default',
           steps: expect.arrayContaining([
-            expect.objectContaining({ step: 1, title: 'Switch your Instagram account to a professional account' }),
+            expect.objectContaining({ step: 1, title: 'Change your Instagram account to a professional account' }),
             expect.objectContaining({ step: 6, title: 'Generate your access token' }),
           ]),
           finish: expect.stringContaining('panda-social setup instagram --token-stdin'),

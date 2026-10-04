@@ -4,21 +4,28 @@ import type { SetupStep } from '../domain/setup-step.ts';
 // pages (checked 2026-09-28), 2026 guides by others for the tester step, and the use case
 // panda-social-agent publishes through. The terminal guide, the agent's JSON guide and
 // docs/setup/instagram.md all carry these words.
+// The text is in Simplified Technical English, with one instruction in each action (D47).
 export const INSTAGRAM_SETUP_STEPS: ReadonlyArray<SetupStep> = [
   {
-    title: 'Switch your Instagram account to a professional account',
+    title: 'Change your Instagram account to a professional account',
     actions: [
-      'In Instagram, open your profile, then the menu (Settings and activity), then Account type and tools under For professionals.',
-      'Tap Switch to professional account and choose Creator or Business. A personal account cannot post through the API, and a professional one is public.',
+      'In Instagram, open your profile, then the menu (Settings and activity), then Account type and tools in For professionals.',
+      'Tap Switch to professional account.',
+      'Select Creator or Business.',
+      'A personal account cannot post through the API. A professional account is public.',
     ],
     url: 'https://help.instagram.com/502981923235522',
   },
   {
     title: 'Create an app that can use the Instagram API',
     actions: [
-      'Log in at developers.facebook.com and register as a developer if it asks.',
-      'Click Create app, enter an app name, and tick "Manage messaging & content on Instagram".',
-      'If it asks for a business portfolio, choose "I don\'t want to connect a business portfolio yet", then create the app.',
+      'Log in at developers.facebook.com.',
+      'If the site shows a registration form, register as a developer.',
+      'Click Create app.',
+      'Enter an app name.',
+      'Select "Manage messaging & content on Instagram".',
+      'If the form shows a business portfolio field, select "I don\'t want to connect a business portfolio yet".',
+      'Create the app.',
     ],
     url: 'https://developers.facebook.com/apps/creation/',
   },
@@ -26,13 +33,14 @@ export const INSTAGRAM_SETUP_STEPS: ReadonlyArray<SetupStep> = [
     title: 'Give the app permission to post',
     actions: [
       'In the app dashboard, open Use cases, then Manage messaging & content on Instagram, then Customize.',
-      'Check that instagram_business_basic and instagram_business_content_publish are among its permissions, and add any that is missing.',
+      'Make sure that instagram_business_basic and instagram_business_content_publish are in the list of permissions.',
+      'Add each permission that is not in the list.',
     ],
     url: 'https://developers.facebook.com/apps/',
   },
   {
     title: 'Make your Instagram account a tester of the app',
-    actions: ['In the app dashboard, open App roles, then Roles, and click Add People.', 'Choose Instagram Tester and enter your Instagram username.'],
+    actions: ['In the app dashboard, open App roles, then Roles.', 'Click Add People.', 'Select Instagram Tester.', 'Enter your Instagram username.'],
   },
   {
     title: 'Accept the invitation in Instagram',
@@ -42,9 +50,12 @@ export const INSTAGRAM_SETUP_STEPS: ReadonlyArray<SetupStep> = [
   {
     title: 'Generate your access token',
     actions: [
-      'Back in the app dashboard: Use cases, Manage messaging & content on Instagram, Customize, then API setup with Instagram login.',
-      'Under Generate access tokens, click Add account and log in to Instagram, then click Generate token next to your account and copy the token.',
-      'It lasts 60 days, and panda-social renews it once it is 30 days old, whenever a command runs.',
+      'In the app dashboard, open Use cases, Manage messaging & content on Instagram, Customize, then API setup with Instagram login.',
+      'In Generate access tokens, click Add account.',
+      'Log in to Instagram.',
+      'Click Generate token next to your account.',
+      'Copy the token.',
+      'The token expires after 60 days. panda-social renews the token 30 days after it saved the token, when a command runs.',
     ],
   },
 ];

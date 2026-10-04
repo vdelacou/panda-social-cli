@@ -49,6 +49,8 @@ const threadsApi = (): FetchMock =>
     { match: (url) => url.includes(`/${NEW_ID}?fields=permalink`), respond: () => json({ id: NEW_ID, permalink: PERMALINK }) },
   ]);
 
+const sentText = (mock: FetchMock): string | null => new URLSearchParams(mock.calls.find((call) => call.url.endsWith('/me/threads'))?.init?.body as URLSearchParams).get('text');
+
 type Envelope = { readonly ok: boolean; readonly error?: { readonly code: string; readonly message: string; readonly hint: string } };
 
 const envelopeOf = (text: string): Envelope => JSON.parse(text) as Envelope;
@@ -226,6 +228,79 @@ describe('serving the commands to an MCP client with `panda-social mcp`', () => 
         error: { code: 'unknown-command', message: expect.any(String), hint: expect.stringContaining('Did you mean "status"?') },
       });
       expect(envelopeOf(answer.text).error?.hint).toContain('list-commands');
+    });
+  });
+
+  describe('the write tool', () => {
+    it('run-write-command posts to Threads one time and gives the id and the url, as `panda-social post` does', async () => {
+      mock = threadsApi();
+      session = await openMcpSession(runCli, env);
+
+      const answer = await session.callTool('run-write-command', { command: 'post', params: { to: 'threads', text: 'Hello from panda' } });
+
+      expect(answer).toEqual({ text: JSON.stringify({ ok: true, data: { platform: 'threads', id: NEW_ID, url: PERMALINK } }), isError: false });
+      expect(mock.calls.filter((call) => call.init?.method === 'POST')).toHaveLength(1);
+    });
+
+    it('run-write-command rejects status and names run-command', async () => {
+      mock = threadsApi();
+      session = await openMcpSession(runCli, env);
+
+      const answer = await session.callTool('run-write-command', { command: 'status', params: { platform: 'threads' } });
+
+      expect(answer.isError).toBe(true);
+      expect(envelopeOf(answer.text)).toEqual({ ok: false, error: { code: 'wrong-tool', message: expect.any(String), hint: expect.stringContaining('run-command') } });
+      expect(mock.calls).toEqual([]);
+    });
+
+    it('a text that starts with a dash stays the text of the post', async () => {
+      mock = threadsApi();
+      session = await openMcpSession(runCli, env);
+
+      const answer = await session.callTool('run-write-command', { command: 'post', params: { to: 'threads', text: '-20% today' } });
+
+      expect(answer.isError).toBe(false);
+      expect(sentText(mock)).toBe('-20% today');
+    });
+
+    it('repost true is the --repost flag, which deletes the old post and publishes the new text; repost false sends nothing and answers unsupported', async () => {
+      mock = threadsApi();
+      session = await openMcpSession(runCli, env);
+
+      const kept = await session.callTool('run-write-command', { command: 'update', params: { on: 'threads', id: POST_ID, text: 'Fixed', repost: false } });
+
+      expect(envelopeOf(kept.text)).toEqual({ ok: false, error: expect.objectContaining({ code: 'unsupported' }) });
+      expect(mock.calls).toEqual([]);
+
+      const replaced = await session.callTool('run-write-command', { command: 'update', params: { on: 'threads', id: POST_ID, text: 'Fixed', repost: true } });
+
+      expect(JSON.parse(replaced.text)).toEqual({ ok: true, data: { platform: 'threads', id: NEW_ID, url: PERMALINK, replaced: POST_ID } });
+      expect(mock.calls.map((call) => call.init?.method)).toEqual(['DELETE', 'POST', 'GET']);
+    });
+
+    it('a param written as "--text" works as text, and an unknown param gets the did-you-mean of the CLI', async () => {
+      mock = threadsApi();
+      session = await openMcpSession(runCli, env);
+
+      const dashed = await session.callTool('run-write-command', { command: 'post', params: { '--to': 'threads', '--text': 'Hello from panda' } });
+      const unknown = await session.callTool('run-write-command', { command: 'post', params: { to: 'threads', txt: 'Hello from panda' } });
+
+      expect(dashed.isError).toBe(false);
+      expect(sentText(mock)).toBe('Hello from panda');
+      expect(envelopeOf(unknown.text)).toEqual({
+        ok: false,
+        error: { code: 'unknown-option', message: 'post has no --txt option.', hint: expect.stringContaining('Did you mean "--text"?') },
+      });
+    });
+
+    it('a post id sent as a JSON number stops the call before the CLI runs, thus the id cannot lose digits', async () => {
+      mock = threadsApi();
+      session = await openMcpSession(runCli, env);
+
+      const answer = await session.callTool('run-write-command', { command: 'delete', params: { on: 'threads', id: Number(POST_ID) } });
+
+      expect(answer.isError).toBe(true);
+      expect(mock.calls).toEqual([]);
     });
   });
 

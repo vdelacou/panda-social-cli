@@ -4,9 +4,19 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { PassThrough } from 'node:stream';
 import packageJson from '../../package.json' with { type: 'json' };
+import { installFetchMock } from '../test-helpers/fetch-mock.ts';
+import type { FetchMock } from '../test-helpers/fetch-mock.ts';
 import { openMcpSession } from '../test-helpers/mcp-session.ts';
 import type { McpSession } from '../test-helpers/mcp-session.ts';
 import { runCli } from './run-cli.ts';
+
+const POST_ID = '17890000000000001';
+const NEW_ID = '17890000000000002';
+const USER_ID = '26000000000000001';
+const PERMALINK = 'https://www.threads.com/@panda/post/C0ffee';
+const TOKEN = ['mcp', 'threads', 'token'].join('-');
+
+const json = (body: unknown): Response => Response.json(body, { headers: { 'content-type': 'application/json' } });
 
 // The line the CLI prints for the same words, to set a tool result against.
 const cliLine = async (argv: ReadonlyArray<string>, env: Readonly<Record<string, string>>): Promise<string> => {
@@ -22,15 +32,41 @@ const cliLine = async (argv: ReadonlyArray<string>, env: Readonly<Record<string,
   return lines.join('\n');
 };
 
+const quota = (used: number, total: number): { readonly quota_usage: number; readonly config: { readonly quota_total: number; readonly quota_duration: number } } => ({
+  quota_usage: used,
+  config: { quota_total: total, quota_duration: 86_400 },
+});
+
+const threadsApi = (): FetchMock =>
+  installFetchMock([
+    { match: (url) => url.endsWith('/me?fields=id,username'), respond: () => json({ id: USER_ID, username: 'panda' }) },
+    {
+      match: (url) => url.includes(`/${USER_ID}/threads_publishing_limit?`),
+      respond: () => json({ data: [{ ...quota(3, 250), reply_quota_usage: 0, reply_config: quota(0, 1000).config, delete_quota_usage: 0, delete_config: quota(0, 100).config }] }),
+    },
+    { match: (url, init) => init?.method === 'DELETE' && url.endsWith(`/${POST_ID}`), respond: () => json({ success: true, deleted_id: POST_ID }) },
+    { match: (url, init) => init?.method === 'POST' && url.endsWith('/me/threads'), respond: () => json({ id: NEW_ID }) },
+    { match: (url) => url.includes(`/${NEW_ID}?fields=permalink`), respond: () => json({ id: NEW_ID, permalink: PERMALINK }) },
+  ]);
+
+type Envelope = { readonly ok: boolean; readonly error?: { readonly code: string; readonly message: string; readonly hint: string } };
+
+const envelopeOf = (text: string): Envelope => JSON.parse(text) as Envelope;
+
 describe('serving the commands to an MCP client with `panda-social mcp`', () => {
   let home = '';
+  let env: Readonly<Record<string, string>> = {};
   let session: McpSession | undefined;
+  let mock: FetchMock | undefined;
   beforeEach(() => {
     home = mkdtempSync(path.join(tmpdir(), 'panda-social-mcp-'));
+    env = { HOME: home, PANDA_SOCIAL_THREADS_TOKEN: TOKEN };
   });
   afterEach(async () => {
     await session?.close();
     session = undefined;
+    mock?.restore();
+    mock = undefined;
     rmSync(home, { recursive: true, force: true });
   });
 
@@ -81,6 +117,23 @@ describe('serving the commands to an MCP client with `panda-social mcp`', () => 
   });
 
   describe('the discovery of the commands', () => {
+    it('list-commands gives post, update, delete, setup and status with the tool that runs each, and not the commands only for the CLI', async () => {
+      session = await openMcpSession(runCli, { HOME: home });
+
+      const answer = await session.callTool('list-commands');
+      const listed = JSON.parse(answer.text) as { readonly commands: ReadonlyArray<{ readonly name: string; readonly summary: string; readonly tool: string }> };
+
+      expect(answer.isError).toBe(false);
+      expect(listed.commands.map(({ name, tool }) => [name, tool])).toEqual([
+        ['post', 'run-write-command'],
+        ['update', 'run-write-command'],
+        ['delete', 'run-write-command'],
+        ['setup', 'get-setup-guide'],
+        ['status', 'run-command'],
+      ]);
+      expect(listed.commands.every((command) => command.summary.length > 0)).toBe(true);
+    });
+
     it('get-command-docs gives the same page as `panda-social docs post`', async () => {
       session = await openMcpSession(runCli, { HOME: home });
 
@@ -88,6 +141,91 @@ describe('serving the commands to an MCP client with `panda-social mcp`', () => 
       const cli = JSON.parse(await cliLine(['docs', 'post'], { HOME: home })) as { readonly data: { readonly markdown: string } };
 
       expect(answer).toEqual({ text: cli.data.markdown, isError: false });
+    });
+
+    it('get-command-docs for "psot" is a tool error that names the command meant', async () => {
+      session = await openMcpSession(runCli, { HOME: home });
+
+      const answer = await session.callTool('get-command-docs', { command: 'psot' });
+
+      expect(answer.isError).toBe(true);
+      expect(envelopeOf(answer.text)).toEqual({
+        ok: false,
+        error: { code: 'unknown-command', message: expect.any(String), hint: expect.stringContaining('Did you mean "post"?') },
+      });
+    });
+
+    it('get-setup-guide gives the same steps as `panda-social setup threads` without a terminal', async () => {
+      session = await openMcpSession(runCli, { HOME: home });
+
+      const answer = await session.callTool('get-setup-guide', { platform: 'threads' });
+
+      expect(answer).toEqual({ text: await cliLine(['setup', 'threads'], { HOME: home }), isError: false });
+    });
+  });
+
+  describe('the read tool', () => {
+    it('run-command runs `status threads` against a fake Threads API and gives the line that the CLI prints', async () => {
+      mock = threadsApi();
+      session = await openMcpSession(runCli, env);
+
+      const answer = await session.callTool('run-command', { command: 'status', params: { platform: 'threads' } });
+
+      expect(answer).toEqual({ text: await cliLine(['status', 'threads'], env), isError: false });
+      expect(JSON.parse(answer.text)).toEqual({ ok: true, data: expect.objectContaining({ account: { userId: USER_ID, username: 'panda' } }) });
+    });
+
+    it('a failed command is a tool error with the code and the hint of the CLI', async () => {
+      session = await openMcpSession(runCli, { HOME: home });
+
+      const answer = await session.callTool('run-command', { command: 'status', params: { platform: 'threads' } });
+
+      expect(answer.isError).toBe(true);
+      expect(envelopeOf(answer.text)).toEqual({
+        ok: false,
+        error: { code: 'missing-credentials', message: expect.any(String), hint: expect.stringContaining('PANDA_SOCIAL_THREADS_TOKEN') },
+      });
+    });
+
+    it('run-command rejects post before a request goes out, and names run-write-command', async () => {
+      mock = threadsApi();
+      session = await openMcpSession(runCli, env);
+
+      const answer = await session.callTool('run-command', { command: 'post', params: { to: 'threads', text: 'Hello from panda' } });
+
+      expect(answer.isError).toBe(true);
+      expect(envelopeOf(answer.text)).toEqual({ ok: false, error: { code: 'wrong-tool', message: expect.any(String), hint: expect.stringContaining('run-write-command') } });
+      expect(mock.calls).toEqual([]);
+    });
+
+    it('the run tools reject setup, help-json, docs and mcp, and name the tool to use instead', async () => {
+      session = await openMcpSession(runCli, { HOME: home });
+      const calls = [
+        ['run-command', 'setup', 'get-setup-guide'],
+        ['run-write-command', 'setup', 'get-setup-guide'],
+        ['run-command', 'help-json', 'list-commands'],
+        ['run-command', 'docs', 'get-command-docs'],
+        ['run-write-command', 'mcp', 'list-commands'],
+      ] as const;
+
+      for (const [tool, command, instead] of calls) {
+        const answer = await session.callTool(tool, { command, params: { platform: 'threads', 'token-stdin': true } });
+        expect(answer.isError).toBe(true);
+        expect(envelopeOf(answer.text)).toEqual({ ok: false, error: { code: 'wrong-tool', message: expect.any(String), hint: expect.stringContaining(instead) } });
+      }
+    });
+
+    it('run-command with "stauts" names the command meant and list-commands', async () => {
+      session = await openMcpSession(runCli, { HOME: home });
+
+      const answer = await session.callTool('run-command', { command: 'stauts', params: { platform: 'threads' } });
+
+      expect(answer.isError).toBe(true);
+      expect(envelopeOf(answer.text)).toEqual({
+        ok: false,
+        error: { code: 'unknown-command', message: expect.any(String), hint: expect.stringContaining('Did you mean "status"?') },
+      });
+      expect(envelopeOf(answer.text).error?.hint).toContain('list-commands');
     });
   });
 

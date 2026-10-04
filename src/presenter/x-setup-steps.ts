@@ -48,5 +48,6 @@ export const X_SETUP_STEPS: ReadonlyArray<SetupStep> = [
 ];
 
 // Shown when the keys are saved: every later command spends credits.
+// The text is in Simplified Technical English (D48).
 export const X_CREDITS_NOTE =
-  'X bills every request this CLI makes against your prepaid credits, from $0.01 (a delete or an account check) to $0.20 (a post with a link). Set a spending limit in the console.';
+  'Each call that panda-social makes to X uses your prepaid credits. A delete or an account check uses $0.01. A post uses $0.015, and a post with a link uses $0.20. Set a spending limit in the console.';

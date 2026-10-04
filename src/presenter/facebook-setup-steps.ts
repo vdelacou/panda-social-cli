@@ -64,4 +64,6 @@ export const FACEBOOK_SETUP_STEPS: ReadonlyArray<SetupStep> = [
 ];
 
 // Shown when the Page is saved: nothing tells the CLI whether the app is published.
-export const FACEBOOK_PUBLISH_NOTE = 'Posts show to everyone only once the app is published (step 3 of the setup); until then only people with a role on the app see them.';
+// The text is in Simplified Technical English (D48).
+export const FACEBOOK_PUBLISH_NOTE =
+  'Until you publish the app (step 3 of the setup), only persons with a role on the app see its posts. A published app shows its posts to all persons.';

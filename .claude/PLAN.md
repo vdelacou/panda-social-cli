@@ -1,6 +1,6 @@
 # PLAN: panda-social-cli v1
 
-Current task: 6.2d, the setup steps of the CLI and the agent skill in STE (D47), is done. The user does 2.6b and 6.2b on the computer of the user, in one session: the setup of each platform, the live QA runs and the screenshots. The reports of these runs decide 4.3 and 5.3.
+Current task: 6.2e, the notes of `setup x` and `setup facebook` in STE (D48), is done. The user does 2.6b and 6.2b on the computer of the user, in one session: the setup of each platform, the live QA runs and the screenshots. The reports of these runs decide 4.3 and 5.3.
 
 ## What we are building
 
@@ -57,6 +57,7 @@ A Bun/TypeScript CLI and library, published to npm as `panda-social-cli` (bin `p
 | D45 | (4.3, 5.3) Two probes publish nothing. `image-host` uploads a local image to the Page as an unpublished temporary photo, offers its Facebook URL to a Threads and an Instagram container, reads whether each finishes, then deletes the photo; `page-instagram` asks whether the Page token reaches the Instagram account linked to the Page and can make a container on graph.facebook.com. No container is ever published, and Meta drops them within 24 hours | 4.3 and 5.3 hinge on these two answers, and a container shows acceptance without a public post |
 | D46 | (6.2) The README and the four setup guides are in Simplified Technical English (ASD-STE100). The STE check tool finds no errors in them. The guides keep the setup steps of the CLI word for word, because `docs:check` compares them with the CLI. The messages of the CLI do not change. | The user asked for STE in all technical text, and asked for no change to the CLI messages. STE text is clear to readers who do not know much English. |
 | D47 | (6.2) The setup steps of the CLI and the agent skill (`skills/SKILL.md`) are in STE. Each action of a step has one instruction. A title changes only where STE makes it necessary: step 1 of Instagram ("Change your Instagram account to a professional account") and step 2 of X ("Add API credits and set a spending limit"). The skill keeps the trigger words of its description. | The user asked for the two changes after 6.2c. The terminal guide, the JSON guide for agents and the setup guides show the same steps. |
+| D48 | (6.2) The two notes that `setup x` and `setup facebook` add to their output after the save are in STE. The other messages of the CLI do not change. | The user asked for this change after 6.2d. The Facebook note keeps the word "published", because `run-cli.test.ts` looks for it. |
 
 ## Platform facts that shape the code (verified 2026-09-28)
 
@@ -160,8 +161,10 @@ A Bun/TypeScript CLI and library, published to npm as `panda-social-cli` (bin `p
   - [ ] 6.2b The onboarding guides' screenshots, from the user's logged-in consoles, and the README around them.
   - [x] 6.2c The README and the four setup guides in STE (D46). The facts do not change, and short sentences, lists and tables replace the long paragraphs. (The STE check tool finds 0 errors in the README and in the guides, if you do not count the setup steps of the CLI. These steps have 6 errors that only a change to the CLI can correct. The rewrite also corrected one statement in the Instagram guide: `post` takes Instagram since 5.2.)
     - Done when: the STE check tool finds no errors outside the setup steps of the CLI. `docs:check`, `check-docs.sh` and the other gates pass. Each commit has a maximum of 10 files and 300 lines.
-  - [x] 6.2d The setup steps of the CLI and `skills/SKILL.md` in STE (D47). (The approved change to the Instagram title in `run-cli.test.ts` failed first, then passed after the change to the steps. The STE check tool finds 0 errors in the steps, the four guides and the skill. The description of the skill keeps its trigger words and has 948 characters. The notes that `setup x` and `setup facebook` show after the save are CLI messages, so they did not change.)
+  - [x] 6.2d The setup steps of the CLI and `skills/SKILL.md` in STE (D47). (The approved change to the Instagram title in `run-cli.test.ts` failed first, then passed after the change to the steps. The STE check tool finds 0 errors in the steps, the four guides and the skill. The description of the skill keeps its trigger words and has 956 characters. The notes that `setup x` and `setup facebook` show after the save are CLI messages. Thus, 6.2d did not change them, and 6.2e changes them.)
     - Done when: the approved change to the Instagram title in `run-cli.test.ts` was seen red, then green. The STE check tool finds no errors in the steps, the guides and the skill. `docs:check` and the other gates pass. Each commit has a maximum of 10 files and 300 lines.
+  - [x] 6.2e The notes that `setup x` and `setup facebook` show after the save, in STE (D48). (No test changed: `run-cli.test.ts` accepts all texts for the X note, and a Facebook note that contains "published". The STE check tool finds 0 errors in the two notes.)
+    - Done when: the STE check tool finds no errors in the two notes. The tests pass with no change. The other gates pass. Each commit has a maximum of 10 files and 300 lines.
 
 ## Phase 7: MCP gateway (list, docs, run-read, run-write tools, as in ask-marcel-office-cli ADR 0001)
 

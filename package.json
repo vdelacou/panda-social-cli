@@ -81,7 +81,9 @@
     "typescript-eslint": "^8.70.1"
   },
   "dependencies": {
+    "@modelcontextprotocol/server": "^2.3.0",
     "oauth-1.0a": "^2.2.6",
-    "winston": "^3.19.0"
+    "winston": "^3.19.0",
+    "zod": "^4.6.5"
   }
 }

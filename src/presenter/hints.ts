@@ -62,6 +62,8 @@ const HINTS: Readonly<Record<string, string>> = {
   corrupt: `The credentials file is not valid. Fix or delete ${CREDENTIALS_FILE}, then run the setup again for each platform.`,
   unreadable: `The credentials file could not be read. Check that ${CREDENTIALS_FILE} belongs to you.`,
   'write-failed': 'The credentials could not be saved. Check that your home folder is writable, then run the setup again.',
+  'wrong-tool':
+    'The MCP server runs the commands that publish or delete with run-write-command, and the other commands with run-command. setup, help-json, docs and mcp run only in the CLI: call get-setup-guide, list-commands or get-command-docs. The hint of each error gives the tool to call.',
   'no-home':
     'Set HOME (USERPROFILE on Windows), or pass the credentials in the environment instead of saving them: PANDA_SOCIAL_THREADS_TOKEN, the four PANDA_SOCIAL_X_ variables, the two PANDA_SOCIAL_FACEBOOK_ variables, or PANDA_SOCIAL_INSTAGRAM_TOKEN.',
 };

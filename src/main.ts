@@ -21,6 +21,7 @@ try {
     },
     logStream: process.stderr,
     readStdin,
+    stdio: { input: process.stdin, output: process.stdout },
     ...(interactive && { terminal: { input: process.stdin, output: process.stderr } }),
   });
 } catch (error) {

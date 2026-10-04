@@ -13,6 +13,7 @@ Every command prints one JSON line on stdout: `{"ok":true,"data":...}` on succes
 | [`status`](#status) | Check a connected Threads, X, Facebook or Instagram account: whose credentials they are and whether they still work, with the Threads and Instagram quotas. |
 | [`help-json`](#help-json) | Describe every command, option, example and error code as JSON. Start here. |
 | [`docs`](#docs) | Show one command's full documentation as markdown. |
+| [`mcp`](#mcp) | Give the commands to an MCP client, for example Claude Desktop, through stdin and stdout. |
 
 | Flag | What it does |
 | --- | --- |
@@ -402,7 +403,7 @@ panda-social docs <command>
 
 | Parameter | Required | Description |
 | --- | --- | --- |
-| `<command>` | yes | The command to document. One of: post, update, delete, setup, status, help-json, docs. |
+| `<command>` | yes | The command to document. One of: post, update, delete, setup, status, help-json, docs, mcp. |
 
 ### Examples
 
@@ -422,6 +423,39 @@ The page: `{"command":"<name>","markdown":"<the page>"}`.
 | `unknown-option` | Run `panda-social docs <command>` for the options that command takes. |
 | `unexpected-argument` | Quote any value that contains spaces, for example --text "Hello from panda". |
 | `unknown-command` | Run `panda-social help-json` for every command, or `panda-social docs <command>` for one. |
+
+## mcp
+
+Starts an MCP server on stdio with five tools, for clients that have no shell: list-commands, get-command-docs, get-setup-guide, run-command and run-write-command. run-command runs the commands that do not publish or delete (status), and run-write-command runs post, update and delete. A token must not go through a chat, thus the setup that saves a token stays in the terminal, and get-setup-guide gives only the steps. To add the server to Claude Code, run `claude mcp add --transport stdio --scope user panda-social -- panda-social mcp`. To add it to Claude Desktop, put `"panda-social": {"command": "panda-social", "args": ["mcp"]}` in `mcpServers` of `claude_desktop_config.json`.
+
+### Usage
+
+```bash
+panda-social mcp
+```
+
+### Parameters
+
+None.
+
+### Examples
+
+```bash
+# Start the server. An MCP client starts this command, not a person.
+panda-social mcp
+```
+
+### Output
+
+No JSON line: until the client closes stdin, stdout contains only the JSON-RPC messages of the MCP protocol. Each run tool gives the JSON line that the CLI prints for the same command.
+
+### Errors
+
+| Code | Next step |
+| --- | --- |
+| `unknown-option` | Run `panda-social docs <command>` for the options that command takes. |
+| `unexpected-argument` | Quote any value that contains spaces, for example --text "Hello from panda". |
+| `wrong-tool` | The MCP server runs the commands that publish or delete with run-write-command, and the other commands with run-command. setup, help-json, docs and mcp run only in the CLI: call get-setup-guide, list-commands or get-command-docs. The hint of each error gives the tool to call. |
 
 ## Error codes
 
@@ -466,3 +500,4 @@ Every failure carries one of these codes. Its `hint` says what to do next.
 | `unreadable` | The credentials file could not be read. Check that ~/.panda-social/credentials.json belongs to you. |
 | `unsupported` | Threads cannot edit a published post, and Facebook edits the text of one but not its image. Pass --repost to delete the post and publish the new version: it gets a new id and link, and loses its likes, replies and comments. Instagram, connected through Instagram Login, can neither edit nor delete a post: change or delete it in the Instagram app. |
 | `write-failed` | The credentials could not be saved. Check that your home folder is writable, then run the setup again. |
+| `wrong-tool` | The MCP server runs the commands that publish or delete with run-write-command, and the other commands with run-command. setup, help-json, docs and mcp run only in the CLI: call get-setup-guide, list-commands or get-command-docs. The hint of each error gives the tool to call. |

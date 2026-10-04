@@ -88,7 +88,7 @@ describe('reading the agent entry points', () => {
     const result = parseCliArgs(['docs', 'myspace']);
 
     expect(!result.ok && result.error.code).toBe('unknown-command');
-    expect(!result.ok && result.error.hint).toContain('post, update, delete, setup, status, help-json, docs');
+    expect(!result.ok && result.error.hint).toContain('post, update, delete, setup, status, help-json, docs, mcp');
   });
 
   it('an unknown option is refused, and the hint lists the command options', () => {
@@ -360,7 +360,7 @@ describe('naming what a mistyped name was meant to be (D41)', () => {
     const docs = failureOf(['docs', 'udpate']);
 
     expect(command.code).toBe('unknown-command');
-    expect(command.hint).toStartWith('Did you mean "post"? Commands: post, update, delete, setup, status, help-json, docs.');
+    expect(command.hint).toStartWith('Did you mean "post"? Commands: post, update, delete, setup, status, help-json, docs, mcp.');
     expect(docs.code).toBe('unknown-command');
     expect(docs.hint).toStartWith('Did you mean "update"? Commands: ');
   });

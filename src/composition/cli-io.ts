@@ -10,6 +10,9 @@ export type CliIo = {
   readonly logStream: Writable;
   readonly readStdin?: () => Promise<string>;
   readonly terminal?: { readonly input: Readable; readonly output: Writable };
+  // The stdin and stdout of the process, which only `mcp` reads: there they carry the MCP
+  // protocol, so no other part of a run may touch them (D53).
+  readonly stdio?: { readonly input: Readable; readonly output: Writable };
 };
 
 // Piped input, or nothing when the run has none.

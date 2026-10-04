@@ -98,4 +98,5 @@ export const BUILDERS: Readonly<Record<CommandName, (flags: Flags) => Result<Cli
   status: buildStatus,
   'help-json': () => ok({ command: 'help-json' }),
   docs: buildDocs,
+  mcp: () => ok({ command: 'mcp' }),
 };

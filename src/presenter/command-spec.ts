@@ -1,4 +1,4 @@
-export type CommandName = 'post' | 'update' | 'delete' | 'setup' | 'status' | 'help-json' | 'docs';
+export type CommandName = 'post' | 'update' | 'delete' | 'setup' | 'status' | 'help-json' | 'docs' | 'mcp';
 
 // The order commands appear in the manifest and in docs/COMMANDS.md.
 export const COMMAND_NAMES: ReadonlyArray<CommandName> = ['post', 'update', 'delete', 'setup', 'status', 'help-json', 'docs'];

@@ -8,6 +8,7 @@ import type { CliIo } from './cli-io.ts';
 import { readConfig } from './env.ts';
 import { PACKAGE_NAME, PACKAGE_VERSION } from './package-info.ts';
 import { runCrossPost } from './run-cross-post.ts';
+import { runMcp } from './run-mcp.ts';
 import { runSetup } from './run-setup.ts';
 
 export type { CliIo } from './cli-io.ts';
@@ -31,6 +32,9 @@ export const runCli = async (io: CliIo): Promise<number> => {
     }
     case 'cross-post': {
       return runCrossPost(io, command, readConfig(io.env));
+    }
+    case 'mcp': {
+      return runMcp(io, runCli);
     }
     // The commands that act on an account, by platform: the type narrows to them, so a new
     // command that is not one of them fails to compile here until it gets its own case.

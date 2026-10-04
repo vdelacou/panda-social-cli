@@ -68,4 +68,13 @@ export type DocsCommand = { readonly command: 'docs'; readonly target: CommandNa
 export type CrossPostCommand = { readonly command: 'cross-post'; readonly posts: ReadonlyArray<PostCommand> };
 
 export type CliCommand =
-  PostCommand | CrossPostCommand | UpdateCommand | DeleteCommand | SetupCommand | StatusCommand | DocsCommand | { readonly command: 'help-json' } | { readonly command: 'version' };
+  | PostCommand
+  | CrossPostCommand
+  | UpdateCommand
+  | DeleteCommand
+  | SetupCommand
+  | StatusCommand
+  | DocsCommand
+  | { readonly command: 'help-json' }
+  | { readonly command: 'version' }
+  | { readonly command: 'mcp' };

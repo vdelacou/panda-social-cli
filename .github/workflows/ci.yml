@@ -64,6 +64,8 @@ jobs:
         run: bun run build && bun run smoke:dist
       - name: README Verify block runs (canon 12.1, references/governance.md)
         run: bash scripts/check-docs.sh
+      - name: release check stops a wrong tag, missing notes and a private package (D57, its self-test)
+        run: bash scripts/check-release.sh --selftest
       - name: mutation (the changed files only, on every event; the full sweep is mutation.yml, daily)
         run: bun run mutate:changed
 

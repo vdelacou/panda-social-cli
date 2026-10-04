@@ -1,15 +1,24 @@
 # Connect an Instagram account
 
-This page walks you through connecting an Instagram account to panda-social, once. It takes about fifteen minutes and needs an Instagram account you can switch to a professional account (Creator or Business), plus a Facebook login for Meta's developer site. No Facebook Page is needed: panda-social connects through Instagram Login.
+This guide connects an Instagram account to panda-social. You do this procedure one time. The procedure is approximately 15 minutes long.
 
-At the end, panda-social keeps the token in `~/.panda-social/credentials.json`, readable by you only. The token lasts 60 days, and panda-social renews it once it is 30 days old, whenever a command runs: an account you use at least once a month stays connected. Left unused for 60 days, the token lapses and the setup runs again.
+You must have these items:
 
-Through Instagram Login, panda-social publishes images with their captions; it cannot edit or delete a post, which you do in the Instagram app.
+- An Instagram account that you can change to a professional account (Creator or Business)
+- A Facebook login, for the developer site of Meta.
 
-There are two ways through the same six steps:
+A Facebook Page is not necessary, because panda-social connects through Instagram Login.
 
-- In a terminal, `panda-social setup instagram` shows the steps one at a time, waits for Enter after each, then asks for the token without showing it on screen.
-- Through an AI agent, the agent relays the steps to you. At the end you still paste the token into your own terminal (see [Finish](#finish-save-the-token)), so it never passes through a chat.
+At the end, panda-social keeps the token in `~/.panda-social/credentials.json`. Only you can read this file.
+
+The token expires after 60 days. panda-social renews the token 30 days after it saved the token, when a command runs. Thus, if you use the account one time each month, it stays connected. If you do not use the account for 60 days, the token expires, and you must do the setup again.
+
+Through Instagram Login, panda-social publishes images with their captions. It cannot edit or delete a post. Edit or delete a post in the Instagram app.
+
+You can do the six steps in a terminal or with an AI agent:
+
+- In a terminal, `panda-social setup instagram` shows the steps one at a time. Push Enter after each step. At the end, paste the token. The token does not show on the screen.
+- With an AI agent, the agent tells you the steps. At the end, paste the token into your terminal (refer to [Finish](#finish-save-the-token)). Thus, the token does not go through a chat.
 
 ## Step 1: Switch your Instagram account to a professional account
 
@@ -18,9 +27,9 @@ There are two ways through the same six steps:
 
 Open https://help.instagram.com/502981923235522
 
-Creator suits a person and Business a brand; panda-social works with both. You can switch back later, from the same menu.
+Creator is for a person, and Business is for a brand. panda-social operates with the two types. You can change the account back in the same menu.
 
-> Screenshot to add: `images/instagram-01-professional.png` (see the [shot list](#screenshots-to-add)).
+> Screenshot to add: `images/instagram-01-professional.png` (refer to the [list of screenshots](#screenshots-to-add)).
 
 ## Step 2: Create an app that can use the Instagram API
 
@@ -30,7 +39,7 @@ Creator suits a person and Business a brand; panda-social works with both. You c
 
 Open https://developers.facebook.com/apps/creation/
 
-Any app name works, for example panda-social.
+The app name is not important, for example panda-social.
 
 > Screenshot to add: `images/instagram-02-use-case.png`.
 
@@ -41,12 +50,14 @@ Any app name works, for example panda-social.
 
 Open https://developers.facebook.com/apps/
 
-| Permission | What panda-social uses it for |
+| Permission | Function in panda-social |
 |---|---|
-| instagram_business_basic | Reading the account's id and username, renewing the token, and reading the posts quota |
-| instagram_business_content_publish | Publishing posts, once `post` takes Instagram |
+| instagram_business_basic | Read the id and the username of the account, renew the token, and read the posts quota |
+| instagram_business_content_publish | Publish posts |
 
-The use case may list permissions for messages and comments too; panda-social uses neither. A permission you add later is not in a token generated before: generate a new one (step 6), then run the setup again.
+The use case can also show permissions for messages and comments. panda-social does not use them.
+
+A token does not contain the permissions that you add after you generate it. If you add a permission, generate a new token (step 6). Then do the setup again.
 
 > Screenshot to add: `images/instagram-03-permissions.png`.
 
@@ -55,7 +66,9 @@ The use case may list permissions for messages and comments too; panda-social us
 - In the app dashboard, open App roles, then Roles, and click Add People.
 - Choose Instagram Tester and enter your Instagram username.
 
-The username is the one on your profile, without the @. Until the app is reviewed by Meta, it can reach only the Instagram accounts that hold a role on it, which is all panda-social needs for your own account.
+The username is the name on your profile, without the @.
+
+Until Meta does a review of the app, the app can use only the Instagram accounts with a role on the app. For your account, this is sufficient.
 
 > Screenshot to add: `images/instagram-04-tester.png`.
 
@@ -66,7 +79,7 @@ The username is the one on your profile, without the @. Until the app is reviewe
 
 Open https://www.instagram.com/accounts/manage_access/
 
-The invitation can take a few minutes to show up: reload the page. Without this step, the dashboard refuses the account in step 6.
+The invitation can show some minutes after step 4. If you do not see it, open the page again. If you do not do this step, the dashboard rejects the account in step 6.
 
 > Screenshot to add: `images/instagram-05-invite.png`.
 
@@ -76,79 +89,87 @@ The invitation can take a few minutes to show up: reload the page. Without this 
 - Under Generate access tokens, click Add account and log in to Instagram, then click Generate token next to your account and copy the token.
 - It lasts 60 days, and panda-social renews it once it is 30 days old, whenever a command runs.
 
-Copy the token as one line, with no space or line break, and treat it like a password: never paste it into a chat, an email or a shared document. If you lose it, generate another.
+Copy the token as one line, without a space or a line break. If you do not have the token, generate a new token.
+
+CAUTION: Do not paste the token into a chat, an email or a document that other persons can read. Other persons can use the token to post on your account.
 
 > Screenshot to add: `images/instagram-06-token.png`.
 
 ## Finish: save the token
 
-In your own terminal:
+In your terminal:
 
 ```bash
 panda-social setup instagram
 ```
 
-It shows the six steps again: if you have already done them, press Enter past each one. Then paste the token when asked; it does not show on screen. panda-social asks Instagram whose token it is and saves it with the account's id and username.
+The command shows the six steps again. If you did the steps before, push Enter at each step. Then paste the token. The token does not show on the screen.
 
-A script can pipe the token in instead, from a file you delete afterwards:
+panda-social sends the token to Instagram to find its account. Then it saves the token with the id and the username of the account.
+
+A script can send the token on standard input from a file. Delete the file after the setup:
 
 ```bash
 panda-social setup instagram --token-stdin < token.txt
 ```
 
-For a second account, run the setup again with a profile name, and use the same name on every later command. A profile holds a Threads token, X keys, a Facebook Page and an Instagram account side by side.
+For one more account, do the setup again with a profile name. Then use the same profile name in each command for that account. One profile can hold a Threads token, X keys, a Facebook Page and an Instagram account together.
 
 ```bash
 panda-social setup instagram --profile brand-a
 ```
 
-On a server or in CI, you can set the token in the environment instead of saving it: `PANDA_SOCIAL_INSTAGRAM_TOKEN`. panda-social never renews a token it reads from the environment, so renew or replace it yourself before its 60 days run out.
+On a server or in CI, you can put the token in an environment variable, and not save it: `PANDA_SOCIAL_INSTAGRAM_TOKEN`. panda-social does not renew a token from the environment. Renew or replace this token before it expires after 60 days.
 
 > Screenshot to add: `images/instagram-07-terminal-setup.png`.
 
-## Check that it works
+## Do a test of the setup
 
 ```bash
 panda-social status instagram
 panda-social post --to instagram --image https://cdn.example.com/cat.jpg --text "Hello from panda"
 ```
 
-`status instagram` answers with the account's id and username, the token (saved, with its date, its age in days and its expiry once renewed, or the environment), and the posts quota for the last 24 hours: how many API posts were used, of how many, over what window. It posts nothing. Meta's pages give 50 or 100 posts a day; the answer shows your account's own figure.
+`status instagram` shows the id and the username of the account. It also shows the token: saved, with its date, its days since the save, and its expiry date after a renewal, or the environment.
 
-The second command publishes a real post: replace the URL with a public https link to a JPEG of yours, 8 MB at most, between 4:5 (portrait) and 1.91:1 (landscape). Instagram downloads the image itself, so the link must open in a private browser window. The answer carries the post's id and its instagram.com link.
+Then `status instagram` shows the posts quota for the last 24 hours: the used posts, the total, and the period. It does not post. The Meta documentation gives two different numbers: 50 posts and 100 posts. The output shows the number for your account.
+
+The next command publishes a post. Replace the URL with a public https link to your JPEG image: 8 MB maximum, between 4:5 (portrait) and 1.91:1 (landscape).
+
+Instagram downloads the image from the link. Thus, the link must open in a private window of your browser. The output gives the id of the post and its link on instagram.com.
 
 > Screenshot to add: `images/instagram-08-status.png`.
 
-## When something goes wrong
+## If an error occurs
 
-| What you see | Why | What to do |
+| Error | Cause | Solution |
 |---|---|---|
-| `unauthorized` | The token was copied incompletely, or it lapsed (60 days after it was generated or last renewed), or the app lost access to the account | Generate a new token (step 6) and run the setup again |
-| `forbidden` | The token lacks a permission from step 3 | Add it, generate a new token, and run the setup again |
-| The dashboard refuses the account in step 6, or says the developer role is insufficient | The account is not a tester of the app, or the invitation is still pending | Do steps 4 and 5, then add the account again |
-| Instagram will not let the account log in to the app | It is a personal account | Switch it to a professional account (step 1) |
-| The app has no API setup with Instagram login | The app was made without the Instagram use case | Add the use case (Use cases, Add use cases), or create a new app as in step 2 |
-| `missing-credentials` | No token is saved for this profile, and `PANDA_SOCIAL_INSTAGRAM_TOKEN` is not set | Run the setup, adding `--profile <name>` for another profile |
-| `rate-limited` | Too many calls in a short time, or the day's API posts are used up | Wait, then retry; `status instagram` shows the posts quota |
-| `missing-image` | Instagram has no text-only posts | Pass `--image` with a public https URL to a JPEG; the text becomes its caption |
-| `invalid-image` | The image is a local file or not an https URL | Host the file where it opens for everyone, then pass its https URL |
-| `image-rejected` | Instagram could not use the image: the URL does not open for everyone, or it is not a JPEG, weighs over 8 MB, or falls outside 4:5 to 1.91:1 | Check the URL in a private browser window, and the image's format, size and shape, then retry |
-| `still-processing` | Instagram had not finished with the image after a minute, so nothing was published | Retry the post |
-| `unsupported` | `update` or `delete` on Instagram, which Instagram Login does not allow | Change or delete the post in the Instagram app |
+| `unauthorized` | The token is not complete, or it expired (60 days after you generated it or after its last renewal), or the app has no access to the account. | Generate a new token (step 6). Then do the setup again. |
+| `forbidden` | The token does not have a permission from step 3. | Add the permission and generate a new token. Then do the setup again. |
+| The dashboard rejects the account in step 6, or tells you that the developer role is not sufficient | The account is not a tester of the app, or you did not accept the invitation. | Do steps 4 and 5. Then add the account again. |
+| Instagram does not let the account log in to the app | The account is a personal account. | Change it to a professional account (step 1). |
+| The app has no API setup with Instagram login | You made the app without the Instagram use case. | Add the use case (Use cases, Add use cases), or make a new app as in step 2. |
+| `missing-credentials` | No token is saved for this profile, and `PANDA_SOCIAL_INSTAGRAM_TOKEN` is not set. | Do the setup. For a different profile, add `--profile <name>`. |
+| `rate-limited` | Too many calls in a short time, or you used all the API posts of the day. | Wait, and then try again. `status instagram` shows the posts quota. |
+| `missing-image` | Instagram has no posts with only text. | Use `--image` with a public https URL to a JPEG. The text becomes its caption. |
+| `invalid-image` | The image is a local file, or it is not an https URL. | Put the file on a server where all persons can open it. Then give its https URL. |
+| `image-rejected` | Instagram cannot use the image. The URL does not open for all persons, or the image is not a JPEG, or it is larger than 8 MB, or its shape is not between 4:5 and 1.91:1. | Open the URL in a private window of your browser. Examine the format, the size and the shape of the image. Then try again. |
+| `still-processing` | Instagram did not complete the image in one minute. Thus, panda-social did not publish it. | Post again. |
+| `unsupported` | `update` or `delete` on Instagram. Instagram Login does not let you do these. | Edit or delete the post in the Instagram app. |
 
-Every error panda-social prints carries a `hint` with the next step, and `panda-social docs setup` has the full command page.
+Each error from panda-social has a `hint` with the next step. `panda-social docs setup` shows the full page of the command.
 
 ## Screenshots to add
 
-Taken in your own logged-in browser, phone and terminal, saved next to this page under `images/`. Blur what the last column says before committing anything, the token always.
+Make these screenshots in your browser and your terminal, after you log in. Save them in the `images/` folder, next to this page. Before you commit a screenshot, blur the items in the last column. Always blur the token.
 
-| File | Step | Where | What it shows | Blur |
+| File | Step | Location | Content | Blur |
 |---|---|---|---|---|
-| `images/instagram-01-professional.png` | 1 | Instagram, Account type and tools | Switch to professional account | The username, if private |
-| `images/instagram-02-use-case.png` | 2 | Create app, use case choice | "Manage messaging & content on Instagram" ticked | Nothing |
+| `images/instagram-01-professional.png` | 1 | Instagram, Account type and tools | Switch to professional account | The username, if it is private |
+| `images/instagram-02-use-case.png` | 2 | Create app, selection of the use case | "Manage messaging & content on Instagram", selected | No blur |
 | `images/instagram-03-permissions.png` | 3 | Use cases, Manage messaging & content on Instagram, Customize | The two permissions in the list | App ID |
-| `images/instagram-04-tester.png` | 4 | App roles, Roles, Add People | Instagram Tester chosen and the username typed | The username, if private |
-| `images/instagram-05-invite.png` | 5 | instagram.com, Settings, Apps and websites, Tester invites | The invitation and its Accept button | Nothing |
-| `images/instagram-06-token.png` | 6 | API setup with Instagram login, Generate access tokens | The account, Generate token, and the token dialog | App ID, the token entirely |
-| `images/instagram-07-terminal-setup.png` | Finish | A terminal | `panda-social setup instagram` at step 1 of 6, then the hidden token prompt | Nothing |
-| `images/instagram-08-status.png` | Check | A terminal | `panda-social status instagram` answering `"ok":true` | Nothing |
+| `images/instagram-04-tester.png` | 4 | App roles, Roles, Add People | Instagram Tester, selected, and the username | The username, if it is private |
+| `images/instagram-05-invite.png` | 5 | instagram.com, Settings, Apps and websites, Tester invites | The invitation and its Accept button | No blur |
+| `images/instagram-06-token.png` | 6 | API setup with Instagram login, Generate access tokens | The account, Generate token, and the dialog of the token | App ID, all of the token |
+| `images/instagram-07-terminal-setup.png` | Finish | A terminal | `panda-social setup instagram` at step 1 of 6, then the prompt for the token, which does not show the token | No blur |
+| `images/instagram-08-status.png` | Test | A terminal | `panda-social status instagram` with `"ok":true` | No blur |

@@ -1,6 +1,6 @@
 # PLAN: panda-social-cli v1
 
-Current task: 2.6a, the live QA script with the 4.3 and 5.3 probes (D42 to D45), is done; the user's runs (2.6b) and the guides' screenshots (6.2b) happen in one sitting on the user's machine, each platform's setup walked once for real, and their reports decide 4.3 and 5.3.
+Current task: 6.2c, the README and the setup guides in STE (D46), is done. The user does 2.6b and 6.2b on the computer of the user, in one session: the setup of each platform, the live QA runs and the screenshots. The reports of these runs decide 4.3 and 5.3.
 
 ## What we are building
 
@@ -55,6 +55,7 @@ A Bun/TypeScript CLI and library, published to npm as `panda-social-cli` (bin `p
 | D43 | (2.6) Without `--publish` a run only reads `status`. With it, each platform posts what its open questions need, its text stamped with the time so no two runs repeat, then deletes every post it made, after a pause on a terminal to open the links logged out: Threads a text, an image and a `--split` thread; X a text, an uploaded image and an edit (edited with X Premium, edit-refused without); Facebook a text, a photo by URL and by file, an edit and the same text again (code 506), then the deletes (the delete one Meta page calls restricted); Instagram an image, which only the app can delete, an image Instagram refuses (what an ERROR container says) and a delete that answers unsupported | one command and one report line per open item; X bills about $0.10 a run, said before anything posts |
 | D44 | (2.6) `--renewal` renews a Threads or Instagram token now rather than at 30 days: the CLI runs `status` in a throwaway HOME holding only that token, its saved time moved 31 days back, and the renewed token is saved through `setup <platform> --token-stdin`, so the user's file changes only through the CLI. Meta renews only a token at least a day old | the renewal is the one code path no fake can prove (2.4), and the throwaway copy keeps a failed run away from the user's file |
 | D45 | (4.3, 5.3) Two probes publish nothing. `image-host` uploads a local image to the Page as an unpublished temporary photo, offers its Facebook URL to a Threads and an Instagram container, reads whether each finishes, then deletes the photo; `page-instagram` asks whether the Page token reaches the Instagram account linked to the Page and can make a container on graph.facebook.com. No container is ever published, and Meta drops them within 24 hours | 4.3 and 5.3 hinge on these two answers, and a container shows acceptance without a public post |
+| D46 | (6.2) The README and the four setup guides are in Simplified Technical English (ASD-STE100). The STE check tool finds no errors in them. The guides keep the setup steps of the CLI word for word, because `docs:check` compares them with the CLI. The messages of the CLI do not change. | The user asked for STE in all technical text, and asked for no change to the CLI messages. STE text is clear to readers who do not know much English. |
 
 ## Platform facts that shape the code (verified 2026-09-28)
 
@@ -156,6 +157,8 @@ A Bun/TypeScript CLI and library, published to npm as `panda-social-cli` (bin `p
   - [x] 6.2a Did-you-mean (D41): the closest name, a pure function in the domain (case, one typo, the first letters; one close name or none); the hint of `unknown-command` (a command, a `docs` target), `unknown-platform` (`--to` and each name of its list, `--on`, `setup`, `status`) and `unknown-option` starts with it; the README says so. (The 13 confirmed tests were seen red, the domain file failing to load and 4 of the 5 parser tests failing, the fifth pinning a hint left as it was, then green; mutation is 100 on the new domain code, 58 mutants and no survivor. The longest word one argument can carry, 131,072 letters, is matched in 0.2 s on Node and 0.1 s on Bun, so no length cap was added.)
     - Done when: the proposed tests were confirmed, seen red, then green; every gate passes, mutation 100 on the new domain code; slices of at most 10 files and 300 lines, each green; a name close to nothing answers exactly as before.
   - [ ] 6.2b The onboarding guides' screenshots, from the user's logged-in consoles, and the README around them.
+  - [x] 6.2c The README and the four setup guides in STE (D46). The facts do not change, and short sentences, lists and tables replace the long paragraphs. (The STE check tool finds 0 errors in the README and in the guides, if you do not count the setup steps of the CLI. These steps have 6 errors that only a change to the CLI can correct. The rewrite also corrected one statement in the Instagram guide: `post` takes Instagram since 5.2.)
+    - Done when: the STE check tool finds no errors outside the setup steps of the CLI. `docs:check`, `check-docs.sh` and the other gates pass. Each commit has a maximum of 10 files and 300 lines.
 
 ## Phase 7: MCP gateway (list, docs, run-read, run-write tools, as in ask-marcel-office-cli ADR 0001)
 

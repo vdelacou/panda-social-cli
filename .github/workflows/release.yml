@@ -1,0 +1,75 @@
+# .github/workflows/release.yml - npm staged publishing on a version tag (D54 to D57).
+#
+# A tag v<version> runs every gate of ci.yml, then stages the package on npm
+# with trusted publishing (OIDC): no npm token lives in GitHub, and npm adds
+# the provenance. Nothing is public until a maintainer approves the staged
+# version with 2FA (`npm stage approve <stage-id>`, or on npmjs.com). The trust
+# relationship on npm allows `npm stage publish` only:
+#
+#   npm trust github panda-social-cli --file release.yml --repo vdelacou/panda-social-cli --env npm --allow-stage-publish
+#
+# npm is the registry's own client here, not the toolchain (rule 5): only it
+# speaks trusted publishing and staged publishing. The README (Release) has the
+# whole procedure.
+name: release
+on:
+  push:
+    tags: ['v*.*.*']
+permissions:
+  contents: read
+concurrency:
+  group: release
+  cancel-in-progress: false
+jobs:
+  gates:
+    uses: ./.github/workflows/ci.yml
+  stage:
+    needs: gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # The trust relationship on npm names this environment, so no other job can stage.
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write # the OIDC token that npm trusted publishing exchanges
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+      # Staged publishing needs npm 11.15.0 or later (npm docs, 2026-09-29).
+      - run: npm install --global npm@11.21.0
+      - run: bun install --frozen-lockfile
+      - name: the tag, package.json and CHANGELOG.md agree (D57)
+        run: bash scripts/check-release.sh --selftest && bash scripts/check-release.sh "$GITHUB_REF_NAME"
+      - name: pack the package (prepack builds dist/)
+        run: |
+          tarball=$(npm pack --pack-destination "$RUNNER_TEMP" | tail -1)
+          echo "TARBALL=$RUNNER_TEMP/$tarball" >> "$GITHUB_ENV"
+      # The SBOM of the package as a user installs it (D56): npm sbom in the
+      # repository drops zod, because a dev tool also uses it.
+      - name: SBOM of a clean install of the tarball
+        run: |
+          mkdir "$RUNNER_TEMP/consumer"
+          cd "$RUNNER_TEMP/consumer"
+          npm init -y > /dev/null
+          npm install --no-audit --no-fund "$TARBALL"
+          npm sbom --sbom-format cyclonedx --sbom-type application > "$RUNNER_TEMP/sbom.cdx.json"
+      # A version that npm already has is not staged again: a re-run, or the tag of
+      # the first version, which comes from the maintainer's computer (D55).
+      - name: stage the exact tarball on npm (waits for the approval of a maintainer)
+        run: |
+          spec="$(jq -r .name package.json)@$(jq -r .version package.json)"
+          if npm view "$spec" version > /dev/null 2>&1; then
+            echo "::notice::npm already has $spec: nothing to stage"
+          else
+            npm stage publish "$TARBALL"
+          fi
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-${{ github.ref_name }}
+          path: |
+            ${{ runner.temp }}/*.tgz
+            ${{ runner.temp }}/sbom.cdx.json

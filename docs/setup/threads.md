@@ -1,13 +1,20 @@
 # Connect Threads
 
-This page walks you through connecting your Threads account to panda-social, once. It takes about ten minutes and needs a Facebook account (to register as a Meta developer) and a public Threads account.
+This guide connects your Threads account to panda-social. You do this procedure one time. The procedure is approximately 10 minutes long.
 
-At the end you have a token that panda-social checks with Threads and saves in `~/.panda-social/credentials.json`, readable by you only. The token lasts 60 days, and panda-social refreshes it by itself once it is 30 days old, so a CLI that runs at least once a month never needs this page again.
+You must have these accounts:
 
-There are two ways through the same six steps:
+- A Facebook account, to register as a Meta developer
+- A public Threads account.
 
-- In a terminal, `panda-social setup threads` shows the steps one at a time, waits for Enter after each, then asks for the token without showing it on screen.
-- Through an AI agent, the agent relays the steps to you. At the end you still paste the token into your own terminal (see [Finish](#finish-save-the-token)), so it never passes through a chat.
+At the end, panda-social has a token. panda-social makes sure that Threads accepts the token. Then it keeps the token in `~/.panda-social/credentials.json`. Only you can read this file.
+
+The token expires 60 days after its last refresh. panda-social refreshes the token 30 days after it saved the token. If the CLI runs one time each month, you do not do this procedure again.
+
+You can do the six steps in a terminal or with an AI agent:
+
+- In a terminal, `panda-social setup threads` shows the steps one at a time. Push Enter after each step. At the end, paste the token. The token does not show on the screen.
+- With an AI agent, the agent tells you the steps. At the end, paste the token into your terminal (refer to [Finish](#finish-save-the-token)). Thus, the token does not go through a chat.
 
 ## Step 1: Create your Meta developer account
 
@@ -16,9 +23,9 @@ There are two ways through the same six steps:
 
 Open https://developers.facebook.com/async/registration
 
-Check the address: the Threads API lives on developers.facebook.com. A console named Meta Model API that asks for a payment method is a different, paid product.
+Make sure that the address is developers.facebook.com. The Threads API is on this site. A console with the name Meta Model API is a different product. That product is not free: its console tells you to add a payment method.
 
-> Screenshot to add: `images/threads-01-registration.png` (see the [shot list](#screenshots-to-add)).
+> Screenshot to add: `images/threads-01-registration.png` (refer to the [list of screenshots](#screenshots-to-add)).
 
 ## Step 2: Create an app that can use the Threads API
 
@@ -28,7 +35,7 @@ Check the address: the Threads API lives on developers.facebook.com. A console n
 
 Open https://developers.facebook.com/apps/creation/
 
-Any app name works, for example panda-social. The app stays in development mode, which is enough to post to your own account once you are its tester (step 4).
+The app name is not important, for example panda-social. The app stays in development mode. In this mode, the app can post to your account when you are its tester (step 4).
 
 > Screenshots to add: `images/threads-02-use-case.png` and `images/threads-03-business-portfolio.png`.
 
@@ -39,14 +46,14 @@ Any app name works, for example panda-social. The app stays in development mode,
 
 Open https://developers.facebook.com/apps/
 
-| Permission | What panda-social uses it for |
+| Permission | Function in panda-social |
 |---|---|
-| threads_basic | Every call, starting with checking whose token it is |
+| threads_basic | All the calls. The first call finds the account of the token. |
 | threads_content_publish | `post`, and the new post of `update --repost` |
 | threads_manage_replies | The replies of a `--split` thread |
-| threads_delete | `delete`, the delete half of `update --repost`, and removing the posted parts of a `--split` thread that failed midway |
+| threads_delete | `delete`, the delete part of `update --repost`, and the delete of the posted parts of a `--split` thread that stopped before its end |
 
-A permission you add later is not in a token generated before: generate a new token (step 6) and run the setup again.
+A token does not contain the permissions that you add after you generate it. If you add a permission, generate a new token (step 6). Then do the setup again.
 
 > Screenshot to add: `images/threads-04-permissions.png`.
 
@@ -64,7 +71,7 @@ A permission you add later is not in a token generated before: generate a new to
 
 Open https://www.threads.com/settings/account
 
-Why public: Meta keeps the permissions a public profile grants for 90 days and lets them be extended, while a private profile has to grant them again when they lapse.
+Keep the profile public, because Meta keeps the permissions of a public profile for 90 days, and you can extend them. A private profile must give the permissions again when they expire.
 
 > Screenshot to add: `images/threads-06-accept-invite.png`.
 
@@ -73,27 +80,31 @@ Why public: Meta keeps the permissions a public profile grants for 90 days and l
 - Back in the app dashboard: Use cases, Access the Threads API, Settings, User Token Generator.
 - Click Generate Access Token next to your account, continue, and copy the token.
 
-If your account is not in the list, the invitation of step 5 is not accepted yet. Copy the token as one line, with no space or line break, and treat it like a password: never paste it into a chat, an email or a shared document.
+If your account is not in the list, accept the invitation of step 5. Copy the token as one line, without a space or a line break.
+
+CAUTION: Do not paste the token into a chat, an email or a document that other persons can read. Other persons can use the token to post on your account.
 
 > Screenshots to add: `images/threads-07-token-generator.png` and `images/threads-08-token-dialog.png`.
 
 ## Finish: save the token
 
-In your own terminal:
+In your terminal:
 
 ```bash
 panda-social setup threads
 ```
 
-It shows the six steps again: if you have already done them, press Enter past each one. Then paste the token when asked; it does not show on screen. panda-social asks Threads whose token it is and saves it only if Threads accepts it.
+The command shows the six steps again. If you did the steps before, push Enter at each step. Then paste the token. The token does not show on the screen.
 
-A script can pipe the token in instead, from a file you delete afterwards:
+panda-social sends the token to Threads to find its account. It saves the token only if Threads accepts it.
+
+A script can send the token on standard input from a file. Delete the file after the setup:
 
 ```bash
 panda-social setup threads --token-stdin < token.txt
 ```
 
-For a second account, run the setup again with a profile name, and use the same name on every later command:
+For one more account, do the setup again with a profile name. Then use the same profile name in each command for that account:
 
 ```bash
 panda-social setup threads --profile brand-a
@@ -101,43 +112,43 @@ panda-social setup threads --profile brand-a
 
 > Screenshot to add: `images/threads-09-terminal-setup.png`.
 
-## Check that it works
+## Do a test of the setup
 
 ```bash
 panda-social status threads
 panda-social post --to threads --text "Hello from panda"
 ```
 
-`status threads` answers with your username, the token's age and how much of the day's quotas is used, and posts nothing. The second command publishes a real post on your profile.
+`status threads` shows your username, the date when panda-social saved the token, and the used part of the quotas for the last 24 hours. It does not post. The next command publishes a post on your profile.
 
 > Screenshot to add: `images/threads-10-status.png`.
 
-## When something goes wrong
+## If an error occurs
 
-| What you see | Why | What to do |
+| Error | Cause | Solution |
 |---|---|---|
-| `unauthorized`, "Cannot parse access token" | The token was copied incompletely, or with a space or a line break | Copy it again from step 6 as one line, then run the setup again |
-| `unauthorized` after weeks of working | The token expired: it lives 60 days after its last refresh, and a refresh happens only when a command runs | Generate a new token (step 6) and run the setup again |
-| `forbidden` | The token lacks a permission from step 3, often one added after the token was generated | Add the permission, generate a new token, run the setup again |
-| Your account is missing from the User Token Generator | The tester invitation is not accepted | Accept it (step 5), then reload the dashboard |
-| A console asks for a payment method | It is Meta's paid model API, not the Threads API | Start again from developers.facebook.com (step 1) |
-| `rate-limited` | Threads allows 250 posts, 1,000 replies and 100 deletes per rolling 24 hours | `panda-social status threads` shows what is used; wait, then retry |
+| `unauthorized`, "Cannot parse access token" | The token is not complete, or it has a space or a line break. | Copy the token again from step 6, as one line. Then do the setup again. |
+| `unauthorized` after some weeks | The token expired. A token expires 60 days after its last refresh, and a refresh occurs only when a command runs. | Generate a new token (step 6). Then do the setup again. |
+| `forbidden` | The token does not have a permission from step 3. Usually, you added the permission after you generated the token. | Add the permission and generate a new token. Then do the setup again. |
+| Your account is not in the User Token Generator | You did not accept the tester invitation. | Accept the invitation (step 5). Then open the dashboard again. |
+| A console tells you to add a payment method | This console is the Meta Model API, which is not free. It is not the Threads API. | Start again from developers.facebook.com (step 1). |
+| `rate-limited` | Threads lets you make 250 posts, 1,000 replies and 100 deletes in each period of 24 hours. | `panda-social status threads` shows the used part of each quota. Wait, and then try again. |
 
-Every error panda-social prints carries a `hint` with the next step, and `panda-social docs setup` has the full command page.
+Each error from panda-social has a `hint` with the next step. `panda-social docs setup` shows the full page of the command.
 
 ## Screenshots to add
 
-Taken in your own logged-in browser and terminal, saved next to this page under `images/`. Blur what the last column says before committing anything, the token always.
+Make these screenshots in your browser and your terminal, after you log in. Save them in the `images/` folder, next to this page. Before you commit a screenshot, blur the items in the last column. Always blur the token.
 
-| File | Step | Where | What it shows | Blur |
+| File | Step | Location | Content | Blur |
 |---|---|---|---|---|
-| `images/threads-01-registration.png` | 1 | developers.facebook.com/async/registration | The registration form with the terms and the phone check | Phone number, email |
-| `images/threads-02-use-case.png` | 2 | Create app, use case choice | "Access the Threads API" ticked | Nothing |
-| `images/threads-03-business-portfolio.png` | 2 | Create app, business portfolio | "I don't want to connect a business portfolio yet" selected | Nothing |
+| `images/threads-01-registration.png` | 1 | developers.facebook.com/async/registration | The registration form, with the terms and the check of the phone number | Phone number, email |
+| `images/threads-02-use-case.png` | 2 | Create app, selection of the use case | "Access the Threads API", selected | No blur |
+| `images/threads-03-business-portfolio.png` | 2 | Create app, business portfolio | "I don't want to connect a business portfolio yet", selected | No blur |
 | `images/threads-04-permissions.png` | 3 | Use cases, Access the Threads API, Customize | The four permissions in the list | App ID |
 | `images/threads-05-add-tester.png` | 4 | Settings, Add or Remove Threads Testers, Add People | The Threads Tester role and a username field | Username |
-| `images/threads-06-accept-invite.png` | 5 | threads.com, Settings, Account, Website permissions, Invites | The pending invitation with its Accept button | App name, if private |
+| `images/threads-06-accept-invite.png` | 5 | threads.com, Settings, Account, Website permissions, Invites | The invitation, with its Accept button | App name, if it is private |
 | `images/threads-07-token-generator.png` | 6 | Settings, User Token Generator | The Generate Access Token button next to the account | Username |
-| `images/threads-08-token-dialog.png` | 6 | The token dialog | Where the token appears and the copy action | The token, entirely |
-| `images/threads-09-terminal-setup.png` | Finish | A terminal | `panda-social setup threads` at step 1 of 6, then the hidden token prompt | Nothing |
-| `images/threads-10-status.png` | Check | A terminal | `panda-social status threads` answering `"ok":true` | User id |
+| `images/threads-08-token-dialog.png` | 6 | The token dialog | The token area and the copy control | All of the token |
+| `images/threads-09-terminal-setup.png` | Finish | A terminal | `panda-social setup threads` at step 1 of 6, then the prompt for the token, which does not show the token | No blur |
+| `images/threads-10-status.png` | Test | A terminal | `panda-social status threads` with `"ok":true` | User id |

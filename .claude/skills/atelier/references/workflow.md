@@ -262,6 +262,26 @@ Practical loop: pull/rebase often to stay close to the trunk; run the four-check
 
 This is the default for this codebase. It overrides any tooling habit of "branch first by default": branch only when a short-lived branch genuinely helps (e.g. a PR-review gate your team requires), and merge it the same day.
 
+### Branch lifecycle (hard rule 38)
+
+A branch is a short detour from the trunk: its whole life fits in a day, and it leaves nothing behind. Six steps, two of them machine-checked:
+
+1. Start from a freshly fetched `main` (`git fetch origin && git switch -c <name> origin/main`), or commit to `main` directly.
+2. Keep your own branch current by rebasing it onto `main` (`git rebase origin/main`), never by merging `main` into it.
+3. Land it by rebase or fast-forward: the host's "Rebase and merge", never a merge commit, and never a squash of several commits, which builds one commit that fails gate 1 on `main`. `check-commit-range.sh` rejects a merge commit in every pull request and every push (GitHub's synthetic merge of a pull request into its base, which a pull_request checkout sits on, is stepped over).
+4. Delete it the moment it lands, on the remote and locally (`git push origin --delete <name>`, `git branch -D <name>`). For the agent the remote delete is a push, so it waits for the user's yes (rule 25); when the host refuses it, say so and point the user at the host's delete button.
+5. Follow-up work after a landing starts a fresh branch from the new `main`, never more commits on the landed one.
+6. Nobody force-pushes or deletes `main`.
+
+The host enforces what git alone cannot. The owner sets it once, as code, to rebase-only merges with automatic head-branch deletion, and protects `main` against force pushes and deletion in the branch-protection code of `references/delivery.md`:
+
+```bash
+gh api -X PATCH repos/{owner}/{repo} -F allow_rebase_merge=true -F allow_merge_commit=false \
+  -F allow_squash_merge=false -F delete_branch_on_merge=true
+```
+
+`assets/branches.yml` runs `check-branches.sh` every morning and fails on a remote branch whose work is already on `main`, judged by content with `git merge-tree` so a rebase or squash merge counts as landed, and on one whose oldest commit not on `main` is more than a day old (`MAX_BRANCH_AGE_HOURS`, default 24). `KEEP_BRANCHES` (default `^release/`) exempts the release branches cut from the trunk when a release ships; a team that keeps other long-lived branches names them there, and owns the drift that follows. It is a watchdog, not a merge gate: a branch goes stale while nobody pushes to it.
+
 ## Confirmation gates (rules 24 and 25)
 
 Two behavioural gates, not lint-enforced; the discipline is the enforcement, exactly as for rule 11.
@@ -271,6 +291,18 @@ Two behavioural gates, not lint-enforced; the discipline is the enforcement, exa
 **Rule 25: never commit or push on your own initiative.** Producing and staging the change is the agent's job; deciding to commit it is the user's. Even when the tree is green, even when a commit is the obvious next step, even mid-flow: stop, show what would be committed (the staged-diff summary and a proposed Conventional Commits message), and wait for an explicit yes before running `git commit`, and the same for `git push`. Do not infer "commit" from a general "do it" or "go ahead" on the task; the commit needs its own confirmation. An explicit "commit and push X" is that confirmation; silence is not. Rule 23 governs the message format, rule 24 the tests; this rule governs when a commit happens: only on the user's say-so.
 
 **Unattended (headless) runs.** Both gates hold when nobody can answer. The one carve-out is creation: writing a NEW test for new code proceeds without the pause, because blocking on a question nobody can answer would make TDD impossible. Every other gated action on an EXISTING test (edit, weaken, delete, skip, rename) stays forbidden unattended, and so do commit and push; do the work, stage it, and put the gated proposals in the final report.
+
+## Reply gate (the Interaction section)
+
+SKILL.md's Interaction section says how a reply to a person reads, and five of its rules are mechanical: no em dash, no cut word, no bold lead-in on a list item, no decorative emoji, sentence-case headings. A doctrine line alone does not hold them: on 2026-10-04, 831 replies from 16 real cloud sessions in seven consumer repos carried a bold lead-in in 63 percent of the current model's long replies, and in 52 percent even where a tool call named atelier.
+
+**The gate.** `assets/check-reply.py --hook` is a Claude Code `Stop` hook, wired by `assets/claude-settings.json`: copy the script to `scripts/check-reply.py` and the settings to `.claude/settings.json`, or merge their `Stop` entry when that file already exists. When the agent ends a turn, Claude Code sends the hook the reply (`last_assistant_message`; the transcript's last reply on a version without that field). A doctrine finding exits 2 with each tag, an example and its fix on stderr; Claude Code hands that text back to the agent, which sends the reply again, fixed. The second stop carries `stop_hook_active` and passes, so a reply is restated at most once and the gate cannot loop. Input that is not a Stop event exits 1, a visible hook error and never a silent pass. It needs `python3` and nothing else.
+
+**What it costs.** A blocked reply appears twice, the original and its restatement, with a "Stop hook error" notice between them, and the restatement costs its own length in output tokens (a three-item list and its restatement: $0.037 together, 2026-10-04). How often it fires after the first block of a session is not yet measured; the probe counts it from session logs, per arm: the gate's blocks, the ones after a session's first, and the restatements that still broke a rule. It holds against an explicit request too: asked for bold labels, the agent restated without them, the same rewrite-to-comply the hard rules ask of code.
+
+**What stays a count.** The file is also a probe: given files or directories (eval transcripts, `~/.claude/projects/<slug>/` session logs) it prints every finding and counts per arm. Its Simplified Technical English candidates (a hedged result such as "should pass", any hedge, an event passive, sentences over 25 words, paragraphs over 6 sentences, a question buried in a report) never block: the 831-reply reading found no habit to fix, and a rule allowing only can, must and will would push honest uncertainty toward false certainty.
+
+**The proof.** Each variant's smoke test copies the pair as a bootstrap does and proves exit 2 with the `bold-lead-in` tag on a planted reply, a pass on a plain one, the loop guard, and that the copied settings run the copied script. In the skill repository, CI runs the file's `--selftest` (every tag on its own plant, both modes, the cut list against this section) and `check-workflow-assets.sh`, which fails a variant whose checklist does not copy the hook's script.
 
 ## Commit identity (rule 26)
 

@@ -282,3 +282,174 @@ def transcript_replies(path: Path) -> list[str]:
     return [text for event in events_of(path) for text in reply_texts(event)]
 
 
+def gate_blocks(path: Path) -> tuple[int, int]:
+    """The reply gate's blocks in a transcript, and the restatements that still broke a rule.
+
+    A block is the feedback Claude Code hands back: a user event that opens with "Stop hook
+    feedback" and carries the gate's own message, so another hook's feedback, or a person quoting
+    the message, is not one. Its restatement is the next reply after it."""
+    blocks = still = 0
+    restating = False
+    for event in events_of(path):
+        said = user_text(event)
+        if said.lstrip().startswith("Stop hook feedback") and GATE_SAID in said:
+            blocks, restating = blocks + 1, True
+            continue
+        texts = reply_texts(event)
+        if restating and texts:
+            restating = False
+            still += any(tag in DOCTRINE for tag, _ in check("\n\n".join(texts))[0])
+    return blocks, still
+
+
+def files_in(root: Path) -> list[Path]:
+    """The reply files under a directory: transcripts, reviews, and a .result.txt with no transcript."""
+    found: list[Path] = []
+    for here, dirs, names in os.walk(root):
+        dirs[:] = sorted(d for d in dirs if d not in SKIP_DIRS)
+        for name in sorted(names):
+            if name.endswith(".jsonl") or name == ".review.txt" or (name == ".result.txt" and ".transcript.jsonl" not in names):
+                found.append(Path(here) / name)
+    return found
+
+
+def paths_of(args: list[str]) -> list[Path]:
+    """The files the arguments name: a file as given, a directory walked for reply files."""
+    paths: list[Path] = []
+    for arg in args:
+        root = Path(arg)
+        if not root.exists():
+            print(f"check-reply.py: no such file or directory: {arg}", file=sys.stderr)
+            sys.exit(2)
+        paths += files_in(root) if root.is_dir() else [root]
+    return paths
+
+
+def collect(args: list[str]) -> list[tuple[str, str, str]]:
+    """(arm, label, reply) for every reply the arguments name."""
+    replies: list[tuple[str, str, str]] = []
+    for path in paths_of(args):
+        if path.suffix == ".jsonl":
+            replies += [(arm_of(path), f"{path}#{i}", text) for i, text in enumerate(transcript_replies(path), 1)]
+        else:
+            replies.append((arm_of(path), str(path), path.read_text(encoding="utf-8", errors="replace")))
+    return replies
+
+
+def gates_in(args: list[str]) -> list[tuple[str, tuple[int, int]]]:
+    """(arm, (blocks, restatements still breaking a rule)) for each transcript the arguments name."""
+    return [(arm_of(path), gate_blocks(path)) for path in paths_of(args) if path.suffix == ".jsonl"]
+
+
+def excerpt(text: str, width: int = 110) -> str:
+    flat = " ".join(text.split())
+    return flat if len(flat) <= width else flat[: width - 3] + "..."
+
+
+def report(replies: list[tuple[str, str, str]], gates: list[tuple[str, tuple[int, int]]] = ()) -> int:
+    """Print every finding, then the counts per arm, with the gate's blocks per session where
+    transcripts were read; 1 when any doctrine tag fired."""
+    counts: dict[str, Counter] = {}
+    for arm, label, reply in replies:
+        found, n_sentences, n_words = check(reply)
+        tally = counts.setdefault(arm, Counter())
+        tally.update(replies=1, sentences=n_sentences, words=n_words)
+        for tag, evidence in found:
+            tally[tag] += 1
+            print(f"{label}: {tag}: {excerpt(evidence)}")
+    sessions: dict[str, list[tuple[int, int]]] = {}
+    for arm, counted in gates:
+        sessions.setdefault(arm, []).append(counted)
+    for arm in sorted(set(counts) | set(sessions)):
+        tally = counts.get(arm, Counter())
+        per = max(tally["sentences"], 1) / 100
+        print(f"\narm {arm}: {tally['replies']} replies, {tally['sentences']} sentences, {tally['words']} words")
+        print("  doctrine: " + ", ".join(f"{tag} {tally[tag]}" for tag in DOCTRINE))
+        print("  candidate (per 100 sentences): " + ", ".join(f"{tag} {tally[tag]} ({tally[tag] / per:.1f})" for tag in CANDIDATE))
+        if arm in sessions:
+            runs = sessions[arm]
+            blocked = [b for b, _ in runs if b]
+            print(f"  gate: {sum(blocked)} block(s) in {len(blocked)} of {len(runs)} session(s), "
+                  f"{sum(b - 1 for b in blocked)} after a session's first, "
+                  f"{sum(s for _, s in runs)} restatement(s) still breaking a rule")
+    doctrine = sum(tally[tag] for tally in counts.values() for tag in DOCTRINE)
+    print(f"\n{doctrine} doctrine finding(s): the Interaction section already bans these" if doctrine
+          else "\nno doctrine finding; the candidates are counts, never a failure")
+    return 1 if doctrine else 0
+
+
+FIXES = {
+    "em-dash": "a comma, a colon, parentheses or a period",
+    "cut-word": "the plain word, or nothing",
+    "bold-lead-in": "open the item with a plain sentence; labelled items go in a table",
+    "emoji": "words (pass, fail, done)",
+    "heading-case": "sentence case, a capital for the first word and proper nouns only",
+}
+GATE_SAID = "This reply breaks the atelier Interaction rules"  # gate_blocks counts the feedback by it
+
+
+def hook(stdin: str) -> int:
+    """The Stop hook: 2 blocks with the doctrine findings on stderr, 0 passes, 1 is bad input."""
+    try:
+        event = json.loads(stdin)
+    except json.JSONDecodeError:
+        event = None
+    if not isinstance(event, dict) or event.get("hook_event_name") != "Stop":
+        print("check-reply.py --hook: stdin is not a Claude Code Stop event", file=sys.stderr)
+        return 1
+    if event.get("stop_hook_active"):
+        return 0  # the restated reply passes: one restatement per reply, never a loop
+    reply = event.get("last_assistant_message")
+    if not isinstance(reply, str):  # an older Claude Code: the transcript's last reply
+        path = Path(str(event.get("transcript_path", "")))
+        replies = transcript_replies(path) if path.is_file() else []
+        reply = replies[-1] if replies else ""
+    found: dict[str, list[str]] = {}
+    for tag, evidence in check(reply)[0]:
+        if tag in DOCTRINE:
+            found.setdefault(tag, []).append(evidence)
+    if not found:
+        return 0
+    print(f"{GATE_SAID}. Send it again in full, fixed, with no preface:", file=sys.stderr)
+    for tag, evidence in found.items():
+        print(f"- {tag} ({len(evidence)}): {excerpt(evidence[0], 80)}; fix: {FIXES[tag]}", file=sys.stderr)
+    return 2
+
+
+CLEAN = (
+    "## What changed in the adapter\n\n"
+    "I moved the deadline into the adapter (`src/infra/http.ts`), and the suite passes: "
+    "`bun test` ran 41 tests and none failed.\n\n"
+    "The old path is disconnected, so nothing reads it. The cache was indeed empty. "
+    "I could not reproduce the timeout, and the ticket keeps the flag until May 2026.\n\n"
+    "I replaced \"should pass\" with the command that proved it, since \"the tests were updated\" hides "
+    "who did it. The review said \"the retry is bounded.\" I read the diff myself, line by line, and "
+    "agreed with every point it made about the adapter, the retry and the flag.\n\n"
+    "**The deadline sits in the adapter now, where the client is built, with the bounded and jittered "
+    "retry right beside it.** It stops after three tries with jitter.\n\n"
+    "```ts\n// robust \u2014 code is not prose, and it should pass\n```\n\n"
+    "> A quoted line keeps its own punctuation \u2014 robust or not.\n\n"
+    "| Check | Result |\n|:---|:---|\n| Lint | 0 warnings |\n| Types | \u2713 |\n\n"
+    "- The first item is plain.\n"
+    "- The second names `should pass` inside code, and [a link](https://example.com/robust).\n\n"
+    "---\n\n"
+    "Which branch should it land on? Commit the two staged files?\n"
+)
+
+PLANTS = {
+    "em-dash": "I moved the deadline \u2014 the adapter owns it now.",
+    "cut-word": "I chose a robust retry for the adapter.",
+    "bold-lead-in": "- **Deadline.** The adapter owns it now.",
+    "emoji": "The suite is green \u2705",
+    "heading-case": "## What Changed In The Adapter",
+    "unverified-claim": "The suite should pass now.",
+    "hedge": "The cache might hold a stale entry.",
+    "passive": "The flaky test was updated.",
+    "long-sentence": "I moved the deadline into the adapter and the retry into the use case and the logger "
+                     "into the composition root and the flag into the config module today.",
+    "long-paragraph": "I read the plan. I ran the suite. I fixed the hook. I moved the flag. I ran lint. "
+                      "I ran the types. I staged it.",
+    "buried-ask": "I fixed the hook. The suite passes. Commit the change?",
+}
+
+

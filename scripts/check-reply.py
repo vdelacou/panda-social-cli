@@ -128,3 +128,291 @@ def clean(line: str) -> str:
     return line.replace("**", "").replace("__", "")
 
 
+def parse(reply: str) -> tuple[list[str], list[tuple[str, str, str]]]:
+    """The lines the character checks read, and the (kind, text, first raw line) blocks the
+    sentence checks read, kind being heading, item or para. Fenced code and block quotes are in
+    neither; a table row or a horizontal rule is a line, never a block."""
+    lines: list[str] = []
+    blocks: list[tuple[str, str, str]] = []
+    kind, buf, first, fence = "", [], "", ""
+
+    def close() -> None:
+        nonlocal kind, buf, first
+        if buf:
+            blocks.append((kind, " ".join(buf), first))
+        kind, buf, first = "", [], ""
+
+    for raw in reply.splitlines():
+        if fence:
+            fence = "" if raw.strip().startswith(fence) else fence
+            continue
+        opened = FENCE.match(raw)
+        if opened:
+            close()
+            fence = opened.group(1)[:3]
+            continue
+        if raw.lstrip().startswith(">"):
+            close()
+            continue
+        line = clean(raw)
+        lines.append(line)
+        heading = HEADING.match(raw)
+        if not raw.strip() or heading or raw.lstrip().startswith("|") or RULE_LINE.match(raw):
+            close()
+            if heading:
+                blocks.append(("heading", clean(heading.group(1)), raw))
+            continue
+        if LIST_ITEM.match(raw):
+            close()
+            kind, first, buf = "item", raw, [LIST_ITEM.sub("", line, count=1)]
+            continue
+        if not buf:
+            kind, first = "para", raw
+        buf.append(line.strip())
+    close()
+    return lines, blocks
+
+
+def title_case(heading: str) -> bool:
+    words = re.findall(r"[A-Za-z][A-Za-z'\u2019.-]*", heading.replace("*", " ").replace("_", " "))[1:]
+    content = [w for w in words if w.lower() not in SMALL_WORDS and not w.isupper()]
+    return len(content) >= 2 and all(w[0].isupper() for w in content)
+
+
+def word_count(sentence: str) -> int:
+    """Words as STE counts them: a parenthesis is one word, and so is a path or a number."""
+    while True:
+        folded = re.sub(r"\([^()]*\)", " PAREN ", sentence)
+        if folded == sentence:
+            return len(WORD.findall(folded))
+        sentence = folded
+
+
+def passive(sentence: str) -> bool:
+    return any(m.group(1).lower() not in NOT_PARTICIPLE for m in PASSIVE.finditer(sentence))
+
+
+def check(reply: str) -> tuple[list[tuple[str, str]], int, int]:
+    """The (tag, evidence) findings of one reply, with its sentence and word counts."""
+    lines, blocks = parse(reply)
+    found: list[tuple[str, str]] = []
+    for line in lines:
+        if EM_DASH in line:
+            found.append(("em-dash", line))
+        cut = CUT_WORD.search(line)
+        if cut:
+            found.append(("cut-word", f"{cut.group(0)}: {line}"))
+        if EMOJI.search(line):
+            found.append(("emoji", line))
+    n_sentences = n_words = 0
+    for kind, text, first in blocks:
+        if kind == "heading":
+            if title_case(text):
+                found.append(("heading-case", text))
+            continue
+        if kind == "item" and BOLD_LEAD_IN.match(first):
+            found.append(("bold-lead-in", first))
+        said = [s for s in SENTENCE_END.split(text) if WORD.search(s)]
+        n_sentences += len(said)
+        if len(said) > MAX_SENTENCES:
+            found.append(("long-paragraph", f"{len(said)} sentences: {text}"))
+        asks = [s for s in said if s.rstrip("*_)\"' ").endswith("?")]
+        if kind == "para" and asks and len(said) - len(asks) >= 2:
+            found.append(("buried-ask", asks[0]))
+        for sentence in said:
+            n = word_count(sentence)
+            n_words += n
+            if n > MAX_WORDS:
+                found.append(("long-sentence", f"{n} words: {sentence}"))
+            claim = sentence not in asks  # a question asks, it does not claim
+            if claim and UNVERIFIED.search(sentence):
+                found.append(("unverified-claim", sentence))
+            elif claim and HEDGE.search(sentence):
+                found.append(("hedge", sentence))
+            if passive(sentence):
+                found.append(("passive", sentence))
+    return found, n_sentences, n_words
+
+
+def arm_of(path: Path) -> str:
+    for part in reversed(path.parent.parts):
+        named = ARM.search(part)
+        if named:
+            return named.group(1)
+    return "-"
+
+
+def events_of(path: Path) -> list[dict]:
+    """The JSON events of a stream-json transcript or a session log; any other line is skipped."""
+    events: list[dict] = []
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(event, dict):
+            events.append(event)
+    return events
+
+
+def reply_texts(event: dict) -> list[str]:
+    """The text blocks of an assistant event that a person reads; nothing for any other event."""
+    if event.get("type") != "assistant" or event.get("isSidechain") or event.get("parent_tool_use_id"):
+        return []  # a subagent talking to its parent is not a reply to the person
+    message = event.get("message")
+    if not isinstance(message, dict) or message.get("model") == "<synthetic>":
+        return []  # the harness's notice (an API error, a /context table), not the agent's words
+    content = message.get("content")
+    blocks = content if isinstance(content, list) else []
+    return [b["text"] for b in blocks
+            if isinstance(b, dict) and b.get("type") == "text" and isinstance(b.get("text"), str) and b["text"].strip()]
+
+
+def user_text(event: dict) -> str:
+    """The text of a user event, whether its content is a string (a session log) or blocks (stream-json)."""
+    message = event.get("message") if event.get("type") == "user" else None
+    content = message.get("content") if isinstance(message, dict) else None
+    if isinstance(content, list):
+        return "\n".join(b.get("text", "") for b in content if isinstance(b, dict) and b.get("type") == "text")
+    return content if isinstance(content, str) else ""
+
+
+def transcript_replies(path: Path) -> list[str]:
+    """Each assistant text block of a stream-json transcript or a session log, in order."""
+    return [text for event in events_of(path) for text in reply_texts(event)]
+
+
+def gate_blocks(path: Path) -> tuple[int, int]:
+    """The reply gate's blocks in a transcript, and the restatements that still broke a rule.
+
+    A block is the feedback Claude Code hands back: a user event that opens with "Stop hook
+    feedback" and carries the gate's own message, so another hook's feedback, or a person quoting
+    the message, is not one. Its restatement is the next reply after it."""
+    blocks = still = 0
+    restating = False
+    for event in events_of(path):
+        said = user_text(event)
+        if said.lstrip().startswith("Stop hook feedback") and GATE_SAID in said:
+            blocks, restating = blocks + 1, True
+            continue
+        texts = reply_texts(event)
+        if restating and texts:
+            restating = False
+            still += any(tag in DOCTRINE for tag, _ in check("\n\n".join(texts))[0])
+    return blocks, still
+
+
+def files_in(root: Path) -> list[Path]:
+    """The reply files under a directory: transcripts, reviews, and a .result.txt with no transcript."""
+    found: list[Path] = []
+    for here, dirs, names in os.walk(root):
+        dirs[:] = sorted(d for d in dirs if d not in SKIP_DIRS)
+        for name in sorted(names):
+            if name.endswith(".jsonl") or name == ".review.txt" or (name == ".result.txt" and ".transcript.jsonl" not in names):
+                found.append(Path(here) / name)
+    return found
+
+
+def paths_of(args: list[str]) -> list[Path]:
+    """The files the arguments name: a file as given, a directory walked for reply files."""
+    paths: list[Path] = []
+    for arg in args:
+        root = Path(arg)
+        if not root.exists():
+            print(f"check-reply.py: no such file or directory: {arg}", file=sys.stderr)
+            sys.exit(2)
+        paths += files_in(root) if root.is_dir() else [root]
+    return paths
+
+
+def collect(args: list[str]) -> list[tuple[str, str, str]]:
+    """(arm, label, reply) for every reply the arguments name."""
+    replies: list[tuple[str, str, str]] = []
+    for path in paths_of(args):
+        if path.suffix == ".jsonl":
+            replies += [(arm_of(path), f"{path}#{i}", text) for i, text in enumerate(transcript_replies(path), 1)]
+        else:
+            replies.append((arm_of(path), str(path), path.read_text(encoding="utf-8", errors="replace")))
+    return replies
+
+
+def gates_in(args: list[str]) -> list[tuple[str, tuple[int, int]]]:
+    """(arm, (blocks, restatements still breaking a rule)) for each transcript the arguments name."""
+    return [(arm_of(path), gate_blocks(path)) for path in paths_of(args) if path.suffix == ".jsonl"]
+
+
+def excerpt(text: str, width: int = 110) -> str:
+    flat = " ".join(text.split())
+    return flat if len(flat) <= width else flat[: width - 3] + "..."
+
+
+def report(replies: list[tuple[str, str, str]], gates: list[tuple[str, tuple[int, int]]] = ()) -> int:
+    """Print every finding, then the counts per arm, with the gate's blocks per session where
+    transcripts were read; 1 when any doctrine tag fired."""
+    counts: dict[str, Counter] = {}
+    for arm, label, reply in replies:
+        found, n_sentences, n_words = check(reply)
+        tally = counts.setdefault(arm, Counter())
+        tally.update(replies=1, sentences=n_sentences, words=n_words)
+        for tag, evidence in found:
+            tally[tag] += 1
+            print(f"{label}: {tag}: {excerpt(evidence)}")
+    sessions: dict[str, list[tuple[int, int]]] = {}
+    for arm, counted in gates:
+        sessions.setdefault(arm, []).append(counted)
+    for arm in sorted(set(counts) | set(sessions)):
+        tally = counts.get(arm, Counter())
+        per = max(tally["sentences"], 1) / 100
+        print(f"\narm {arm}: {tally['replies']} replies, {tally['sentences']} sentences, {tally['words']} words")
+        print("  doctrine: " + ", ".join(f"{tag} {tally[tag]}" for tag in DOCTRINE))
+        print("  candidate (per 100 sentences): " + ", ".join(f"{tag} {tally[tag]} ({tally[tag] / per:.1f})" for tag in CANDIDATE))
+        if arm in sessions:
+            runs = sessions[arm]
+            blocked = [b for b, _ in runs if b]
+            print(f"  gate: {sum(blocked)} block(s) in {len(blocked)} of {len(runs)} session(s), "
+                  f"{sum(b - 1 for b in blocked)} after a session's first, "
+                  f"{sum(s for _, s in runs)} restatement(s) still breaking a rule")
+    doctrine = sum(tally[tag] for tally in counts.values() for tag in DOCTRINE)
+    print(f"\n{doctrine} doctrine finding(s): the Interaction section already bans these" if doctrine
+          else "\nno doctrine finding; the candidates are counts, never a failure")
+    return 1 if doctrine else 0
+
+
+FIXES = {
+    "em-dash": "a comma, a colon, parentheses or a period",
+    "cut-word": "the plain word, or nothing",
+    "bold-lead-in": "open the item with a plain sentence; labelled items go in a table",
+    "emoji": "words (pass, fail, done)",
+    "heading-case": "sentence case, a capital for the first word and proper nouns only",
+}
+GATE_SAID = "This reply breaks the atelier Interaction rules"  # gate_blocks counts the feedback by it
+
+
+def hook(stdin: str) -> int:
+    """The Stop hook: 2 blocks with the doctrine findings on stderr, 0 passes, 1 is bad input."""
+    try:
+        event = json.loads(stdin)
+    except json.JSONDecodeError:
+        event = None
+    if not isinstance(event, dict) or event.get("hook_event_name") != "Stop":
+        print("check-reply.py --hook: stdin is not a Claude Code Stop event", file=sys.stderr)
+        return 1
+    if event.get("stop_hook_active"):
+        return 0  # the restated reply passes: one restatement per reply, never a loop
+    reply = event.get("last_assistant_message")
+    if not isinstance(reply, str):  # an older Claude Code: the transcript's last reply
+        path = Path(str(event.get("transcript_path", "")))
+        replies = transcript_replies(path) if path.is_file() else []
+        reply = replies[-1] if replies else ""
+    found: dict[str, list[str]] = {}
+    for tag, evidence in check(reply)[0]:
+        if tag in DOCTRINE:
+            found.setdefault(tag, []).append(evidence)
+    if not found:
+        return 0
+    print(f"{GATE_SAID}. Send it again in full, fixed, with no preface:", file=sys.stderr)
+    for tag, evidence in found.items():
+        print(f"- {tag} ({len(evidence)}): {excerpt(evidence[0], 80)}; fix: {FIXES[tag]}", file=sys.stderr)
+    return 2
+
+

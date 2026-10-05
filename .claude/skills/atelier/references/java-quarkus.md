@@ -502,12 +502,15 @@ Same git hooks as the Bun variant, shell only, wired with `git config core.hooks
 - `assets/check-no-suppressions.sh`: the rule 15 tripwire for Java, staged lines in the hook and `--all` in CI; the forms it rejects are listed in its header.
 - `assets/check-identity.sh`: the rule 26 tripwire, hook gate 5 on the staged lines and `--all` in CI: a multi-word git name in both orders and the email, every author and committer in the history under `--all`, `IDENTITY_DENYLIST` for employers and clients; one-word names and noreply addresses are handles, CODEOWNERS and `.mailmap` exempt.
 - `assets/java/pmd-ruleset.xml`: the rule 35 ruleset and the rule 15 `NoSuppressWarnings` XPath rule (`CyclomaticComplexity`, `methodReportLevel` 11, so complexity 11 and above fails and 10 passes, the same boundary as the TypeScript `complexity: ['error', 10]`), copied to the repository root where the canonical pom's `maven-pmd-plugin` reads it in `verify`. `smoke-test-java.sh` plants a complexity-11 method and sees `pmd:check` red, and a complexity-10 one green. Since 2026-09-19 it carries rule 4 too: PMD's `SystemPrintln` and the `NoPrintStackTrace` XPath rule (PMD's own `AvoidPrintStackTrace` is silent on 7.17).
+- `assets/check-reply.py` and `assets/claude-settings.json`: the reply gate, a Claude Code Stop hook rather than a git hook or a CI step, that has the agent restate a reply breaking the Interaction section's mechanical rules (`references/workflow.md`, Reply gate); it needs python3.
+- `assets/check-branches.sh` and `assets/branches.yml`: the daily branch watchdog of hard rule 38, a branch whose work already landed or one more than a day off `main`; the owner also sets the host to rebase-only merges with automatic head-branch deletion, once (`references/workflow.md`, Branch lifecycle).
 
 ```bash
 mkdir -p .githooks scripts .github/workflows
 cp <skill>/assets/pre-commit-java        .githooks/pre-commit
 cp <skill>/assets/commit-msg             .githooks/commit-msg
 cp <skill>/assets/java/pmd-ruleset.xml   pmd-ruleset.xml
+cp <skill>/assets/gitattributes          .gitattributes
 cp <skill>/assets/check-commit-size.sh   scripts/check-commit-size.sh
 cp <skill>/assets/check-pom.sh           scripts/check-pom.sh
 cp <skill>/assets/check-no-suppressions.sh scripts/check-no-suppressions.sh
@@ -515,12 +518,16 @@ cp <skill>/assets/check-identity.sh       scripts/check-identity.sh
 cp <skill>/assets/check-disciplines.sh    scripts/check-disciplines.sh
 cp <skill>/assets/check-commit-messages.sh scripts/check-commit-messages.sh
 cp <skill>/assets/check-commit-range.sh    scripts/check-commit-range.sh
+cp <skill>/assets/check-branches.sh       scripts/check-branches.sh
+cp <skill>/assets/branches.yml            .github/workflows/branches.yml
 cp <skill>/assets/pit-changed.sh         scripts/pit-changed.sh
 cp <skill>/assets/check-docs.sh          scripts/check-docs.sh
 cp <skill>/assets/ci-java.yml            .github/workflows/ci.yml
 cp <skill>/assets/mutation-java.yml      .github/workflows/mutation-java.yml
 cp <skill>/assets/audit-java.yml         .github/workflows/audit-java.yml
 cp <skill>/assets/check-skill-pin.sh     scripts/check-skill-pin.sh
+cp <skill>/assets/check-reply.py         scripts/check-reply.py
+mkdir -p .claude && cp <skill>/assets/claude-settings.json .claude/settings.json   # the reply gate; merge its Stop entry if the file exists
 
 # Discipline tripwires. Three are core gates run by check-disciplines.sh (hook gate 6,
 # CI --all): rules 27, 29, 30. The isolation guard (rule 28) is opt-in where tenants or

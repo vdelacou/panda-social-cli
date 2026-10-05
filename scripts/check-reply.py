@@ -416,3 +416,199 @@ def hook(stdin: str) -> int:
     return 2
 
 
+CLEAN = (
+    "## What changed in the adapter\n\n"
+    "I moved the deadline into the adapter (`src/infra/http.ts`), and the suite passes: "
+    "`bun test` ran 41 tests and none failed.\n\n"
+    "The old path is disconnected, so nothing reads it. The cache was indeed empty. "
+    "I could not reproduce the timeout, and the ticket keeps the flag until May 2026.\n\n"
+    "I replaced \"should pass\" with the command that proved it, since \"the tests were updated\" hides "
+    "who did it. The review said \"the retry is bounded.\" I read the diff myself, line by line, and "
+    "agreed with every point it made about the adapter, the retry and the flag.\n\n"
+    "**The deadline sits in the adapter now, where the client is built, with the bounded and jittered "
+    "retry right beside it.** It stops after three tries with jitter.\n\n"
+    "```ts\n// robust \u2014 code is not prose, and it should pass\n```\n\n"
+    "> A quoted line keeps its own punctuation \u2014 robust or not.\n\n"
+    "| Check | Result |\n|:---|:---|\n| Lint | 0 warnings |\n| Types | \u2713 |\n\n"
+    "- The first item is plain.\n"
+    "- The second names `should pass` inside code, and [a link](https://example.com/robust).\n\n"
+    "---\n\n"
+    "Which branch should it land on? Commit the two staged files?\n"
+)
+
+PLANTS = {
+    "em-dash": "I moved the deadline \u2014 the adapter owns it now.",
+    "cut-word": "I chose a robust retry for the adapter.",
+    "bold-lead-in": "- **Deadline.** The adapter owns it now.",
+    "emoji": "The suite is green \u2705",
+    "heading-case": "## What Changed In The Adapter",
+    "unverified-claim": "The suite should pass now.",
+    "hedge": "The cache might hold a stale entry.",
+    "passive": "The flaky test was updated.",
+    "long-sentence": "I moved the deadline into the adapter and the retry into the use case and the logger "
+                     "into the composition root and the flag into the config module today.",
+    "long-paragraph": "I read the plan. I ran the suite. I fixed the hook. I moved the flag. I ran lint. "
+                      "I ran the types. I staged it.",
+    "buried-ask": "I fixed the hook. The suite passes. Commit the change?",
+}
+
+
+def selftest() -> int:
+    failures: list[str] = []
+
+    def tags(reply: str) -> list[str]:
+        return [tag for tag, _ in check(reply)[0]]
+
+    if tags(CLEAN):
+        failures.append(f"the clean reply drew {tags(CLEAN)}")
+    if sorted(PLANTS) != sorted(DOCTRINE + CANDIDATE):
+        failures.append("a tag has no plant")
+    for tag, plant in PLANTS.items():
+        if tags(plant) != [tag]:
+            failures.append(f"the {tag} plant drew {tags(plant)}")
+
+    # The doctrine tags mirror the Interaction section: a cut word added or dropped there, or a
+    # rule reworded away, fails here until this file follows. A copy outside the skill tree has
+    # no SKILL.md beside it, and that is a failure too, never a skipped check.
+    text = SKILL.read_text(encoding="utf-8") if SKILL.is_file() else ""
+    interaction = text.partition("## Interaction")[2].split("\n## ", 1)[0]
+    if not interaction:
+        failures.append(f"the drift check needs the skill tree: no Interaction section at {SKILL}")
+    else:
+        listed = re.search(r"\bcut (.+?)\.(?:\s|$)", interaction)
+        cut = tuple(w.strip().strip('"') for w in listed.group(1).split(",")) if listed else ()
+        if cut != CUT_WORDS:
+            failures.append(f"SKILL.md cuts {cut}, this file {CUT_WORDS}")
+        failures += [f"the Interaction section no longer names {rule!r}"
+                     for rule in ("em dash", "bold lead-in", "sentence-case headings", "decorative emoji")
+                     if rule not in interaction]
+    failures += [f"CUT_WORD misses {w!r}" for w in CUT_WORDS if not CUT_WORD.search(w)]
+
+    # Inputs: only the person-facing assistant text of a transcript, a run dir's arm, and nothing
+    # from a copied skill or a derived .result.txt.
+    tmp = Path(tempfile.mkdtemp(prefix="check-reply-"))
+    try:
+        run = tmp / "runs" / "t1-with_skill"
+        (run / "skills" / "atelier").mkdir(parents=True)
+        (run / "skills" / "atelier" / ".review.txt").write_text("A copied skill \u2014 never read.\n")
+        events = [
+            {"type": "system", "subtype": "init"},
+            {"type": "user", "message": {"role": "user", "content": "Fix it \u2014 now."}},
+            {"type": "assistant", "parent_tool_use_id": None, "message": {"id": "m1", "content": [
+                {"type": "thinking", "thinking": "A robust plan \u2014 maybe."},
+                {"type": "text", "text": PLANTS["unverified-claim"]},
+                {"type": "tool_use", "name": "Bash", "input": {"command": "echo robust"}}]}},
+            {"type": "assistant", "parent_tool_use_id": "toolu_1", "message": {"id": "m2", "content": [
+                {"type": "text", "text": PLANTS["cut-word"]}]}},
+            {"type": "assistant", "isSidechain": True, "message": {"id": "m3", "content": [
+                {"type": "text", "text": PLANTS["emoji"]}]}},
+            {"type": "assistant", "message": {"id": "m4", "content": [{"type": "text", "text": "I fixed the hook."}]}},
+            {"type": "assistant", "message": {"id": "m5", "model": "<synthetic>", "content": [
+                {"type": "text", "text": PLANTS["em-dash"]}]}},
+            {"type": "result", "result": PLANTS["em-dash"]},
+        ]
+        (run / ".transcript.jsonl").write_text("\n".join(json.dumps(e) for e in events) + "\nnot json\n")
+        (run / ".result.txt").write_text(PLANTS["em-dash"] + "\n")
+        (tmp / "runs" / "review-baseline").mkdir()
+        (tmp / "runs" / "review-baseline" / ".review.txt").write_text(PLANTS["passive"] + "\n")
+        got = [(arm, Path(label).name, reply) for arm, label, reply in collect([str(tmp / "runs")])]
+        want = [("baseline", ".review.txt", PLANTS["passive"] + "\n"),
+                ("with_skill", ".transcript.jsonl#1", PLANTS["unverified-claim"]),
+                ("with_skill", ".transcript.jsonl#2", "I fixed the hook.")]
+        if got != want:
+            failures.append(f"the run dirs read as {got}")
+
+        # The gate: a doctrine finding blocks with its tag and fix, a candidate never blocks, the
+        # restated reply passes, an older Claude Code's transcript is read, bad input is an error.
+        (tmp / "session.jsonl").write_text(json.dumps(
+            {"type": "assistant", "message": {"content": [{"type": "text", "text": PLANTS["em-dash"]}]}}) + "\n")
+        stop = {"hook_event_name": "Stop", "stop_hook_active": False}
+        cases = [
+            ("a bold lead-in", {**stop, "last_assistant_message": PLANTS["bold-lead-in"]}, 2, "- bold-lead-in (1): "),
+            ("the clean reply", {**stop, "last_assistant_message": CLEAN}, 0, ""),
+            ("a candidate", {**stop, "last_assistant_message": PLANTS["hedge"]}, 0, ""),
+            ("the restated reply", {**stop, "stop_hook_active": True,
+                                    "last_assistant_message": PLANTS["bold-lead-in"]}, 0, ""),
+            ("a turn with no text", {**stop, "last_assistant_message": ""}, 0, ""),
+            ("an older Claude Code", {**stop, "transcript_path": str(tmp / "session.jsonl")}, 2, "- em-dash (1): "),
+            ("another event", {"hook_event_name": "SubagentStop", "last_assistant_message": PLANTS["em-dash"]},
+             1, "not a Claude Code Stop event"),
+            ("stdin that is not JSON", "not json", 1, "not a Claude Code Stop event"),
+        ]
+        for name, event, want_code, want_text in cases:
+            with contextlib.redirect_stderr(io.StringIO()) as said:
+                code = hook(event if isinstance(event, str) else json.dumps(event))
+            told = said.getvalue()
+            if code != want_code or (want_text not in told if want_text else told):
+                failures.append(f"the gate gave {name} exit {code} and {told!r}")
+            if code == 2 and not told.startswith(GATE_SAID):
+                failures.append(f"the gate's feedback does not open with the message gate_blocks counts: {told!r}")
+
+        # The count: two blocks (a session log's string, stream-json's text block), one restatement
+        # fixed and one still broken; another hook's feedback and a person quoting the message are
+        # not blocks, and a broken reply with no block before it is no restatement.
+        feedback = f"Stop hook feedback: [python3 scripts/check-reply.py --hook]: {GATE_SAID}. Send it again"
+        said_by = [
+            ("assistant", PLANTS["bold-lead-in"]),
+            ("meta", feedback),
+            ("assistant", "The adapter owns the deadline now."),
+            ("assistant", PLANTS["em-dash"]),
+            ("blocks", feedback),
+            ("thinking", "Restate it."),
+            ("assistant", PLANTS["em-dash"]),
+            ("meta", "Stop hook feedback: [~/.claude/stop-hook-git-check.sh]: There are uncommitted changes."),
+            ("person", f"Why did it say {GATE_SAID}?"),
+        ]
+        shapes = {
+            "assistant": lambda s: {"type": "assistant", "message": {"content": [{"type": "text", "text": s}]}},
+            "thinking": lambda s: {"type": "assistant", "message": {"content": [{"type": "thinking", "thinking": s}]}},
+            "meta": lambda s: {"type": "user", "isMeta": True, "message": {"role": "user", "content": s}},
+            "blocks": lambda s: {"type": "user", "message": {"role": "user", "content": [{"type": "text", "text": s}]}},
+            "person": lambda s: {"type": "user", "message": {"role": "user", "content": s}},
+        }
+        (tmp / "gated.jsonl").write_text("\n".join(json.dumps(shapes[k](s)) for k, s in said_by) + "\n")
+        if gate_blocks(tmp / "gated.jsonl") != (2, 1):
+            failures.append(f"the gate's blocks read as {gate_blocks(tmp / 'gated.jsonl')}, not (2, 1)")
+    finally:
+        shutil.rmtree(tmp)
+
+    # The exit status: a candidate never fails a run, a doctrine finding always does; with
+    # transcripts read, each arm reports the gate's blocks per session.
+    with contextlib.redirect_stdout(io.StringIO()) as printed:
+        passing = report([("-", "clean", CLEAN), ("-", "hedged", PLANTS["hedge"])])
+        failing = report([("-", "dashed", PLANTS["em-dash"])])
+        report([("with_skill", "r", CLEAN)], [("with_skill", (2, 1)), ("with_skill", (0, 0)), ("with_skill", (1, 0))])
+    if passing != 0 or failing != 1 or "dashed: em-dash: " not in printed.getvalue():
+        failures.append(f"exit {passing} on a candidate, {failing} on a doctrine finding")
+    gate_line = ("gate: 3 block(s) in 2 of 3 session(s), 1 after a session's first, "
+                 "1 restatement(s) still breaking a rule")
+    if gate_line not in printed.getvalue():
+        failures.append(f"the per-arm gate line is missing or wrong: {printed.getvalue()[-300:]!r}")
+
+    for failure in failures:
+        print(f"check-reply.py --selftest: {failure}")
+    if failures:
+        return 1
+    print(f"check-reply.py --selftest: each of the {len(PLANTS)} tags fires on its own plant and nowhere else, "
+          "the clean reply passes, transcripts and run dirs read as replies, the gate blocks a doctrine finding "
+          "once and nothing else, the cut list matches SKILL.md")
+    return 0
+
+
+def main(argv: list[str]) -> int:
+    if argv == ["--selftest"]:
+        return selftest()
+    if argv == ["--hook"]:
+        return hook(sys.stdin.read())
+    if argv and argv[0] in ("-h", "--help"):
+        print(__doc__)
+        return 0
+    replies = collect(argv) if argv else [("-", "stdin", sys.stdin.read())]
+    if not any(reply.strip() for _, _, reply in replies):
+        print("check-reply.py: no reply found in the input", file=sys.stderr)
+        return 2
+    return report(replies, gates_in(argv) if argv else [])
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

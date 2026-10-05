@@ -597,7 +597,7 @@ Why: keeping file IO on `Bun.file` is faster, has zero import ceremony, fits the
 3. Create `tsconfig.json` with the block above (includes `"types": ["bun"]`).
 4. Create `eslint.config.js` with the flat config above (includes `sonarjs.configs.recommended` and type-aware `@typescript-eslint` rules behind `LINT_STRICT=1`).
 5. Create `.vscode/settings.json` and `.vscode/extensions.json`.
-6. Drop in a Node `.gitignore`, plus `*-service-account*.json` if Firebase is in play.
+6. Drop in a Node `.gitignore`, plus `*-service-account*.json` if Firebase is in play, and `cp <skill-path>/assets/gitattributes .gitattributes` (text checks out LF on every machine: Git for Windows turns a checkout CRLF without it, and the formatter's `endOfLine: 'lf'` then fails every file).
 7. `bun install` to resolve the skeleton's ranges; then `bun update` to bump every dep to its current latest matching version. Commit `bun.lock` and the updated `package.json` together. From this point, every new dep is added via `bun add <pkg>` (runtime) or `bun add -d <pkg>` (dev), never hand-edit `package.json`.
 8. Scaffold the Clean Architecture layout (see `references/architecture.md`): `mkdir -p src/{domain,use-cases/ports,infra,presenter,composition,test-helpers}`.
 9. Create `src/domain/result.ts` with the `Result<T, E>` type and helpers from `references/result-type.md`.
@@ -626,7 +626,9 @@ Why: keeping file IO on `Bun.file` is faster, has zero import ceremony, fits the
     - `cp <skill-path>/assets/lint-staged.sh scripts/lint-staged.sh` (hook gate 6 runs it via the `lint:staged` script)
     - `cp <skill-path>/assets/check-commit-messages.sh scripts/check-commit-messages.sh` (CI re-runs the message check over the pushed range, so `--no-verify` cannot slip one past)
     - `cp <skill-path>/assets/check-commit-range.sh scripts/check-commit-range.sh` (the same for commit SIZE: the hook sees one staged diff, CI walks every commit in the range)
+    - `cp <skill-path>/assets/check-branches.sh scripts/check-branches.sh` and `cp <skill-path>/assets/branches.yml .github/workflows/branches.yml` (the daily branch watchdog, hard rule 38: a branch whose work already landed, or one more than a day off `main`), and the owner sets the host to rebase-only merges with automatic head-branch deletion, once (`references/workflow.md`, Branch lifecycle)
     - `cp <skill-path>/assets/check-identity.sh scripts/check-identity.sh` (hook gate 4, rule 26: no person, employer, or client named in file contents; CI runs it over the whole tree with `--all`)
+    - `cp <skill-path>/assets/check-reply.py scripts/check-reply.py` and `mkdir -p .claude && cp <skill-path>/assets/claude-settings.json .claude/settings.json` (the reply gate: a Claude Code Stop hook, not a git hook, that has the agent restate a reply breaking the Interaction section's mechanical rules; merge its `Stop` entry instead when `.claude/settings.json` exists; `references/workflow.md`, Reply gate)
     - `cp <skill-path>/assets/check-disciplines.sh <skill-path>/assets/check-pii-channels.sh <skill-path>/assets/check-io-deadlines.sh <skill-path>/assets/check-data-lifecycle.sh scripts/` (hook gate 5, rules 27, 29, 30: the three discipline tripwires that are core gates, run by the wrapper; CI runs it with `--all`). Where tenants or owners exist, copy `check-isolation-tests.sh` too and call it beside the wrapper in the hook and CI (rule 28, `references/workflow.md`, Discipline tripwires)
     - `chmod +x scripts/lint-staged.sh scripts/check-commit-messages.sh`
     - `mkdir -p .github/workflows && cp <skill-path>/assets/ci.yml .github/workflows/ci.yml` (the authoritative gate set: strict lint, tests, coverage, mutation on the changed files, secret scan on a frozen lockfile)

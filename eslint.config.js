@@ -233,6 +233,15 @@ export default [
     },
   },
   {
+    // The entry point exists for its side effect: it runs the composition root and sets
+    // `process.exitCode`. unicorn 79's no-top-level-side-effects flags exactly that assignment
+    // (atelier 2.8.0, found 2026-10-24); every other module stays under the rule.
+    files: ['src/main.ts'],
+    rules: {
+      'unicorn/no-top-level-side-effects': 'off',
+    },
+  },
+  {
     // A test proving that an insecure URL is refused needs that URL as its fixture, and the
     // rule's autofix rewrote one to https, silently changing what the test checked.
     files: ['**/*.test.ts'],

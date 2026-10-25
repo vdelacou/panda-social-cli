@@ -50,7 +50,7 @@ export const parseCliArgs = (argv: ReadonlyArray<string>): Result<CliCommand, Fa
   if (first === '' || first === '--help') return ok({ command: 'help-json' });
   const spec = findCommand(first);
   if (spec === undefined) return err(unknownCommand(`Unknown command: "${first}".`, first));
-  if (rest.includes('--help')) return ok({ command: 'docs', target: spec.name });
+  if (argv.includes('--help', 1)) return ok({ command: 'docs', target: spec.name });
   const flags = readFlags(spec, rest);
   if (!flags.ok) return flags;
   return BUILDERS[spec.name](flags.value);

@@ -1,6 +1,6 @@
 # PLAN: panda-social-cli v1
 
-Current task: the re-sync of the standard (M1, D58) is done. The first release (8.4) comes after the live QA. The user does 2.6b, 6.2b and 7.3 on the computer of the user, in one session: the setup of each platform, the live QA runs, the screenshots and a first run in an MCP client. The reports of these runs decide 4.3 and 5.3.
+Current task: the upgrade to atelier 2.8.0 (M2, D59) is done. The first release (8.4) comes after the live QA. The user does 2.6b, 6.2b and 7.3 on the computer of the user, in one session: the setup of each platform, the live QA runs, the screenshots and a first run in an MCP client. The reports of these runs decide 4.3 and 5.3.
 
 ## What we are building
 
@@ -68,6 +68,7 @@ A Bun/TypeScript CLI and library, published to npm as `panda-social-cli` (bin `p
 | D56 | (8) CI installs the packed tarball in an empty folder, as a user does, and `npm sbom` writes the CycloneDX SBOM of that install. The release run keeps the SBOM and the tarball as its artifacts. | In the repository, `npm sbom --omit dev` drops zod, because a dev tool also uses it (npm 11.21.0, tested on 2026-10-04). The install of the tarball gives the same tree that a user gets. |
 | D57 | (8) `CHANGELOG.md` follows Keep a Changelog. The version stays 0.0.0 until the release commit, after the live QA (2.6b). `scripts/check-release.sh` stops a release in three cases. The tag is not `v` and the version of package.json, CHANGELOG.md has no section for that version, or package.json is private. Its self-test shows each of these stops. | The live QA did not run yet. The check keeps the tag, the package and the release notes in agreement. |
 | D58 | (M1) The copy of the atelier standard in `.claude/skills/` is the same as upstream again (26b15bc, 2026-10-05). A branch lives for less than one day, and it goes onto `main` by rebase or fast-forward (hard rule 38). `check-commit-range.sh` stops a merge commit, and `branches.yml` runs `check-branches.sh` each day. A Stop hook of Claude Code runs `scripts/check-reply.py`, which stops a reply that breaks the prose rules of the standard. The `.gitattributes` file keeps the line ends of the text files LF. | The daily audit failed, because 14 files of the copy were older than upstream. The rules and their gates change together (`references/governance.md`). |
+| D59 | (M2) The repository follows atelier 2.8.0, and `bunx skills update` updates the five skills. The skills CLI keeps three skills in `.agents/skills/` and puts symbolic links to them in `.claude/skills/`. Each file of the domain and the use cases must have a mutation score of 90 or more. `land.yml` merges a green pull request into `main` by rebase, and it runs only the code of `main`. TypeScript 7 runs the type check, and the TypeScript 6 API serves ESLint, thus the development needs Bun 1.4. | The audit found 1 file behind upstream on 2026-10-25, and atelier 2.7.0 and 2.8.0 changed the gates. The user asked for the full upgrade, the layout of the skills CLI and the land job. |
 
 ## Platform facts that shape the code (verified 2026-09-28)
 
@@ -208,6 +209,11 @@ A Bun/TypeScript CLI and library, published to npm as `panda-social-cli` (bin `p
   - Done when: `check-skill-pin.sh` finds no difference from upstream, the self-tests of the new gates pass, and every gate passes. Each commit has a maximum of 10 files and 300 lines.
   - (Nine commits land M1, each within the size limit. The reply gate has 614 lines, thus each of its two copies lands in parts. Until the last part, nothing runs the script.)
   - The user makes `main` the default branch, sets the GitHub repository to rebase merges only, with automatic deletion of the head branch, and protects `main`. GitHub refuses these changes from the session (403). While the default branch is not `main`, the watchdog finds `main` as a landed branch and fails.
+- [x] M2 The upgrade to atelier 2.8.0 (D59). It changes the skills, the copies of the gates and the TypeScript aliases. It adds the mutation check of each file, `land.yml` and the host check.
+  - Done when: `check-skill-pin.sh` finds no difference from upstream, the self-tests of the new gates pass, and every gate passes. Each commit has a maximum of 10 files and 300 lines.
+  - (The two approved tests of the guided setup failed when the guided path was broken, and then passed. Bun 1.4 counts the functions of the guided path. Without the tests, two files of the composition had 75 percent of their functions covered, and the gate is 80. A full mutation run killed 1326 of 1337 mutants, and 9 timed out. Two mutants survived in `credentials.ts` (90.48). Only the composition tests kill them, and the new runner runs only the tests of the domain and the use cases.)
+  - The land job of 2.8.0 ran the code of the pull request with a write token. Upstream moved it to `land.yml` on 2026-10-25, before M2 landed. `land.yml` acts from the pull request after the one that adds it, because GitHub runs `workflow_run` only from the default branch.
+  - The user runs `python3 scripts/check-host.py --apply` one time, with an admin token. It makes `main` the default branch, protects `main`, and sets rebase merges only, with automatic deletion of the head branch. Until then, the host check of `branches.yml` fails each day.
 
 ## Open risks
 

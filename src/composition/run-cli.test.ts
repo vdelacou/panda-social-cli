@@ -71,6 +71,28 @@ const run = async (
   return { exitCode, answers: lines.map((line) => JSON.parse(line) as unknown) };
 };
 
+// A human at a terminal: Enter at each step, then the token. The guide writes to the
+// terminal only, so stdout keeps its one JSON line.
+const runAtTerminal = async (
+  argv: ReadonlyArray<string>,
+  env: Readonly<Record<string, string>>,
+  typed: string
+): Promise<{ readonly exitCode: number; readonly answers: ReadonlyArray<unknown> }> => {
+  const lines: string[] = [];
+  const input = new PassThrough();
+  input.end(typed);
+  const exitCode = await runCli({
+    argv,
+    env,
+    writeOut: (line) => {
+      lines.push(line);
+    },
+    logStream: new PassThrough(),
+    terminal: { input, output: new PassThrough() },
+  });
+  return { exitCode, answers: lines.map((line) => JSON.parse(line) as unknown) };
+};
+
 const threadsApi = (): FetchMock =>
   installFetchMock([
     { match: (url) => url.endsWith('/me?fields=id,username'), respond: () => json({ id: '26000000000000001', username: 'panda' }) },
@@ -115,6 +137,17 @@ describe('connecting Threads with `panda-social setup threads`', () => {
     mock = threadsApi();
 
     const setup = await run(['setup', 'threads', '--token-stdin'], { HOME: home }, `${STORED}\n`);
+    const posted = await run(['post', '--to', 'threads', '--text', 'Hello from panda'], { HOME: home });
+
+    expect(setup).toEqual({ exitCode: 0, answers: [{ ok: true, data: { platform: 'threads', profile: 'default', userId: '26000000000000001', username: 'panda' } }] });
+    expect(posted.exitCode).toBe(0);
+    expect(publishToken(mock)).toBe(`Bearer ${STORED}`);
+  });
+
+  it('at a terminal, `setup threads` walks the six steps, then checks the typed token with Threads and saves it', async () => {
+    mock = threadsApi();
+
+    const setup = await runAtTerminal(['setup', 'threads'], { HOME: home }, `${'\n'.repeat(6)}${STORED}\n`);
     const posted = await run(['post', '--to', 'threads', '--text', 'Hello from panda'], { HOME: home });
 
     expect(setup).toEqual({ exitCode: 0, answers: [{ ok: true, data: { platform: 'threads', profile: 'default', userId: '26000000000000001', username: 'panda' } }] });
@@ -717,6 +750,15 @@ describe('connecting Instagram with `panda-social setup instagram`', () => {
         },
       ],
     });
+    expect(lastAuthorization(mock)).toBe(`Bearer ${INSTAGRAM_TOKEN}`);
+  });
+
+  it('at a terminal, `setup instagram` walks the six steps, then checks the typed token with Instagram and saves it', async () => {
+    mock = instagramGraph();
+
+    const setup = await runAtTerminal(['setup', 'instagram'], { HOME: home }, `${'\n'.repeat(6)}${INSTAGRAM_TOKEN}\n`);
+
+    expect(setup).toEqual({ exitCode: 0, answers: [{ ok: true, data: { platform: 'instagram', profile: 'default', ...INSTAGRAM_ACCOUNT } }] });
     expect(lastAuthorization(mock)).toBe(`Bearer ${INSTAGRAM_TOKEN}`);
   });
 

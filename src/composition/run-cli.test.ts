@@ -4,6 +4,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { PassThrough } from 'node:stream';
 import packageJson from '../../package.json' with { type: 'json' };
+import { INSTAGRAM_SETUP_STEPS } from '../presenter/instagram-setup-steps.ts';
+import { THREADS_SETUP_STEPS } from '../presenter/threads-setup-steps.ts';
 import { installFetchMock } from '../test-helpers/fetch-mock.ts';
 import type { FetchMock, FetchMockCall } from '../test-helpers/fetch-mock.ts';
 import { runCli } from './run-cli.ts';
@@ -71,6 +73,32 @@ const run = async (
   return { exitCode, answers: lines.map((line) => JSON.parse(line) as unknown) };
 };
 
+// A human at a terminal: the typed lines go to the input, and the guide writes to the output.
+const runAtTerminal = async (
+  argv: ReadonlyArray<string>,
+  env: Readonly<Record<string, string>>,
+  typed: string
+): Promise<{ readonly exitCode: number; readonly answers: ReadonlyArray<unknown>; readonly screen: string }> => {
+  const lines: string[] = [];
+  const shown: string[] = [];
+  const input = new PassThrough();
+  const output = new PassThrough();
+  output.on('data', (chunk: Buffer) => {
+    shown.push(chunk.toString());
+  });
+  input.end(typed);
+  const exitCode = await runCli({
+    argv,
+    env,
+    writeOut: (line) => {
+      lines.push(line);
+    },
+    logStream: new PassThrough(),
+    terminal: { input, output },
+  });
+  return { exitCode, answers: lines.map((line) => JSON.parse(line) as unknown), screen: shown.join('') };
+};
+
 const threadsApi = (): FetchMock =>
   installFetchMock([
     { match: (url) => url.endsWith('/me?fields=id,username'), respond: () => json({ id: '26000000000000001', username: 'panda' }) },
@@ -120,6 +148,16 @@ describe('connecting Threads with `panda-social setup threads`', () => {
     expect(setup).toEqual({ exitCode: 0, answers: [{ ok: true, data: { platform: 'threads', profile: 'default', userId: '26000000000000001', username: 'panda' } }] });
     expect(posted.exitCode).toBe(0);
     expect(publishToken(mock)).toBe(`Bearer ${STORED}`);
+  });
+
+  it('at a terminal, `setup threads` walks every step, asks for the token, and saves the typed token', async () => {
+    mock = threadsApi();
+
+    const setup = await runAtTerminal(['setup', 'threads'], { HOME: home }, `${'\n'.repeat(THREADS_SETUP_STEPS.length)}${STORED}\n`);
+
+    expect(setup.exitCode).toBe(0);
+    expect(setup.answers).toEqual([{ ok: true, data: { platform: 'threads', profile: 'default', userId: '26000000000000001', username: 'panda' } }]);
+    expect(setup.screen).toContain('Paste your Threads token');
   });
 
   it('PANDA_SOCIAL_THREADS_TOKEN overrides the saved token', async () => {
@@ -718,6 +756,16 @@ describe('connecting Instagram with `panda-social setup instagram`', () => {
       ],
     });
     expect(lastAuthorization(mock)).toBe(`Bearer ${INSTAGRAM_TOKEN}`);
+  });
+
+  it('at a terminal, `setup instagram` walks every step, asks for the token, and saves the typed token', async () => {
+    mock = instagramGraph();
+
+    const setup = await runAtTerminal(['setup', 'instagram'], { HOME: home }, `${'\n'.repeat(INSTAGRAM_SETUP_STEPS.length)}${INSTAGRAM_TOKEN}\n`);
+
+    expect(setup.exitCode).toBe(0);
+    expect(setup.answers).toEqual([{ ok: true, data: { platform: 'instagram', profile: 'default', ...INSTAGRAM_ACCOUNT } }]);
+    expect(setup.screen).toContain('Instagram token');
   });
 
   it('PANDA_SOCIAL_INSTAGRAM_TOKEN overrides the saved token for `status instagram`', async () => {

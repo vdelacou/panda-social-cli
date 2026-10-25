@@ -5,7 +5,7 @@
       "source": "vdelacou/atelier",
       "sourceType": "github",
       "skillPath": "skills/atelier/SKILL.md",
-      "computedHash": "42e422aad2df4498e6d30dc78913d2836930cdba3ce525b8e8dd1fc969efc09f"
+      "computedHash": "9a29fa9dcd08db55ec7fab26a8637afb1e7151b58f6ff8ec10d70111b974f88e"
     },
     "atelier-distill": {
       "source": "vdelacou/atelier",
@@ -17,7 +17,7 @@
       "source": "vdelacou/atelier",
       "sourceType": "github",
       "skillPath": "skills/atelier-greenfield/SKILL.md",
-      "computedHash": "efbe88fb65f07cfa5d080413460c6f09a3e57f76057a17de1f25e4b295742dfd"
+      "computedHash": "4cb2e86be331ea2fe1480d47de17f89691579cd2c397b6f1bf67575735345128"
     },
     "atelier-grill-me": {
       "source": "vdelacou/atelier",
@@ -29,7 +29,7 @@
       "source": "vdelacou/atelier",
       "sourceType": "github",
       "skillPath": "skills/atelier-review-me/SKILL.md",
-      "computedHash": "f4a955d7e744fdf6888d2e99bda9837e34485c0105bd39baf5a2916318d513f3"
+      "computedHash": "ea3c7c8dfe1e74e0751c46c1f1e945a82fb601533e553f61f723330a308c75d3"
     }
   }
 }

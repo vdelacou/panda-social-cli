@@ -4,8 +4,6 @@
 # that touch the dependency tree, plus a scheduled daily sweep.
 name: audit
 on:
-  schedule:
-    - cron: '0 6 * * *'        # daily watchdog: new CVEs in untouched deps
   pull_request:
     paths:                      # PR run fires only when deps actually change
       - '**/package.json'       # every workspace manifest, the root included

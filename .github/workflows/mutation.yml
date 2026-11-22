@@ -7,8 +7,6 @@
 # not a blocked merge; it is not a required status check.
 name: mutation
 on:
-  schedule:
-    - cron: '0 3 * * *'        # daily, before the working day (UTC)
   workflow_dispatch:           # on demand, after a large refactor
 permissions:
   contents: read

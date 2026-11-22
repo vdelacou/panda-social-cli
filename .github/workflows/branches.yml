@@ -8,8 +8,6 @@
 # merge (check-host.py; its owner sets them once with --apply).
 name: branches
 on:
-  schedule:
-    - cron: '30 6 * * *'       # daily, after the audit watchdog
   workflow_dispatch:
 permissions:
   contents: read
